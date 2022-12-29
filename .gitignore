@@ -1,0 +1,16 @@
+
+.vs/MIK/v16/
+
+*.txt
+
+Debug/
+
+ex.bin
+
+ex.dat
+
+*.sln
+
+*.vfproj
+
+*.u2d
