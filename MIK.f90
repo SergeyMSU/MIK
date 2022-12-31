@@ -1324,18 +1324,18 @@ include "Help_func.f90"
     
     ncell = size(gl_all_Cell(1, :))
     
-    
+    !P_E = par_kk/(par_chi_real**2 * par_R0**2) * par_chi_real**2 / (ggg * 5.0**2)
     
     do gr = 1, ncell
         c = gl_Cell_center(:, gr)
         r = norm2(c)
-        if (r <= par_R_character) then   !(.FALSE.) then!
+        if (r <= par_R0 * par_R_int * 1.01) then   !(.FALSE.) then!
             ro = par_kk/(par_chi_real**2 * r**2)
-            P_E = ro * par_chi_real**2 / (ggg * 10.0**2)
+            P_E = ro * par_chi_real**2 / (ggg * 7.0**2)
             c = DBLE(c) * par_chi_real/DBLE(r)
             gl_Cell_par(:, gr) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E, 0.0_8, 0.0_8, 0.0_8/)
         else
-            gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8/)
+            !gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8/)
         end if
     end do
 
@@ -2519,8 +2519,11 @@ include "Help_func.f90"
     fg(1) = 2
     dd = 124532
     
-    call Set_STORAGE()
-    call Build_Mesh_start()
+    !call Set_STORAGE()
+    !call Build_Mesh_start()
+    
+    call Read_setka_bin(1)
+    
     call Find_Surface()
     call Print_All_Points()
     call Print_A_Ray(1,3)
@@ -2535,35 +2538,11 @@ include "Help_func.f90"
     call calc_all_Gran()
     
     print *, "Start_GD_1"
-    !call Start_GD_1(10000)
-    !call Print_par_2D()
+    call Start_GD_1(5000)
+    call Print_par_2D()
+    call Save_setka_bin(2)
     ! Variables
     
-    ! Пробуем работать с файло
-    
-    namelist /mylist/ fg, dd
-    
-    open(2, file = "ex.bin", ERR = 5, FORM = 'BINARY')
-    
-    write(2)  fg
-    
-    close(2)
-    
-    open(2, file = "ex.bin", ERR = 5, FORM = 'BINARY')
-    
-    read(2)  fg
-    
-    close(2)
-
-    ! Body of MIK
-    print *, 'Hello World'
-    
-    
-    pause   
-    
-    if (.False.) then
-5       pause "Error  file 1186"    
-    end if
-
+    pause
     end program MIK
 
