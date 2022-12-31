@@ -8,22 +8,90 @@
     ! Описание модулей
     
 include "Storage_modul.f90"    
-include "Solvers.f90"   
+include "Solvers.f90"  
+include "Help_func.f90"
 
 
     
     module My_func                     ! Модуль интерфейсов для внешних функций
     
     interface
-        real(4) pure function calc_square(n)
-        integer, intent(in) :: n
+        real(8) pure function calc_square(n)
+            integer, intent(in) :: n
         end function
+        
+        real(8) pure function polar_angle(x, y)
+            use GEO_PARAM
+	        implicit none
+            real(8), intent(in) :: x, y
+        end function
+        
     end interface
     
     end module My_func
     
+    ! Вспомогательные функции
+    
+    real(8) pure function polar_angle(x, y)
+    use GEO_PARAM
+	implicit none
+    real(8), intent(in) :: x, y
+    
+	if (abs(x) + abs(y) < 0.00001 / par_R_character) then
+        polar_angle = 0.0_8
+        return 
+    end if
     
 
+	if (x < 0) then
+		polar_angle = atan(y / x) + 1.0 * par_pi_8
+	elseif (x > 0 .and. y >= 0) then
+		polar_angle = atan(y / x)
+	elseif (x > 0 .and. y < 0) then
+		polar_angle = atan(y / x) + 2.0 * par_pi_8
+	elseif (y > 0 .and. x >= 0 .and. x <= 0) then
+		polar_angle = par_pi_8 / 2.0
+	elseif (y < 0 .and. x >= 0 .and. x <= 0) then
+		polar_angle =  3.0 * par_pi_8 / 2.0
+	end if
+        
+	return 
+    end function polar_angle
+
+    subroutine spherical_skorost(z, x, y, Vz, Vx, Vy, Vr, Vphi, Vtheta)
+    ! Variables
+    use My_func
+    implicit none 
+    real(8), intent(in) :: x, y, z, Vx, Vy, Vz
+    real(8), intent(out) :: Vr, Vphi, Vtheta
+    real(8) :: r_1, the_1, phi_1
+    
+    r_1 = sqrt(x * x + y * y + z * z)
+	the_1 = acos(z / r_1)
+	phi_1 = polar_angle(x, y)
+
+	Vr = Vx * sin(the_1) * cos(phi_1) + Vy * sin(the_1) * sin(phi_1) + Vz * cos(the_1);
+	Vtheta = Vx * cos(the_1) * cos(phi_1) + Vy * cos(the_1) * sin(phi_1) - Vz * sin(the_1);
+	Vphi = -Vx * sin(phi_1) + Vy * cos(phi_1);
+    
+    end subroutine spherical_skorost
+    
+    subroutine dekard_skorost(z, x, y, Vr, Vphi, Vtheta, Vz, Vx, Vy)
+    use My_func
+    implicit none 
+    real(8), intent(in) :: x, y, z,  Vr, Vphi, Vtheta
+    real(8), intent(out) :: Vx, Vy, Vz
+    real(8) :: r_2, the_2, phi_2
+    
+    r_2 = sqrt(x * x + y * y + z * z);
+	the_2 = acos(z / r_2);
+	phi_2 = polar_angle(x, y);
+
+	Vx = Vr * sin(the_2) * cos(phi_2) + Vtheta * cos(the_2) * cos(phi_2) - Vphi * sin(phi_2);
+	Vy = Vr * sin(the_2) * sin(phi_2) + Vtheta * cos(the_2) * sin(phi_2) + Vphi * cos(phi_2);
+	Vz = Vr * cos(the_2) - Vtheta * sin(the_2);
+    
+    end subroutine dekard_skorost
     
     ! ****************************************************************************************************************************************************
     ! Блок функций для начального построения сетки
@@ -38,9 +106,9 @@ include "Solvers.f90"
     
     if (par_developer_info) print *, "START Set_STORAGE"
     ! Выделяем память под переменные
-    !gl_x = [real(4) ::]
-    !gl_y = [real(4) ::]
-    !gl_z = [real(4) ::]
+    !gl_x = [real(8) ::]
+    !gl_y = [real(8) ::]
+    !gl_z = [real(8) ::]
     
     
     allocate(gl_RAY_A(par_n_END, par_m_A, par_l_phi))
@@ -73,9 +141,9 @@ include "Solvers.f90"
     allocate(gl_x(par_n_points))
     allocate(gl_y(par_n_points))
     allocate(gl_z(par_n_points))
-    !gl_x = [real(4) ::]
-    !gl_y = [real(4) ::]
-    !gl_z = [real(4) ::]
+    !gl_x = [real(8) ::]
+    !gl_y = [real(8) ::]
+    !gl_z = [real(8) ::]
     
     n2 =  (par_n_END - 1) * (par_m_A + par_m_BC - 1) + (par_n_TS - 1 + par_m_O) * (par_m_K) + &
         (par_n_END - par_n_TS) * par_m_O ! Число ячеек в 1 слое по углу
@@ -91,6 +159,7 @@ include "Solvers.f90"
     allocate(gl_Gran_normal(3, n1))
     allocate(gl_Gran_square(n1))
     allocate(gl_Gran_POTOK(8, n1))
+    allocate(gl_Gran_center(3, n1))
     
     allocate(gl_Contact( (par_m_O + par_m_A + par_m_BC -1) * par_l_phi ))   ! Выделяем память под контакт
     
@@ -125,6 +194,7 @@ include "Solvers.f90"
     gl_Cell_center = 0.0
     gl_Gran_POTOK = 0.0
     gl_Cell_par = 0.0
+    gl_Gran_center = 0.0
     
     gl_Cell_A = -1
     gl_Cell_B = -1
@@ -153,7 +223,7 @@ include "Solvers.f90"
     implicit none
     
     integer(4), automatic :: i, j, k, N1, N2, N3, i1, kk, node, kk2, ni
-    real(4), automatic :: r, phi, the, xx, x, y, z, rr, x2, y2, z2
+    real(8), automatic :: r, phi, the, xx, x, y, z, rr, x2, y2, z2
     
     ! Сетка строится в декартовой системе координат, хотя сама сетка цилиндрически симметричная 
     ! Нужно уметь преобразовывать x,y,z <---> x, r, phi  (x - ось симметрии), а также сферические координаты
@@ -190,21 +260,22 @@ include "Solvers.f90"
                 end if
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                the = (j - 1) * par_pi_4/2.0/(N2 - 1)
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                the = (j - 1) * par_pi_8/2.0/(N2 - 1)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 ! до TS
                 if (i <= par_n_TS) then  ! До расстояния = par_R_character
-                    r =  par_R0 + (par_R_character - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+                    r =  par_R0 + (par_R_character - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
                     !print *, r
                     !pause
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = par_R_character + (i - par_n_TS) * 0.3 * par_R_character/(par_n_HP - par_n_TS)
                 else if (i <= par_n_BS) then  ! До расстояния = par_R_character * 2
                     r = 1.3 * par_R_character + (i - par_n_HP) * 0.7 * par_R_character/(par_n_BS - par_n_HP)
-                else  ! До расстояния = par_R_character * 1.3_4
-                    r = 2.0 * par_R_character + (i - par_n_BS) * (par_R_END - 2.0 * par_R_character)/(par_n_END - par_n_BS)
+                else  ! До расстояния = par_R_character * 1.3_8
+                    !r = 2.0 * par_R_character + (i - par_n_BS) * (par_R_END - 2.0 * par_R_character)/(par_n_END - par_n_BS)
+                    r = 2.0 * par_R_character + (par_R_END - 2.0 * par_R_character) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**par_kk2
                 end if
                 
                 ! Создаём точку
@@ -236,8 +307,8 @@ include "Solvers.f90"
                 end if
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                the = par_pi_4/2.0 + (j) * par_triple_point/(N2)
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 ! до TS
@@ -246,7 +317,7 @@ include "Solvers.f90"
                     !print *, r
                     !pause
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
-                    xx = 1.3 * par_R_character * (1 - cos(the - par_pi_4/2.0))/cos(the - par_pi_4/2.0)
+                    xx = 1.3 * par_R_character * (1 - cos(the - par_pi_8/2.0))/cos(the - par_pi_8/2.0)
                     r = par_R_character + (i - par_n_TS) * (0.3 * par_R_character + xx) /(par_n_HP - par_n_TS)
                 end if
                 
@@ -281,7 +352,7 @@ include "Solvers.f90"
                 end if
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 x = gl_x(gl_RAY_B(par_n_HP, j, k))
@@ -292,7 +363,8 @@ include "Solvers.f90"
                 if (i <= par_n_BS - par_n_HP + 1) then  
                     r = rr + (i - 1) * (2.0 * par_R_character - rr)/(par_n_BS - par_n_HP)
                 else
-                    r = 2.0 * par_R_character + (i - (par_n_BS - par_n_HP + 1)) * (par_R_END - 2.0 * par_R_character) /(N1 - (par_n_BS - par_n_HP + 1) )
+                    !r = 2.0 * par_R_character + (i - (par_n_BS - par_n_HP + 1)) * (par_R_END - 2.0 * par_R_character) /(N1 - (par_n_BS - par_n_HP + 1) )
+                    r = 2.0 * par_R_character + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - 2.0 * par_R_character)
                 end if
                 
                 ! Создаём точку
@@ -319,18 +391,20 @@ include "Solvers.f90"
     ! Цикл генерации точек на лучах O и их связывание с этими лучами ************************************************************
     do k = 1, N3
     	do j = 1, N2
-            x = xx - j * (xx - par_R_LEFT)/N2
+            !x = xx - j * (xx - par_R_LEFT)/N2
+            x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
             do i = 1, N1
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 
                 if (i <= par_n_BS - par_n_HP + 1) then  
-                    r = 1.3 * par_R_character + (i - 1) * par_R_character * (0.7 * par_R_character)/(par_n_BS - par_n_HP)
+                    r = 1.3 * par_R_character + (i - 1) * par_R_character * (0.7)/(par_n_BS - par_n_HP)
                 else
-                    r = 2.0 * par_R_character + (i - (par_n_BS - par_n_HP + 1)) * (par_R_END - 2.0 * par_R_character) /(N1 - (par_n_BS - par_n_HP + 1) )
+                    !r = 2.0 * par_R_character + (i - (par_n_BS - par_n_HP + 1)) * (par_R_END - 2.0 * par_R_character) /(N1 - (par_n_BS - par_n_HP + 1) )
+                    r = 2.0 * par_R_character + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - 2.0 * par_R_character)
                 end if
                 
                 ! Создаём точку
@@ -368,8 +442,8 @@ include "Solvers.f90"
                 end if
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                the = par_pi_4/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_4/2.0 - par_triple_point)/(N2)
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 r =  par_R0 + (par_R_character - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
@@ -414,7 +488,7 @@ include "Solvers.f90"
                 end if
                 
     	        ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_4 * par_pi_4/(N3)
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
                 
                 if (j < N2) then
@@ -428,7 +502,8 @@ include "Solvers.f90"
                 end if
                 
                 r = sqrt(y**2 + z**2)
-                x = xx + (i - 1) * (par_R_LEFT - xx)/(N1 - 1)
+                !x = xx + (i - 1) * (par_R_LEFT - xx)/(N1 - 1)
+                x = xx + (DBLE(i - 1)/(N1 - 1))**par_kk3 * (par_R_LEFT - xx)
                 
                 
                 ! Создаём точку
@@ -1158,7 +1233,7 @@ include "Solvers.f90"
                     gl_Gran_neighbour(1, node) = ni
                     gl_Gran_neighbour(2, node) = -2
                     
-                    gl_Cell_gran(4, ni) = node
+                    gl_Cell_gran(3, ni) = node
                     node = node + 1
                 end if
                 
@@ -1243,9 +1318,9 @@ include "Solvers.f90"
     implicit none
     
     integer(4) :: ncell, gr
-    real(4) :: r
+    real(8) :: r
     real(8) :: ro, P_E
-    real(4) :: c(3)
+    real(8) :: c(3)
     
     ncell = size(gl_all_Cell(1, :))
     
@@ -1254,8 +1329,8 @@ include "Solvers.f90"
     do gr = 1, ncell
         c = gl_Cell_center(:, gr)
         r = norm2(c)
-        if (r <= par_R_character) then
-            ro = 1.0/(par_chi_real**2 * r**2)
+        if (r <= par_R_character) then   !(.FALSE.) then!
+            ro = par_kk/(par_chi_real**2 * r**2)
             P_E = ro * par_chi_real**2 / (ggg * 10.0**2)
             c = DBLE(c) * par_chi_real/DBLE(r)
             gl_Cell_par(:, gr) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E, 0.0_8, 0.0_8, 0.0_8/)
@@ -1275,16 +1350,39 @@ include "Solvers.f90"
     implicit none
     
     integer, automatic :: Ngran, iter
-    real(4) :: p(3, 4), Vol, D
-    real(4) :: a(3), b(3), c(3), S, node1(3), node2(3)
-    real(4) :: dist, di
-    integer :: i, j, k, ll
+    real(8) :: p(3, 4), Vol, D
+    real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
+    real(8) :: dist, di, gr_center(3)
+    integer :: i, j, k, ll, grc
     
     ! Цикл по граням - считаем площадь грани, её нормаль
     Ngran = size(gl_all_Gran(1,:))
     
     do  iter = 1, Ngran
+        grc = 0
+        p = 0.0
+        a = 0.0
+        b = 0.0
+        c = 0.0
+        gr_center = 0.0
+        node1 = 0.0
+        node2 = 0.0
         ! Считываем из глобальной памяти координаты точек грани
+        
+        !print*, gl_all_Gran(:, iter)
+        !pause
+        
+        if (gl_all_Gran(1, iter) == gl_all_Gran(3, iter)) then
+            print*, "EROROR nierhfue 1", iter
+            pause
+        end if
+        
+        if (gl_all_Gran(2, iter) == gl_all_Gran(4, iter)) then
+            print*, "EROROR nierhfue 2", iter
+            pause
+        end if
+        
+        
         do j = 1, 4
         	i = gl_all_Gran(j, iter)
             p(:,j) = (/gl_x(i), gl_y(i), gl_z(i)/)
@@ -1292,6 +1390,28 @@ include "Solvers.f90"
         a = p(:,3) - p(:,1)
         b = p(:,4) - p(:,2)
         
+        ! Нужно сохранить центр грани
+        gr_center = p(:, 1)
+        grc = 1
+        if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
+            grc = grc + 1
+            gr_center = gr_center + p(:,2)
+        end if
+        
+        if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
+            grc = grc + 1
+            gr_center = gr_center + p(:,3)
+        end if
+        
+        if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) & 
+            .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
+            grc = grc + 1
+            gr_center = gr_center + p(:,4)
+            end if
+            
+        gr_center = gr_center/grc
+        
+        gl_Gran_center(:, iter) = gr_center
         
         c(1) = a(2) * b(3) - a(3) * b(2) 
         c(2) = a(3) * b(1) - a(1) * b(3) 
@@ -1328,11 +1448,12 @@ include "Solvers.f90"
     
     ! Теперь посчитаем объёмы ячеек
     Ngran = size(gl_all_Cell(1,:))
-    c = 0.0
+    
     do  iter = 1, Ngran   ! Пробегаемся по всем ячейкам
         Vol = 0.0
         ll = 0
-        dist = 1000.0 * par_R_character
+        dist = 10000.0 * par_R_character
+        c = 0.0
         ! Для вычисления правильного центра ячейки, нужно понять какая она (некоторые узлы пропущены)
         if (gl_all_Cell(1, iter) /= gl_all_Cell(5, iter)) then
             do j = 1, 8
@@ -1395,12 +1516,21 @@ include "Solvers.f90"
         end if
         
         gl_Cell_center(:, iter) = c
+        
+        !print *, c
+        !pause
             
         ! Вычислили центр ячейки теперь считаем объём пирамиды на каждую грань
         do j = 1, 6
-        	i = gl_Cell_gran(j, iter)
+        	i = gl_Cell_gran(j, iter)   ! Берём по очереди все грани ячейки
+            
+            !if (iter == gl_Cell_C(1, size(gl_Cell_C(1,:,1)) ,1)) then
+            !    print*, gl_Cell_gran(:, iter)
+            !    pause
+            !end if
+            
             if (i == 0) CYCLE
-            k = gl_all_Gran(1, iter)
+            k = gl_all_Gran(1, i)  ! Номер первого узла грани
             b = (/gl_x(k), gl_y(k), gl_z(k)/)
             a = gl_Gran_normal(:,i)
             di = abs(DOT_PRODUCT(c,a) - DOT_PRODUCT(a,b))  ! Расстояние от точки до плоскости
@@ -1408,6 +1538,16 @@ include "Solvers.f90"
             dist = MIN(dist, di)
             ll = ll + 1
         end do
+        
+        
+        
+        !if (iter == gl_Cell_A(5, 1, 1)) then
+        !    write(*, *) c
+        !    print*, Vol
+        !    print*, gl_Cell_gran(:, iter)
+        !    pause
+        !end if
+        
         
         gl_Cell_Volume(iter) = Vol
         gl_Cell_dist(iter) = dist
@@ -1421,17 +1561,20 @@ include "Solvers.f90"
     end subroutine calc_all_Gran
     
     subroutine Start_GD_1(steps)
+    ! Считается просто газовая динамика (без мультифлюида, без магнитных полей)
+    ! Без атомов и т.д. Без ТВД
+    ! Функция паспараллелена на OPEN_MP
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
     implicit none
     
     integer(4), intent(in) :: steps
-    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j
+    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k
     real(8) :: qqq1(8), qqq2(8), qqq(8)  ! Переменные в ячейке
     real(8) :: dist, dsl, dsc, dsp
     real(8) :: POTOK(8)
-    real(8) :: time, Volume, TT, U8
+    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc
     
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3
     
@@ -1443,45 +1586,101 @@ include "Solvers.f90"
     
     time = 0.00000001
     
+    !k = gl_Cell_C(1, size(gl_Cell_C(1,:,1)) ,1)
+    !print*, gl_Cell_Volume(k)
+    !
+    !k = gl_Cell_C(1, size(gl_Cell_C(1,:,1)) - 1 ,1)
+    !print*, gl_Cell_Volume(k)
+    !
+    !pause
+    
+    
     do st = 1, steps
         ! Делаем цикл по граням и считаем потоки через них
         TT = time
         time = 100000.0
-        print*, st
+        if (mod(st, 50) == 0)  print*, st, TT
         
-    	do gr = 1,ngran
+        !$omp parallel
+        
+        !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc) &
+        !$omp & reduction(min:time)
+    	    do gr = 1, ngran
+            POTOK = 0.0
     	    s1 = gl_Gran_neighbour(1, gr)
+            if(s1 < 1) print*, "ERROR 1465gdfdyhe"
             s2 = gl_Gran_neighbour(2, gr)
             qqq1 = gl_Cell_par(:, s1)
+            
+            ! Попробуем снести плотность пропорционально квадрату
+            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 5.0) then
+                rad1 = norm2(gl_Cell_center(:, s1))
+                rad2 = norm2(gl_Gran_center(:, gr))
+                qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+                qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+                ! Скорости сносим в сферической С.К.
+                call spherical_skorost(gl_Cell_center(1, s1), gl_Cell_center(2, s1), gl_Cell_center(3, s1), &
+                    qqq1(2), qqq1(3), qqq1(4), aa, bb, cc)
+                call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
+                    aa, bb, cc, qqq1(2), qqq1(3), qqq1(4))
+                
+            end if
+            
             if (s2 >= 1) then
+                if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
                 qqq2 = gl_Cell_par(:, s2 )
                 dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+                
+                ! Попробуем снести плотность пропорционально квадрату
+                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 5.0) then
+                    rad1 = norm2(gl_Cell_center(:, s2))
+                    rad2 = norm2(gl_Gran_center(:, gr))
+                    qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+                    qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+                    call spherical_skorost(gl_Cell_center(1, s2), gl_Cell_center(2, s2), gl_Cell_center(3, s2), &
+                        qqq2(2), qqq2(3), qqq2(4), aa, bb, cc)
+                    call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
+                        aa, bb, cc, qqq2(2), qqq2(3), qqq2(4))
+                end if
+                
             else  ! В случае граничных ячеек - граничные условия
+                if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
                 if(s2 == -1) then  ! Набегающий поток
                     dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8/)
                 else  ! Здесь нужны мягкие условия
                     dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
+                    qqq2(5) = 1.0_8
+                    if(qqq2(2) > par_Velosity_inf) then
+                        qqq2(2) = par_Velosity_inf ! Отсос жидкости 
+                    end if
                 end if
             end if
             
-            call chlld(1, DBLE(gl_Gran_normal(1, gr)), DBLE(gl_Gran_normal(2, gr)), DBLE(gl_Gran_normal(3, gr)), &
+            !print*, POTOK
+            call chlld(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
-            time = min(time, 0.9 * dist/max(abs(dsl), abs(dsp)) )
+            !print*, POTOK
+            !pause
+            
+            time = min(time, 0.9 * dist/max(abs(dsl), abs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(:, gr) = POTOK * gl_Gran_square(gr)
         end do
+    !$omp end do
     
+    !$omp barrier ! Синхронизация нитей
         ! Теперь цикл по ячейкам
-        do concurrent (gr = 1:ncell)
-            if (norm2(gl_Cell_center(:, gr)) <= par_R0 * 30) CYCLE    ! Не считаем внутри сферы
+    !$omp do private(POTOK, Volume, qqq, i, j, ro3, u3, v3, w3, p3)
+        do gr = 1, ncell
+            if (norm2(gl_Cell_center(:, gr)) <= par_R0 * par_R_int) CYCLE    ! Не считаем внутри сферы
             POTOK = 0.0
             Volume = gl_Cell_Volume(gr)
             qqq = gl_Cell_par(:, gr)            
             ! Просуммируем потоки через грани
             do i = 1, 6
             	j = gl_Cell_gran(i, gr)
-                if (j < 1) CYCLE
+                if (j == 0) CYCLE
                 if (gl_Gran_neighbour(1, j) == gr) then
                     POTOK = POTOK + gl_Gran_POTOK(:, j)
                 else
@@ -1491,7 +1690,7 @@ include "Solvers.f90"
             
             ro3 = qqq(1) - TT * POTOK(1) / Volume
             if (ro3 <= 0.0_8) then
-                print*, "Ro < 0  1490"
+                print*, "Ro < 0  1490 ", ro3
                 pause
             end if
             u3 = (qqq(1) * qqq(2) - TT * POTOK(2) / Volume) / ro3
@@ -1500,19 +1699,22 @@ include "Solvers.f90"
             !bx3 = (bx * Volume_do / Volume - T[now1] * (K->Potok[4] + qqq(2) * K->Potok[8]) / Volume)
             !by3 = (by * Volume_do / Volume - T[now1] * (K->Potok[5] + qqq(3) * K->Potok[8]) / Volume)
             !bz3 = (bz * Volume_do / Volume - T[now1] * (K->Potok[6] + qqq(4) * K->Potok[8]) / Volume)
-            U8 = ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 )
-            p3 = ((U8 - TT * POTOK(5)/ Volume) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
+            !U8 = ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 )
+            p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 ) &
+                - TT * POTOK(5)/ Volume) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
             
             if (p3 <= 0.0_8) then
-                print*, "p < 0  1490 ", gl_Cell_center(:, gr)
-                p3 = 0.0000001
-                pause
+                print*, "p < 0  1490 ", p3 , gl_Cell_center(:, gr)
+                p3 = 0.000001
+                !pause
             end if
             
             gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, 0.0_8, 0.0_8, 0.0_8/)
             
         end do
+    !$omp end do
         
+    !$omp end parallel
     
     end do
     
@@ -1522,13 +1724,13 @@ include "Solvers.f90"
     ! ************************************************************************************************************************************************
     ! Блок геометрии, необходимой для физики - Считаем площади, объёмы
     
-    real(4) pure function calc_square(n) ! Вычисляет площадь грани под номером n в общем списке граней
+    real(8) pure function calc_square(n) ! Вычисляет площадь грани под номером n в общем списке граней
     use STORAGE, only: gl_all_Gran, gl_x, gl_y, gl_z
     implicit none
     
     integer, intent (in) :: n
-    real(4) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4
-    real(4) :: v1(3), v2(3), d1, d2
+    real(8) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4
+    real(8) :: v1(3), v2(3), d1, d2
     
     x1 = gl_x(gl_all_Gran(1, n))
     y1 = gl_y(gl_all_Gran(1, n))
@@ -1560,8 +1762,8 @@ include "Solvers.f90"
     implicit none
     
     integer, intent(in) :: n
-    real(4), intent(out) :: CENTER(3)
-    real(4) :: c(3)
+    real(8), intent(out) :: CENTER(3)
+    real(8) :: c(3)
     integer :: i, j
     
     CENTER = 0.0
@@ -1586,7 +1788,7 @@ include "Solvers.f90"
     implicit none
     
     !interface
-    !    real(4) pure function calc_square(n)
+    !    real(8) pure function calc_square(n)
     !    integer, intent(in) :: n
     !    end function
     !end interface
@@ -1708,6 +1910,96 @@ include "Solvers.f90"
         
     
     end subroutine Print_Setka_2D
+    
+    subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
+    use GEO_PARAM
+    use STORAGE
+    implicit none
+    
+    integer, automatic :: N1, N2, kk, k, i, j, N, m
+    real(8) :: c(3), Mach
+    
+    
+    N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + & 
+        size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(:, 1, 1)) + &
+        size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
+    N = N * 2
+    
+    open(1, file = 'print_par_2D.txt')  
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p', 'bx', 'by', 'bz', 'Volume', 'Mach'  ZONE T= 'HP'"
+    
+    
+    kk = 1
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
+            m = gl_Cell_A(i, j, kk)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_B(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_C(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    
+    ! Нижняя часть сетки
+    
+    kk = par_l_phi/2 + 1
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_A(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_B(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_C(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c, gl_Cell_par(:, m ), gl_Cell_Volume(m), Mach
+        end do
+    end do
+    
+    
+    close(1)
+        
+    
+    end subroutine Print_par_2D
     
     subroutine Print_Point_Plane()
     ! Точки в плоскости XOY - имеют две координаты
@@ -2065,7 +2357,7 @@ include "Solvers.f90"
     write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'M'  ZONE T= 'HP', N= ", 4 * (m), ", E =  ", 4 * (m) , ", F=FEPOINT, ET=LINESEG "
     
     ! Печатаем
-    do n = 401, 401 !1, size(gl_all_Gran(1,:))
+    do n = 3953, 3953 !1, size(gl_all_Gran(1,:))
         !if ( ANY( gl_Gran_neighbour(:,n) == -2 ) == .FALSE. ) CYCLE
         do i = 1, 4
             write(1,*) gl_x(gl_all_Gran(i, n)), gl_y(gl_all_Gran(i, n)), gl_z(gl_all_Gran(i, n)), n
@@ -2236,14 +2528,15 @@ include "Solvers.f90"
     call Geometry_check()
     !call Print_Cell(1, 2, 1, "C")
     !call Print_all_Cell()
-    !call Print_Setka_2D()
+    call Print_Setka_2D()
     !call Print_cell_and_neighbour(1,2,1)
     !call Print_gran()
     !call Print_all_surface("C")
     call calc_all_Gran()
     
     print *, "Start_GD_1"
-    call Start_GD_1(100)
+    !call Start_GD_1(10000)
+    !call Print_par_2D()
     ! Variables
     
     ! Пробуем работать с файло
