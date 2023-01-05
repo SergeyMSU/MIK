@@ -21,12 +21,14 @@
     
     ! Печатаем параметры сетки
     
-    write(1) size(gl_Cell_par(1, :))     ! 8 штук!  ro, u, v, w, p, bx, by, bz
-    write(1) gl_Cell_par(1:8, :)
+    write(1) size(gl_Cell_par(1, :))     ! 9 штук!  ro, u, v, w, p, bx, by, bz
+    write(1) gl_Cell_par(:, :)
     
     
     ! Для  будующих дополнений
-    write(1) 0
+    write(1) 1
+    write(1) gl_Cell_par_MF
+    
     write(1) 0
     write(1) 0
     write(1) 0
@@ -77,13 +79,17 @@
     
     ! Печатаем параметры сетки
     
-    read(1) n     ! 8 штук!  ro, u, v, w, p, bx, by, bz
-    if (size(gl_Cell_par(1, :)) /= n) print*, "ERROR 81 tfevh 765678 23412213313"
-    read(1) gl_Cell_par(1:8, :)
+    read(1) n
+    read(1) gl_Cell_par(:, :)
     
     
     ! Для  будующих дополнений
     read(1) n
+    if (n == 1) then
+        read(1) gl_Cell_par_MF
+    end if
+    
+    
     read(1) n
     read(1) n
     read(1) n
