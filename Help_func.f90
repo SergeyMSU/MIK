@@ -62,8 +62,16 @@
     integer, intent(in) :: num
     character(len=3) :: name
     integer :: n
+    logical :: exists
     
     write(unit=name,fmt='(i3.3)') num
+    
+    inquire(file="save_" // name // ".bin", exist=exists)
+    
+    if (exists == .False.) then
+        STOP "net faila!!!"
+    end if
+    
     
     open(1, file = "save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
     
