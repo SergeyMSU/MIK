@@ -19,7 +19,7 @@
     real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
     
     real(8), parameter :: par_a_2 = 0.1307345665         ! Параметр в сечении перезарядки
-    real(8), parameter :: par_n_p_LISM = (3.0)         ! в перезарядке
+    real(8), parameter :: par_n_p_LISM = 3.0_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
     real(8), parameter :: par_Kn = 43.3   !0.4326569808         ! в перезарядке
     

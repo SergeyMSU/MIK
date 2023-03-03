@@ -68,9 +68,9 @@
     real(8) :: normal(3), qqq1(8), qqq2(8), dsl, dsp, dsc, POTOK(8), a1, a2, v1, v2, &
         ray(3), norm, b1, b2, c1, c2, koef1, koef2, koef3
     
-    koef1 = 0.1
-    koef2 = 0.01
-    koef3 = 0.1
+    koef1 = 0.3
+    koef2 = 0.3
+    koef3 = 0.3
     
     ! Пробегаемся по всем граням и вычисляем скорости их движения
     
@@ -306,7 +306,7 @@
     integer, intent(in) :: now
     real(8) :: R_TS, proect, vel(3), R_HP, R_BS
     integer :: yzel, N1, N2, N3, i, j, k
-    real(8) :: the, phi, r, x, y, z, rr, xx
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2
     
     now2 = mod(now, 2) + 1   
     
@@ -501,9 +501,9 @@
                 phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 
                 ! Вычисляем координаты точки на луче
-                x = gl_x(gl_RAY_B(par_n_HP, j, k))
-                y = gl_y(gl_RAY_B(par_n_HP, j, k))
-                z = gl_z(gl_RAY_B(par_n_HP, j, k))
+                x = gl_x2(gl_RAY_B(par_n_HP, j, k), now2)
+                y = gl_y2(gl_RAY_B(par_n_HP, j, k), now2)
+                z = gl_z2(gl_RAY_B(par_n_HP, j, k), now2)
                 rr = (y**2 + z**2)**(0.5)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
@@ -552,15 +552,15 @@
             
             ! Обнулим для следующего использования
             gl_Point_num(yzel) = 0
-            gl_Vx(yzel) = 0.0
-            gl_Vy(yzel) = 0.0
-            gl_Vz(yzel) = 0.0
+            gl_Vx(yzel) = 0.0_8
+            gl_Vy(yzel) = 0.0_8
+            gl_Vz(yzel) = 0.0_8
             
             proect = DOT_PRODUCT(vel * Time, (/0.0_8, cos(phi), sin(phi)/) )  !  Находим проекцию перемещения на радиус вектор луча
-            R_HP = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
+            R_HP = norm2((/0.0_8, gl_y2(yzel, now), gl_z2(yzel, now)/) + &
                     proect * (/0.0_8, cos(phi), sin(phi)/) )  ! Новое расстояние до HP
             
-            xx = gl_x(gl_RAY_B(par_n_HP, par_m_BC, k))              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
+            xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
             x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
             
             ! BS     Нужно взять положение BS из её положения на крайнем луче A
@@ -584,6 +584,134 @@
             end do
         end do
     end do
+    
+    N3 = size(gl_RAY_K(1, 1, :))
+    N2 = size(gl_RAY_K(1, :, 1))
+    N1 = size(gl_RAY_K(:, 1, 1))
+
+    ! Цикл движения точек на лучах K  ************************************************************
+    do k = 1, N3
+        do j = 1, N2
+            
+             ! Вычисляем координаты текущего луча в пространстве
+            the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
+            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            
+            if (k /= 1 .and. j == 1) CYCLE
+            
+            yzel = gl_RAY_K(par_n_TS, j, k)
+            if(gl_Point_num(yzel) == 0) then
+                vel = 0.0
+            else
+                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+                vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
+            end if
+            
+            ! Обнулим для следующего использования
+            gl_Point_num(yzel) = 0
+            gl_Vx(yzel) = 0.0
+            gl_Vy(yzel) = 0.0
+            gl_Vz(yzel) = 0.0
+            
+            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
+            R_TS = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
+                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до TS
+            
+            do i = 1, N1
+
+                if (i == 1) CYCLE
+                
+                ! Вычисляем координаты точки на луче
+                yzel = gl_RAY_K(i, j, k)
+                r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+
+
+                ! Записываем новые координаты
+                gl_x2(yzel, now2) = r * cos(the)
+                gl_y2(yzel, now2) = r * sin(the) * cos(phi)
+                gl_z2(yzel, now2) = r * sin(the) * sin(phi)
+                
+                
+            end do
+        end do
+    end do
+    
+    
+     N3 = size(gl_RAY_D(1, 1, :))
+    N2 = size(gl_RAY_D(1, :, 1))
+    N1 = size(gl_RAY_D(:, 1, 1))
+
+    ! Цикл движения точек на лучах D ************************************************************
+    do k = 1, N3
+        do j = 1, N2
+            
+            ! Вычисляем координаты текущего луча в пространстве
+                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                
+            do i = 1, N1
+
+                if (i == 1) CYCLE
+
+                if (k /= 1 .and. j == 1) CYCLE
+
+                
+                ! Вычисляем координаты точки на луче
+
+                if (j < N2) then
+                    xx = gl_x2(gl_RAY_K(par_n_TS, j, k), now2)
+                    y = gl_y2(gl_RAY_K(par_n_TS, j, k), now2)
+                    z = gl_z2(gl_RAY_K(par_n_TS, j, k), now2)
+                else
+                    xx = gl_x2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+                    y = gl_y2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+                    z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+                end if
+
+                yzel = gl_RAY_D(i, j, k)
+                r = sqrt(y**2 + z**2)
+                
+                x = xx + (DBLE(i - 1)/(N1 - 1))**par_kk3 * (par_R_LEFT - xx)
+
+                ! Записываем новые координаты
+                gl_x2(yzel, now2) = x
+                gl_y2(yzel, now2) = r * cos(phi)
+                gl_z2(yzel, now2) = r * sin(phi)
+                
+            end do
+        end do
+    end do
+    
+    N3 = size(gl_RAY_E(1, 1, :))
+    N2 = size(gl_RAY_E(1, :, 1))
+    N1 = size(gl_RAY_E(:, 1, 1))
+    
+    ! Цикл движения точек на лучах E  ************************************************************
+    do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+
+                if (i == 1) CYCLE
+
+                if (i == N1) CYCLE
+
+                x = gl_x2(gl_RAY_E(1, j, k), now2)
+                y = gl_y2(gl_RAY_E(1, j, k), now2)
+                z = gl_z2(gl_RAY_E(1, j, k), now2)
+
+                x2 = gl_x2(gl_RAY_O(1, j, k), now2)
+                y2 = gl_y2(gl_RAY_O(1, j, k), now2)
+                z2 = gl_z2(gl_RAY_O(1, j, k), now2)
+
+                yzel = gl_RAY_E(i, j, k)
+
+                gl_x2(yzel, now2) = x + (x2 - x) * (i - 1)/(N1 - 1)
+                gl_y2(yzel, now2) = y + (y2 - y) * (i - 1)/(N1 - 1)
+                gl_z2(yzel, now2) = z + (z2 - z) * (i - 1)/(N1 - 1)
+                
+            end do
+        end do
+    end do
+
     
     
     end subroutine Move_all
@@ -620,9 +748,10 @@
     real(8) :: p(3, 4), Vol, D
     real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
     real(8) :: dist, di, gr_center(3)
-    integer :: i, j, k, ll, grc, ii
+    integer :: i, j, k, ll, grc, ii, now2
 
-    print*, "calc_all_Gran_move"
+    !print*, "calc_all_Gran_move"
+    now2 = mod(now, 2) + 1 
     ! Цикл по граням - считаем площадь грани, её нормаль
     Ngran = size(gl_all_Gran(1,:))
 
@@ -698,17 +827,7 @@
         
         if(DOT_PRODUCT(node1, c) < 0.0) then
             print*, c
-            print*, node2
-            print*, node1
-            call Get_center_move(gl_Gran_neighbour(1, iter), node1, now)
-            print*, node1
-            call Get_center(gl_Gran_neighbour(1, iter), node1)
-            print*, node1
-            !do ii = 1, 4
-            !    print*, gl_x2(gl_all_gran(ii, iter), 1), gl_x2(gl_all_gran(ii, iter), 2)
-            !    print*, gl_y2(gl_all_gran(ii, iter), 1), gl_y2(gl_all_gran(ii, iter), 2)
-            !    print*, gl_z2(gl_all_gran(ii, iter), 1), gl_z2(gl_all_gran(ii, iter), 2)
-            !end do
+            print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
             print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
             print*, iter
             pause

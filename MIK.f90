@@ -12,7 +12,7 @@
     include "Help_func.f90"
     include "Move_func.f90"
 
-
+    ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
 
     module My_func                     ! Модуль интерфейсов для внешних функций
 
@@ -211,11 +211,6 @@
                 gl_y(node) = r * sin(the) * cos(phi)
                 gl_z(node) = r * sin(the) * sin(phi)
                 node = node + 1
-                
-                if(i == 27 .and. j == 1 .and. k == 1) then
-                    print*, "My  "
-                    print*, r
-                end if
 
                 gl_RAY_B(i, j, k) = node - 1
             end do
@@ -1347,14 +1342,6 @@
         node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
         node1 = node2 - node1
         
-        if (iter == 7076) then
-            print*, c
-            print*, DOT_PRODUCT(node1, c)
-            print*, node2
-            print*, node1
-            call Get_center(gl_Gran_neighbour(1, iter), node1)
-            print*, node1, "    ____  "
-        end if
         
         if(DOT_PRODUCT(node1, c) < 0.0) then
             print*, "ERROR 1333 ", DOT_PRODUCT(node1, c)
@@ -2288,9 +2275,9 @@
                 if(s2 == -1) then  ! Набегающий поток
                     dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 2) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 3) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
+                    fluid2(:, 1) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
+                    fluid2(:, 2) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
+                    fluid2(:, 3) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
                     dist = gl_Cell_dist(s1)
@@ -2599,8 +2586,9 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 10   ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 5000 * 6 * 5   ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+        if (mod(step, 1000) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
         now = mod(now, 2) + 1
         
@@ -2886,6 +2874,17 @@
         !$omp end do
         
         !$omp end parallel
+        
+        gl_x = gl_x2(:, now2)
+        gl_y = gl_y2(:, now2)
+        gl_z = gl_z2(:, now2)
+        gl_Cell_Volume = gl_Cell_Volume2(:, now2)
+        gl_Gran_normal = gl_Gran_normal2(:, :, now2)
+        gl_Gran_center = gl_Gran_center2(:, :, now2)
+        gl_Cell_center = gl_Cell_center2(:, :, now2)
+        gl_Gran_square = gl_Gran_square2(:, now2)
+        
+        call Start_GD_3_inner(3)
         
     end do
 
@@ -3888,7 +3887,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(10)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(12)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -3947,9 +3946,9 @@
     !call Print_all_surface("B")
     !call Print_all_surface("T")
     call Print_par_2D()
-    !call Save_setka_bin(11)
+    call Save_setka_bin(13)
     ! Variables
 
-    pause
+    !pause
     end program MIK
 
