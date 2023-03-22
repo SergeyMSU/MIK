@@ -111,6 +111,8 @@
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_par(:, :)           ! Набор параметров (8 стартовых + Q)
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
+    character, allocatable :: gl_Cell_type(:)           ! Тип каждой ячейки А, Б, С
+    integer(4), allocatable :: gl_Cell_number(:, :)     ! (3, :) номер каждой ячейки внутри своего типа
     
     ! Набор переменных для подвижной сетки (они имеют второй индекс, обознающий шаг по времни, следующий или предыдущий)
     real(8), allocatable :: gl_Cell_Volume2(:, :)           ! (всего ячеек, 2) Набор объёмов ячеек   !MOVE
@@ -184,6 +186,8 @@
     allocate(gl_Cell_dist(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     allocate( gl_Cell_center(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
     allocate(gl_Cell_info(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+    allocate(gl_Cell_type(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+    allocate(gl_Cell_number(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     
     allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
     allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))

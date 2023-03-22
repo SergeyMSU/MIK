@@ -6,21 +6,30 @@
     !
     !****************************************************************************
     ! Описание модулей
+	
 
     include "Storage_modul.f90"
     include "Solvers.f90"
     include "Help_func.f90"
     include "Move_func.f90"
+	
+	!@cuf include "cuf_kernel.cuf"
+	
 
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
 
     module My_func                     ! Модуль интерфейсов для внешних функций
 
     interface
-    real(8) pure function calc_square(n)
-    integer, intent(in) :: n
-    end function
-
+	
+	!@cuf attributes(host, device) & 
+	real(8) pure function calc_square(n) ! Вычисляет площадь грани под номером n в общем списке граней
+    use STORAGE, only: gl_all_Gran, gl_x, gl_y, gl_z
+    implicit none
+    integer, intent (in) :: n
+	end function
+	
+	!@cuf attributes(host, device) & 
     real(8) pure function polar_angle(x, y)
     use GEO_PARAM
     implicit none
@@ -29,10 +38,11 @@
 
     end interface
 
-    end module My_func
+	end module My_func
 
     ! Вспомогательные функции
 
+	!@cuf attributes(host, device) & 
     real(8) pure function polar_angle(x, y)
     use GEO_PARAM
     implicit none
@@ -57,8 +67,9 @@
     end if
 
     return
-    end function polar_angle
+	end function polar_angle
 
+	!@cuf attributes(host, device) & 
     subroutine spherical_skorost(z, x, y, Vz, Vx, Vy, Vr, Vphi, Vtheta)
     ! Variables
     use My_func
@@ -75,8 +86,9 @@
     Vtheta = Vx * cos(the_1) * cos(phi_1) + Vy * cos(the_1) * sin(phi_1) - Vz * sin(the_1);
     Vphi = -Vx * sin(phi_1) + Vy * cos(phi_1);
 
-    end subroutine spherical_skorost
+	end subroutine spherical_skorost
 
+	!@cuf attributes(host, device) & 
     subroutine dekard_skorost(z, x, y, Vr, Vphi, Vtheta, Vz, Vx, Vy)
     use My_func
     implicit none
@@ -103,8 +115,8 @@
     use GEO_PARAM
     implicit none
 
-    integer(4), automatic :: i, j, k, N1, N2, N3, i1, kk, node, kk2, ni
-    real(8), automatic :: r, phi, the, xx, x, y, z, rr, x2, y2, z2
+    integer(4) :: i, j, k, N1, N2, N3, i1, kk, node, kk2, ni, num1
+    real(8) :: r, phi, the, xx, x, y, z, rr, x2, y2, z2
 
     ! Сетка строится в декартовой системе координат, хотя сама сетка цилиндрически симметричная
     ! Нужно уметь преобразовывать x,y,z <---> x, r, phi  (x - ось симметрии), а также сферические координаты
@@ -1153,6 +1165,54 @@
         end do
     end do
 
+    
+    ! Теперь для каждой ячейки добавим ей информацию какого она типа и какой у неё номер (тройка) в этом типе
+    ! Начнём с группы А
+    N3 = size(gl_Cell_A(1, 1, :))
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+
+    do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+                num1 = gl_Cell_A(i, j, k)
+                gl_Cell_type(num1) = "A"
+                gl_Cell_number(:, num1) = (/ i, j, k /)
+            end do
+        end do
+    end do
+    
+    ! Начнём с группы B
+    N3 = size(gl_Cell_B(1, 1, :))
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+
+    do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+                num1 = gl_Cell_B(i, j, k)
+                gl_Cell_type(num1) = "B"
+                gl_Cell_number(:, num1) = (/ i, j, k /)
+            end do
+        end do
+    end do
+    
+    ! Начнём с группы C
+    N3 = size(gl_Cell_C(1, 1, :))
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+
+    do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+                num1 = gl_Cell_C(i, j, k)
+                gl_Cell_type(num1) = "C"
+                gl_Cell_number(:, num1) = (/ i, j, k /)
+            end do
+        end do
+    end do
+    
+    
 
     if (par_developer_info) print *, "Build_Mesh_start: All Cell = ", i1 - 1
 
@@ -1211,46 +1271,85 @@
     end subroutine Find_inner
     ! ************************************************************************************************************************************************
     ! Блок физики
+    
+    subroutine Inner_conditions(ncell)  ! Задаём начальные условия в ячейке (функция принимает номер ячейки, в которой надо задать эти условия)
+    use STORAGE
+    use GEO_PARAM
+    implicit none
+    
+    integer(4), intent(in) :: ncell
+    real(8) :: r
+    real(8) :: ro, P_E
+    real(8) :: c(3)
+    
+    c = gl_Cell_center(:, ncell)
+    r = norm2(c)
+    ro = par_kk/(par_chi**2 * r**2)
+    P_E = ro * par_chi**2 / (ggg * 10.0**2)
+    c = DBLE(c) * par_chi/DBLE(r)
+    
+    ! Задаём плазму  (ro, u, v, w, p, bx, by, bz, Q)
+    gl_Cell_par(:, ncell) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E, 0.0_8, 0.0_8, 0.0_8, ro/)
+            
+    ! Задаём мультифлюид (только первый сорт)
+    gl_Cell_par_MF(:, 1, ncell) = (/0.0000001_8, c(1), c(2), c(3), 0.0000001_8 * P_E/ro /)
+    
+    end subroutine Inner_conditions
 
     subroutine Initial_conditions()  ! Задаём начальные условия
     use STORAGE
     use GEO_PARAM
     implicit none
 
-    integer(4) :: ncell, gr
-    real(8) :: r
-    real(8) :: ro, P_E
-    real(8) :: c(3)
-
-    ncell = size(gl_all_Cell(1, :))
-
-    !P_E = par_kk/(par_chi_real**2 * par_R0**2) * par_chi_real**2 / (ggg * 5.0**2)
-
-    do gr = 1, ncell
-        c = gl_Cell_center(:, gr)
-        r = norm2(c)
-        if (r <= par_R0 * par_R_int * 1.01) then   !(.FALSE.) then!
-            ro = par_kk/(par_chi_real**2 * r**2)
-            P_E = ro * par_chi_real**2 / (ggg * 7.0**2)
-            !c = DBLE(c) * par_chi_real/DBLE(r)
-            !gl_Cell_par(:, gr) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E, 0.0_8, 0.0_8, 0.0_8, ro * 1.0_8/)
-            c = DBLE(c) * par_chi/DBLE(r)
-            ! Задаём мультифлюид
-            gl_Cell_par_MF(:, 1, gr) = (/0.000001_8, c(1), c(2), c(3), 0.000001_8/)
-
-            !gl_Cell_par_MF(:, 2, gr) = (/0.001_8, 0.0_8, 0.0_8, 0.0_8, 0.00001_8/)
-            !gl_Cell_par_MF(:, 3, gr) = (/0.001_8, 0.0_8, 0.0_8, 0.0_8, 0.00001_8/)
-            !gl_Cell_par_MF(:, 4, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
-        else
-            !gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-
-            ! Задаём мультифлюид
-            !gl_Cell_par_MF(:, 1, gr) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-            !gl_Cell_par_MF(:, 2, gr) = (/0.001_8, 0.0_8, 0.0_8, 0.0_8, 0.00001_8/)
-            !gl_Cell_par_MF(:, 3, gr) = (/0.001_8, 0.0_8, 0.0_8, 0.0_8, 0.00001_8/)
-            !gl_Cell_par_MF(:, 4, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
-        end if
+    integer(4) :: ncell, gr, N1, N2, N3, j, k
+    real(8) :: qqq(9)
+    
+    
+    ! Перенормировка параметров, если это необходимо
+    !ncell = size(gl_all_Cell(1, :))
+    !
+    !do gr = 1, ncell
+    !    qqq = gl_Cell_par(:, gr)
+    !    if(qqq(9)/qqq(1) < 50.0) then
+    !            gl_Cell_par(2:4, gr) = qqq(2:4) * (par_chi/par_chi_real)
+    !            gl_Cell_par(1, gr) = qqq(1) / (par_chi/par_chi_real)**2
+    !    end if
+    !end do
+    
+    
+    ! Задаём граничные условия (параметры в первых ячейках на внутренней сфере)
+    
+    N3 = size(gl_Cell_A(1, 1, :))
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    
+    
+    do k = 1, N3
+        do j = 1, N2
+            ncell = gl_Cell_A(1, j, k)
+            call Inner_conditions(ncell)
+            
+            ncell = gl_Cell_A(2, j, k)
+            call Inner_conditions(ncell)
+            
+        end do
     end do
+    
+    
+    N3 = size(gl_Cell_B(1, 1, :))
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    
+    do k = 1, N3
+        do j = 1, N2
+            ncell = gl_Cell_B(1, j, k)
+            call Inner_conditions(ncell)
+            
+            ncell = gl_Cell_B(2, j, k)
+            call Inner_conditions(ncell)
+        end do
+    end do
+    
 
 
     end subroutine Initial_conditions
@@ -1262,7 +1361,7 @@
     use GEO_PARAM
     implicit none
 
-    integer, automatic :: Ngran, iter
+    integer :: Ngran, iter
     real(8) :: p(3, 4), Vol, D
     real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
     real(8) :: dist, di, gr_center(3)
@@ -2030,7 +2129,7 @@
         do gr = 1, ncell
             if(gl_Cell_info(gr) == 0) CYCLE
             l_1 = .TRUE.
-            if (norm2(gl_Cell_center(:, gr)) <= par_R0 + (par_R_character - par_R0) * (3.0_8/par_n_TS)**par_kk1) l_1 = .FALSE.    ! Не считаем внутри сферы
+            if (norm2(gl_Cell_center(:, gr)) <= 1.0 * par_R0) l_1 = .FALSE.    ! Не считаем внутри сферы
             POTOK = 0.0
             SOURSE = 0.0
             POTOK_MF_all = 0.0
@@ -2061,10 +2160,10 @@
             if(qqq(9)/qqq(1) < 50.0) then
 
                 ! Перенормируем параметры
-                qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
-                qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+                !qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
+                !qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
 
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.0) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 3.0) then
                     zone = 1
                 else
                     zone = 2
@@ -2078,31 +2177,31 @@
             end if
 
             ! Перенормируем первую жидкость
-            fluid1(2:4, 1) = fluid1(2:4, 1) * (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) / (par_chi/par_chi_real)**2
+            !fluid1(2:4, 1) = fluid1(2:4, 1) * (par_chi/par_chi_real)
+            !fluid1(1, 1) = fluid1(1, 1) / (par_chi/par_chi_real)**2
 
-            fluid1(2:4, 2) = fluid1(2:4, 2) * (3.0_8)
-            fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
+            !fluid1(2:4, 2) = fluid1(2:4, 2) * (3.0_8)
+            !fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
 
             ! Перенормируем первую жидкость обратно
-            fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) * (par_chi/par_chi_real)**2
-            SOURSE(5, 2) = SOURSE(5, 2)/ (par_chi/par_chi_real)
-            SOURSE(1, 2) = SOURSE(1, 2)* (par_chi/par_chi_real)
+            !fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
+            !fluid1(1, 1) = fluid1(1, 1) * (par_chi/par_chi_real)**2
+            !SOURSE(5, 2) = SOURSE(5, 2)/ (par_chi/par_chi_real)
+            !SOURSE(1, 2) = SOURSE(1, 2)* (par_chi/par_chi_real)
 
-            fluid1(2:4, 2) = fluid1(2:4, 2) / (3.0_8)
-            fluid1(1, 2) = fluid1(1, 2) * (3.0_8)**2
-            SOURSE(5, 3) = SOURSE(5, 3)/ (3.0_8)
-            SOURSE(1, 3) = SOURSE(1, 3)* (3.0_8)
+            !fluid1(2:4, 2) = fluid1(2:4, 2) / (3.0_8)
+            !fluid1(1, 2) = fluid1(1, 2) * (3.0_8)**2
+            !SOURSE(5, 3) = SOURSE(5, 3)/ (3.0_8)
+            !SOURSE(1, 3) = SOURSE(1, 3)* (3.0_8)
 
             ! Перенормируем обратно
-            if(zone == 1 .or. zone == 2) then
-                qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
-                qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
-                SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
-            end if
+            !if(zone == 1 .or. zone == 2) then
+            !    qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
+            !    qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+            !    SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
+            !end if
 
 
             if (l_1 == .TRUE.) then
@@ -2279,7 +2378,7 @@
                     fluid2(:, 2) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 3) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
-                else  ! Здесь нужны мягкие условия
+                else  ! Здесь нужны мягкие условия (это задняя стенка)
                     dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     fluid2 = fluid1
@@ -2366,7 +2465,7 @@
             gr = gl_all_Cell_inner(iter)
             !if(gl_Cell_info(gr) == 2) CYCLE
             l_1 = .TRUE.
-            if (norm2(gl_Cell_center(:, gr)) <= par_R0 + (par_R_character - par_R0) * (2.0_8/par_n_TS)**par_kk1) l_1 = .FALSE.    ! Не считаем внутри сферы
+            if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE.    ! Не считаем в первых двух ячейках
             POTOK = 0.0
             SOURSE = 0.0
             POTOK_MF_all = 0.0
@@ -2394,56 +2493,11 @@
 
 
             ! Определяем зону в которой находимся
-            if(qqq(9)/qqq(1) < 50.0) then
 
-                ! Перенормируем параметры
-                qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
-                qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+            zone = 1
 
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.0) then
-                    zone = 1
-                else
-                    zone = 2
-                end if
-            else
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.1) then
-                    zone = 4
-                else
-                    zone = 3
-                end if
-            end if
-
-
-            ! Перенормируем первую жидкость
-
-            fluid1(2:4, 1) = fluid1(2:4, 1) * (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) / (par_chi/par_chi_real)**2
-
-            fluid1(2:4, 2) = fluid1(2:4, 2) * (3.0)
-            fluid1(1, 2) = fluid1(1, 2) / (3.0)**2
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
-
-            ! Перенормируем первую жидкость обратно
-
-            fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) * (par_chi/par_chi_real)**2
-            SOURSE(5, 2) = SOURSE(5, 2)/ (par_chi/par_chi_real)
-            SOURSE(1, 2) = SOURSE(1, 2)* (par_chi/par_chi_real)
-
-            fluid1(2:4, 2) = fluid1(2:4, 2) / (3.0)
-            fluid1(1, 2) = fluid1(1, 2) * (3.0)**2
-            SOURSE(5, 3) = SOURSE(5, 3)/ (3.0)
-            SOURSE(1, 3) = SOURSE(1, 3)* (3.0)
-
-
-            ! Перенормируем обратно
-            if(zone == 1 .or. zone == 2) then
-                qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
-                qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
-                SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
-            end if
-
 
             if (l_1 == .TRUE.) then
                 ro3 = qqq(1) - time * POTOK(1) / Volume
@@ -2471,12 +2525,9 @@
             ! Теперь посчитаем законы сохранения для остальных жидкостей
 
             do i = 1, 4
-                if (i == 1 .and. l_1 == .FALSE.) then
-                    gl_Cell_par_MF(1, i, gr) = 0.0000001
-                    gl_Cell_par_MF(5, i, gr) = 0.0000001
-                    CYCLE       ! Пропускаем внутреннюю сферу для сорта 1
-                end if
-                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем внутреннюю сферу для сорта не 1
+                if (i == 1 .and. l_1 == .FALSE.) CYCLE
+                
+                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Не перезаряжаем жидкости внутри сферы
                 ro3 = fluid1(1, i) - time * POTOK_MF_all(1, i) / Volume + time * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
                     print*, "Ro < 0  in ", i,  ro3, gl_Cell_center(:, gr)
@@ -3044,7 +3095,7 @@
     use STORAGE
     implicit none
 
-    integer, automatic :: N1, N2, kk, k, i, j, N
+    integer :: N1, N2, kk, k, i, j, N
 
 
     N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
@@ -3280,7 +3331,7 @@
     use STORAGE
     implicit none
 
-    integer, automatic :: N1, N2, kk, k, i, j, N, m
+    integer :: N1, N2, kk, k, i, j, N, m
     real(8) :: c(3), Mach
 
 
@@ -3290,7 +3341,8 @@
     N = N * 2
 
     open(1, file = 'print_par_2D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p', 'bx', 'by', 'bz', 'Volume', 'Mach', 'Q',"
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
+    write(1,*) "'bx', 'by', 'bz', 'Volume', 'Mach', 'Q',"
     write(1,*) "'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
     write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
     write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
@@ -3543,7 +3595,7 @@
 
     implicit none
     integer, intent(in) :: n1, n2
-    integer(4), automatic :: i, k
+    integer(4) :: i, k
 
     open(1, file = 'Ray.txt')
 
@@ -3564,7 +3616,7 @@
     implicit none
     integer, intent(in) :: n1, n2, n3
     character, intent(in) :: str
-    integer(4), automatic :: i, k
+    integer(4) :: i, k
 
     open(1, file = 'one_Cell.txt')
 
@@ -3654,7 +3706,7 @@
     implicit none
 
     integer, intent(in) :: n1, n2, n3
-    integer, automatic :: n, m, i, j, k
+    integer :: n, m, i, j, k
 
     n = gl_Cell_C(n1, n2, n3)  ! Получили номер ячейки в общем списке
 
@@ -3707,7 +3759,7 @@
     use STORAGE
     implicit none
 
-    integer, automatic :: n, m, i, j, k
+    integer :: n, m, i, j, k
 
     m = 0
 
@@ -3876,18 +3928,32 @@
     ! ****************************************************************************************************************************************************
     ! Основная программа
 
+    
+    
+    
     program MIK
     use STORAGE
     use GEO_PARAM
+	!@cuf use MY_CUDA
     implicit none
 
-    integer :: i
+    integer(4) :: i, NGRAN
+	integer :: istat
+	real(8) :: local1
+	integer :: ierrSync, ierrAsync
+	
+	print*, "START PROGRAM"
+	
+	!pause
+	
+	!@cuf call CUDA_info()
+	!call EXIT()
 
     ! Процесс построения сетки (не менять, все шаги необходимы для корректной работы)
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(12)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(14)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -3913,31 +3979,43 @@
     !call Initial_conditions()
 
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
-    !call Initial_conditions()
+    
+    call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
 
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
-    gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
-    gl_Cell_par_MF(1, 1, :) =  gl_Cell_par_MF(1, 1, :) * (par_chi/par_chi_real)**2
+    !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
+    !gl_Cell_par_MF(1, 1, :) =  gl_Cell_par_MF(1, 1, :) * (par_chi/par_chi_real)**2
 
-    gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) / (3.0)
-    gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) * (3.0)**2
+    !gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) / (3.0)
+    !gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) * (3.0)**2
 
     !call Print_par_2D()
-    call Start_GD_move()
     
-    !do i = 1, 112000 * 3
-    !    if(mod(i, 1000) == 0) print*, i
-    !    call Start_GD_3(1)
-    !    call Start_GD_3_inner(5)
+    !call Start_GD_move()
+	
+	call CUDA_START_GD_3()
+    
+    !do i = 1, 1
+    !    !if(mod(i, 1000) == 0) print*, i
+    !    !call Start_GD_3(1)
+    !    call Start_GD_3_inner(1)
+    !    !if(mod(i, 10000) == 0) then
+    !    !    call Save_setka_bin(14)
+    !    !    call Print_surface_2D()
+    !    !    call Print_Setka_2D()
+    !    !    call Print_par_2D()
+    !    end if
     !end do
+	
+	
 
     ! Перенормировка сортов обратно
-    gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) * (par_chi/par_chi_real)
-    gl_Cell_par_MF(1, 1, :) =  gl_Cell_par_MF(1, 1, :) / (par_chi/par_chi_real)**2
+    !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) * (par_chi/par_chi_real)
+    !gl_Cell_par_MF(1, 1, :) =  gl_Cell_par_MF(1, 1, :) / (par_chi/par_chi_real)**2
 
-    gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) * (3.0)
-    gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) / (3.0)**2
+    !gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) * (3.0)
+    !gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) / (3.0)**2
 
 
     call Print_surface_2D()
@@ -3945,8 +4023,9 @@
     !call Print_all_surface("C")
     !call Print_all_surface("B")
     !call Print_all_surface("T")
+	
     call Print_par_2D()
-    call Save_setka_bin(13)
+    call Save_setka_bin(15)
     ! Variables
 
     !pause

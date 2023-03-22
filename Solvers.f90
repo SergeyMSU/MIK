@@ -6,8 +6,10 @@
 !**    shema HLLD(modification) for 3D MHD                           **
 !******7**10**********************************************************70
     
+
        ! Моя версия с добавлением Q (сделана из версии Д.Б.)
-      subroutine chlld_Q(n_state, al, be, ge, &
+      !@cuf attributes(host, device) & 
+	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
                                  qqq)
@@ -687,7 +689,8 @@
               print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
               print*,w,SL,SZL,SM,SZR,SR
-              pause
+              !pause
+			  STOP
            endif
 
 !c----- Bn
@@ -722,9 +725,10 @@
 
 
       return
-    end
+	end
   
-      subroutine chlld(n_state, al, be, ge, &
+      !@cuf attributes(host, device) & 
+	  subroutine chlld(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
                                  qqq)
@@ -1369,7 +1373,8 @@
               print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
               print*,w,SL,SZL,SM,SZR,SR
-              pause
+              !pause
+			  STOP
            endif
 
 !c----- Bn
@@ -1406,7 +1411,7 @@
       return
     end
 
-    
+     !@cuf attributes(host, device) & 
       subroutine chlld_gd(n_state, al, be, ge, &  ! Для газовой динамики без магнитных полей
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
@@ -1733,13 +1738,14 @@
         endif
 
       return
-    end
+	end
 
     
     !******7**10**********************************************************70
     
     ! Мультифлюид источники
     
+	!@cuf attributes(host) & 
     subroutine Calc_sourse_MF(plasma, fluid, sourse, zone)  ! Считаются мультифлюидные источники
     ! Variables
     use GEO_PARAM, only: par_a_2, par_n_p_LISM, par_Kn, par_pi_8, par_n_H_LISM_

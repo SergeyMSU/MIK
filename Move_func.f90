@@ -744,7 +744,7 @@
     implicit none
     
     integer, intent(in) :: now           ! Откуда берём координаты узлов и куда записываем вычисленные параметры (площади и объёмы)
-    integer, automatic :: Ngran, iter
+    integer :: Ngran, iter
     real(8) :: p(3, 4), Vol, D
     real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
     real(8) :: dist, di, gr_center(3)
@@ -848,7 +848,7 @@
         !pause
     end do
 
-
+    
 
 
     ! Теперь посчитаем объёмы ячеек
