@@ -17,15 +17,20 @@
     real(8), parameter :: cpi4 = 12.56637061435917295384
     real(8), parameter :: ggg = (5.0/3.0)
     real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
+	
+	
+	real(8), parameter :: par_nat_TS = 0.002                ! Коэффициент натяжения ударной волны  0.003
+	real(8), parameter :: par_nat_HP = 0.0001                ! Коэффициент натяжения контакта
+	real(8), parameter :: par_nat_BS = 0.0001                ! Коэффициент натяжения внешней ударной волны
     
-    real(8), parameter :: par_a_2 = 0.1307345665         ! Параметр в сечении перезарядки
+    real(8), parameter :: par_a_2 = 0.130724_8        ! Параметр в сечении перезарядки
     real(8), parameter :: par_n_p_LISM = 3.0_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_Kn = 43.3   !0.4326569808         ! в перезарядке
+    real(8), parameter :: par_Kn = 41.0358   !0.4326569808         ! в перезарядке
     
     real(8), parameter :: par_chi_real = 1.0_8      ! С каким хи считаем реально
-    real(8), parameter :: par_chi = 36.1275_8      ! С каким хи надо было бы считать
-    real(8), parameter :: par_Velosity_inf = -2.54338_8
+    real(8), parameter :: par_chi = 40.1984_8      ! С каким хи надо было бы считать
+    real(8), parameter :: par_Velosity_inf = -2.54494_8
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри
     
@@ -125,7 +130,7 @@
     
     real(8), allocatable :: gl_Gran_normal(:,:)       ! (3, :) Нормаль грани   4444444444444444
     real(8), allocatable :: gl_Gran_square(:)         ! (:) Площадь грани
-    real(8), allocatable :: gl_Gran_POTOK(:,:)       ! (8, :) поток грани
+    real(8), allocatable :: gl_Gran_POTOK(:,:)       ! (9, :) поток грани
     real(8), allocatable :: gl_Gran_POTOK_MF(:,:,:)       ! (5, 4, :) поток грани мультифлюидных жидкостей
     real(8), allocatable :: gl_Gran_center(:,:)       ! (3, :) 
     integer(4), allocatable :: gl_Gran_info(:)         ! (:) классификатор грани (см. схему)

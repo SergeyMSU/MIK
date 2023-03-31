@@ -115,7 +115,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_center(3, Ngran))
 		 allocate(dev_gl_Cell_dist(Ncell))
 		 allocate(dev_gl_Cell_Volume(Ncell))
-		 allocate(dev_gl_Gran_POTOK(8, Ngran))
+		 allocate(dev_gl_Gran_POTOK(9, Ngran))
 		 allocate(dev_gl_Gran_POTOK_MF(5, 4, Ngran))
 		 allocate(dev_gl_Cell_info(Ncell))
 		 allocate(dev_gl_Cell_gran(6, Ncell))
@@ -172,6 +172,7 @@ module MY_CUDA
 		gl_Cell_par = dev_gl_Cell_par
 		gl_Cell_par_MF = dev_gl_Cell_par_MF
 	end subroutine Send_data_to_Host
+	
 	
 	attributes(device) real(8) function dev_norm2(x)
     implicit none
@@ -257,7 +258,18 @@ module MY_CUDA
 	end subroutine CUF_hellow
 	
 	
+	subroutine CUDA_START_GD_move()
+	! На подвижной сетке! Без магнитных полей, с мультифлюидом
+	use STORAGE
+    use GEO_PARAM
+	use MY_CUDA
+	
+	
+	end subroutine CUDA_START_GD_move
+	
+	
 	subroutine CUDA_START_GD_3()
+	! На неподвижной сетке! Без магнитных полей, с мультифлюидом
 	use STORAGE
     use GEO_PARAM
 	use MY_CUDA
@@ -282,7 +294,7 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
 	
-	step_all = 200000
+	step_all = 20000 * 5 * 6 * 2
 	
 	do step = 1, step_all
 		
@@ -446,7 +458,7 @@ module MY_CUDA
             end if
 
 
-            call chlld_Q(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+            call chlld_Q(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(:, gr) = POTOK * gl_Gran_square(gr)
@@ -525,7 +537,7 @@ module MY_CUDA
 	fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 	
 	! Попробуем снести плотность пропорционально квадрату
-    if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 5.0) then
+    if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
         rad1 = norm2(gl_Cell_center(:, s1))
         rad2 = norm2(gl_Gran_center(:, gr))
         qqq1(1) = qqq1(1) * rad1**2 / rad2**2
@@ -550,7 +562,7 @@ module MY_CUDA
                 dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
 
                 ! Попробуем снести плотность пропорционально квадрату
-                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 5.0) then
+                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then
                     rad1 = norm2(gl_Cell_center(:, s2))
                     rad2 = norm2(gl_Gran_center(:, gr))
                     qqq2(1) = qqq2(1) * rad1**2 / rad2**2
@@ -588,7 +600,7 @@ module MY_CUDA
                 end if
 	end if
 	
-	call chlld_Q(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+	call chlld_Q(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
     time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
     gl_Gran_POTOK(:, gr) = POTOK * gl_Gran_square(gr)
@@ -781,7 +793,7 @@ module MY_CUDA
 	if(gl_Cell_info(gr) == 0) return
 	
     l_1 = .TRUE.
-    if (norm2(gl_Cell_center(:, gr)) <= 1.0 * par_R0) l_1 = .FALSE.    ! Не считаем внутри сферы
+    !if (norm2(gl_Cell_center(:, gr)) <= 1.0 * par_R0)   write(*,*) "NONE ERROR  27465678uhgfdr"  !l_1 = .FALSE.    ! Не считаем внутри сферы   здесь такого не должно быть
     POTOK = 0.0
     SOURSE = 0.0
     POTOK_MF_all = 0.0

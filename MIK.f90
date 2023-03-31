@@ -1285,7 +1285,7 @@
     c = gl_Cell_center(:, ncell)
     r = norm2(c)
     ro = par_kk/(par_chi**2 * r**2)
-    P_E = ro * par_chi**2 / (ggg * 10.0**2)
+    P_E = ro * par_chi**2 / (ggg * 7.0**2)
     c = DBLE(c) * par_chi/DBLE(r)
     
     ! Задаём плазму  (ro, u, v, w, p, bx, by, bz, Q)
@@ -1302,7 +1302,7 @@
     implicit none
 
     integer(4) :: ncell, gr, N1, N2, N3, j, k
-    real(8) :: qqq(9)
+    real(8) :: qqq(9), dist, dist2
     
     
     ! Перенормировка параметров, если это необходимо
@@ -1348,7 +1348,25 @@
             ncell = gl_Cell_B(2, j, k)
             call Inner_conditions(ncell)
         end do
-    end do
+	end do
+	
+	
+	! Пробежимся по всем ячейкам и зададим какие-то условия, если нужно
+	N1 = size(gl_Cell_par(1, :))
+	
+	!do k = 1, N1
+	!	dist = norm2(gl_Cell_center(:, k))
+	!	dist2 = sqrt((gl_Cell_center(1, k) + 10.0)**2 + gl_Cell_center(2, k)**2 + gl_Cell_center(3, k)**2)
+	!	if (dist2 < 30.0) then
+	!		gl_Cell_par_MF(1, 2, k) = 0.0002
+	!		gl_Cell_par_MF(2, 2, k) = -2.54
+	!		gl_Cell_par_MF(3, 2, k) = 0.0
+	!		gl_Cell_par_MF(4, 2, k) = 0.0
+	!		!call Inner_conditions(k)
+	!	end if
+	!	
+	!end do
+	
     
 
 
@@ -2327,7 +2345,7 @@
             fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 
             ! Попробуем снести плотность пропорционально квадрату
-            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 5.0) then
+            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
                 rad1 = norm2(gl_Cell_center(:, s1))
                 rad2 = norm2(gl_Gran_center(:, gr))
                 qqq1(1) = qqq1(1) * rad1**2 / rad2**2
@@ -2352,7 +2370,7 @@
                 dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
 
                 ! Попробуем снести плотность пропорционально квадрату
-                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 5.0) then
+                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then
                     rad1 = norm2(gl_Cell_center(:, s2))
                     rad2 = norm2(gl_Gran_center(:, gr))
                     qqq2(1) = qqq2(1) * rad1**2 / rad2**2
@@ -2403,7 +2421,7 @@
             end if
 
 
-            call chlld_Q(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+            call chlld_Q(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(:, gr) = POTOK * gl_Gran_square(gr)
@@ -2527,7 +2545,7 @@
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE
                 
-                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Не перезаряжаем жидкости внутри сферы
+                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Не перезаряжаем жидкости внутри мини сферы
                 ro3 = fluid1(1, i) - time * POTOK_MF_all(1, i) / Volume + time * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
                     print*, "Ro < 0  in ", i,  ro3, gl_Cell_center(:, gr)
@@ -2637,9 +2655,9 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 5000 * 6 * 5   ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 20000 * 2 * 2   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 1000) == 0) print*, "Step = ", step , "  step_time = ", time
+        if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
         now = mod(now, 2) + 1
         
@@ -2651,7 +2669,7 @@
         ! Пока только Контакт сделал
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
-        call Move_all(now, TT)    ! Пока только А-лучи сделал
+        call Move_all(now, TT)   
         
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
         
@@ -2675,7 +2693,7 @@
             fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 
             ! Попробуем снести плотность пропорционально квадрату
-            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 5.0) then
+            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
                 rad1 = norm2(gl_Cell_center2(:, s1, now))
                 rad2 = norm2(gl_Gran_center2(:, gr, now))
                 qqq1(1) = qqq1(1) * rad1**2 / rad2**2
@@ -2700,7 +2718,7 @@
                 dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))                                              
 
                 ! Попробуем снести плотность пропорционально квадрату
-                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 5.0) then 
+                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
                     rad1 = norm2(gl_Cell_center2(:, s2, now))                              
                     rad2 = norm2(gl_Gran_center2(:, gr, now))
                     qqq2(1) = qqq2(1) * rad1**2 / rad2**2
@@ -2741,7 +2759,7 @@
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
             
-            call chlld_Q(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            call chlld_Q(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(:, gr) = POTOK * gl_Gran_square2(gr, now)
@@ -2815,10 +2833,10 @@
             if(qqq(9)/qqq(1) < 50.0) then
 
                 ! Перенормируем параметры
-                qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
-                qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+                !qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
+                !qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
 
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.0) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.3) then
                     zone = 1
                 else
                     zone = 2
@@ -2832,31 +2850,31 @@
             end if
 
             ! Перенормируем первую жидкость
-            fluid1(2:4, 1) = fluid1(2:4, 1) * (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) / (par_chi/par_chi_real)**2
-
-            fluid1(2:4, 2) = fluid1(2:4, 2) * (3.0_8)
-            fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
+            !fluid1(2:4, 1) = fluid1(2:4, 1) * (par_chi/par_chi_real)
+            !fluid1(1, 1) = fluid1(1, 1) / (par_chi/par_chi_real)**2
+            !
+            !fluid1(2:4, 2) = fluid1(2:4, 2) * (3.0_8)
+            !fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
 
             ! Перенормируем первую жидкость обратно
-            fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
-            fluid1(1, 1) = fluid1(1, 1) * (par_chi/par_chi_real)**2
-            SOURSE(5, 2) = SOURSE(5, 2)/ (par_chi/par_chi_real)
-            SOURSE(1, 2) = SOURSE(1, 2)* (par_chi/par_chi_real)
-
-            fluid1(2:4, 2) = fluid1(2:4, 2) / (3.0_8)
-            fluid1(1, 2) = fluid1(1, 2) * (3.0_8)**2
-            SOURSE(5, 3) = SOURSE(5, 3)/ (3.0_8)
-            SOURSE(1, 3) = SOURSE(1, 3)* (3.0_8)
+            !fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
+            !fluid1(1, 1) = fluid1(1, 1) * (par_chi/par_chi_real)**2
+            !SOURSE(5, 2) = SOURSE(5, 2)/ (par_chi/par_chi_real)
+            !SOURSE(1, 2) = SOURSE(1, 2)* (par_chi/par_chi_real)
+            !
+            !fluid1(2:4, 2) = fluid1(2:4, 2) / (3.0_8)
+            !fluid1(1, 2) = fluid1(1, 2) * (3.0_8)**2
+            !SOURSE(5, 3) = SOURSE(5, 3)/ (3.0_8)
+            !SOURSE(1, 3) = SOURSE(1, 3)* (3.0_8)
 
             ! Перенормируем обратно
-            if(zone == 1 .or. zone == 2) then
-                qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
-                qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
-                SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
-            end if
+            !if(zone == 1 .or. zone == 2) then
+            !    qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
+            !    qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+            !    SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
+            !end if
 
 
             if (l_1 == .TRUE.) then
@@ -2934,8 +2952,22 @@
         gl_Gran_center = gl_Gran_center2(:, :, now2)
         gl_Cell_center = gl_Cell_center2(:, :, now2)
         gl_Gran_square = gl_Gran_square2(:, now2)
+		
+		if (mod(step, 100) == 0) then
+			call Initial_conditions()
+		end if
         
         call Start_GD_3_inner(3)
+		
+		if (mod(step, 5000) == 0) then
+		    call Print_surface_2D()
+            call Print_Setka_2D()
+            call Print_par_2D()
+			call Initial_conditions()
+		end if
+		
+		
+		
         
     end do
 
@@ -3953,7 +3985,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(14)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(24)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -3992,9 +4024,9 @@
 
     !call Print_par_2D()
     
-    !call Start_GD_move()
+    call Start_GD_move()
 	
-	call CUDA_START_GD_3()
+	!call CUDA_START_GD_3()
     
     !do i = 1, 1
     !    !if(mod(i, 1000) == 0) print*, i
@@ -4025,7 +4057,7 @@
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    call Save_setka_bin(15)
+    call Save_setka_bin(24)
     ! Variables
 
     !pause

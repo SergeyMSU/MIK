@@ -304,11 +304,380 @@
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
     real(8), intent(in) :: Time
     integer, intent(in) :: now
-    real(8) :: R_TS, proect, vel(3), R_HP, R_BS
-    integer :: yzel, N1, N2, N3, i, j, k
+    real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+    integer :: yzel, N1, N2, N3, i, j, k, yzel2
     real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2
     
     now2 = mod(now, 2) + 1   
+	
+	! Поверхностное натяжение ------------------------------------------------------------------------------
+	
+	N3 = size(gl_RAY_A(1, 1, :))
+    N2 = size(gl_RAY_A(1, :, 1))
+    N1 = size(gl_RAY_A(:, 1, 1))
+
+    ! Цикл движения точек на лучах А  
+    do k = 1, N3
+        do j = 1, N2
+			
+			if (k /= 1 .and. j == 1) then
+                    CYCLE
+			end if
+			
+			! Ударная волна
+			
+			yzel = gl_RAY_A(par_n_TS, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_A(par_n_TS, j + 1, k)
+			else
+				yzel2 = gl_RAY_B(par_n_TS, 1, k)
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_A(par_n_TS, j, k - 1)
+			else
+			    yzel2 = gl_RAY_A(par_n_TS, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_A(par_n_TS, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_TS, j, k + ceiling(1.0 * N3/2))
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_A(par_n_TS, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_TS, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+			! Контакт
+			
+			yzel = gl_RAY_A(par_n_HP, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+			else
+				yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
+			else
+			    yzel2 = gl_RAY_A(par_n_HP, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, k + ceiling(1.0 * N3/2))
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+			
+			! Внешняя ударная волна
+			
+			yzel = gl_RAY_A(par_n_BS, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_A(par_n_BS, j + 1, k)
+			else
+				CYCLE !yzel2 = yzel                                                    ! Вот тут есть неопределённость что делать с крайним узлом
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_A(par_n_BS, j, k - 1)
+			else
+			    yzel2 = gl_RAY_A(par_n_BS, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_A(par_n_BS, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_BS, j, k + ceiling(1.0 * N3/2))
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_A(par_n_BS, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_BS, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+		end do
+	end do
+	
+	
+	N3 = size(gl_RAY_B(1, 1, :))
+    N2 = size(gl_RAY_B(1, :, 1))
+    N1 = size(gl_RAY_B(:, 1, 1))
+
+    ! Цикл движения точек на лучах B  
+    do k = 1, N3
+        do j = 1, N2
+			
+			! Ударная волна
+			
+			yzel = gl_RAY_B(par_n_TS, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_B(par_n_TS, j + 1, k)
+			else
+				yzel2 = gl_RAY_K(par_n_TS, size(gl_RAY_K(par_n_TS, :, k)), k)
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_B(par_n_TS, j, k - 1)
+			else
+			    yzel2 = gl_RAY_B(par_n_TS, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_B(par_n_TS, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_TS, size( gl_RAY_A(par_n_TS, :, k)), k)
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_B(par_n_TS, j, k + 1)
+			else
+				yzel2 = gl_RAY_B(par_n_TS, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+			
+			! Контакт
+			
+			yzel = gl_RAY_B(par_n_HP, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_B(par_n_HP, j + 1, k)
+			else
+				yzel2 = gl_RAY_O(1, 1, k)
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_B(par_n_HP, j, k - 1)
+			else
+			    yzel2 = gl_RAY_B(par_n_HP, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_B(par_n_HP, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, size( gl_RAY_A(par_n_HP, :, k)), k)
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_B(par_n_HP, j, k + 1)
+			else
+				yzel2 = gl_RAY_B(par_n_HP, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+		end do
+	end do
+	
+	
+	N3 = size(gl_RAY_K(1, 1, :))
+    N2 = size(gl_RAY_K(1, :, 1))
+    N1 = size(gl_RAY_K(:, 1, 1))
+
+    ! Цикл движения точек на лучах K  
+    do k = 1, N3
+        do j = 1, N2
+			
+			if (k /= 1 .and. j == 1) then
+                    CYCLE
+			end if
+			
+			yzel = gl_RAY_K(par_n_TS, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_K(par_n_TS, j + 1, k)
+			else
+				yzel2 = gl_RAY_B(par_n_TS, size(gl_RAY_B(par_n_TS, :, k)), k)
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_K(par_n_TS, j, k - 1)
+			else
+			    yzel2 = gl_RAY_K(par_n_TS, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_K(par_n_TS, j - 1, k)
+			else
+				yzel2 = gl_RAY_K(par_n_TS, j, k + ceiling(1.0 * N3/2))
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_K(par_n_TS, j, k + 1)
+			else
+				yzel2 = gl_RAY_K(par_n_TS, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+		end do
+	end do
+	
+	N3 = size(gl_RAY_O(1, 1, :))
+    N2 = size(gl_RAY_O(1, :, 1))
+    N1 = size(gl_RAY_O(:, 1, 1))
+
+    ! Цикл движения точек на лучах O  
+    do k = 1, N3
+        do j = 1, N2
+			
+			! Контакт
+			yzel = gl_RAY_O(1, j, k)
+			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			
+			if (j < N2) then
+			    yzel2 = gl_RAY_O(1, j + 1, k)
+			else
+				yzel2 = yzel
+			end if
+			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (k > 1) then
+			    yzel2 = gl_RAY_O(1, j, k - 1)
+			else
+			    yzel2 = gl_RAY_O(1, j, N3)
+			end if
+			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (j > 1) then
+			    yzel2 = gl_RAY_O(1, j - 1, k)
+			else
+				yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
+			end if
+			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if(k < N3) then
+			    yzel2 = gl_RAY_O(1, j, k + 1)
+			else
+				yzel2 = gl_RAY_O(1, j, 1)
+			end if
+			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
+			if (gl_Point_num(yzel) > 0) then
+			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			else
+				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			end if
+			
+			
+			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
+		end do
+	end do
+	
+	
+	
+	
+	! Конец поверхностного натяжения --------------------------------------------------------------------------------------------------------------------
+	
     
     N3 = size(gl_RAY_A(1, 1, :))
     N2 = size(gl_RAY_A(1, :, 1))

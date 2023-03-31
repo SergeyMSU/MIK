@@ -276,7 +276,7 @@
 !       if(id_bn.eq.1)UZ(6)=x0
         
 !c----
-        if(n_state.le.1)then
+        if(n_state <= 1)then
 
                 do ik=1,9
                 dq(ik)=UR(ik)-UL(ik)
@@ -284,18 +284,19 @@
 
                    TL=SL
                    TR=SR
-                if(SL.gt.wv)then
+                if(SL > wv)then
                    TL=x0
                    do ik=1, 9
                    FW(ik)=wv*UL(ik)
-                   enddo
+				   enddo
+				   
                 endif
-                if(SL.le.wv.and.wv.le.SR)then
+                if(SL <= wv .and. wv <= SR)then
                    do ik=1, 9
                    FW(ik)=wv*UZ(ik)
                    enddo
                 endif
-                if(SR.lt.wv)then
+                if(SR < wv)then
                    TR=x0
                    do ik=1, 9
                    FW(ik)=wv*UR(ik)
@@ -349,6 +350,7 @@
            vzL(2)=vzR(2)
            vzL(3)=vzR(3)
 
+		   
            vzR(2)=vR(2)+UZ(6)*(bR(2)-UZ(7))/suR/r2
            vzR(3)=vR(3)+UZ(6)*(bR(3)-UZ(8))/suR/r2
            vzL(2)=vL(2)+UZ(6)*(bL(2)-UZ(7))/suL/r1
@@ -373,7 +375,15 @@
            bzR(3)=bR(3)*suRm
            bzL(2)=bL(2)*suLm
            bzL(3)=bL(3)*suLm
-      endif
+	  endif
+	  
+	  ! —гладим —корость
+	  vzR(2)=UZ(3)/UZ(1)
+    vzR(3)=UZ(4)/UZ(1)
+    vzL(2)=vzR(2)
+    vzL(3)=vzR(3)
+	! ! ! ! ! ! !
+	  
              UZL(1)=rzL
              UZL(9)=qzL
              UZL(5)=ezL
@@ -560,6 +570,7 @@
              UZL(9)=qzL
              UZL(5)=ezL
              UZR(1)=rzR
+			 UZR(9)=qzR
              UZR(5)=ezR
              do ik=1,3
              UZL(ik+1)=vzL(ik)*rzL
@@ -572,6 +583,7 @@
              UZZL(9)=qzzL
              UZZL(5)=ezzL
              UZZR(1)=rzzR
+			 UZZR(9)=qzzR
              UZZR(5)=ezzR
              do ik=1,3
              UZZL(ik+1)=vzzL(ik)*rzzL
@@ -585,6 +597,7 @@
            if(SL.gt.wv)then
              qqq(1)=FL(1)-wv*UL(1)
              qqq(5)=FL(5)-wv*UL(5)
+			 qqq(9)=FL(9)-wv*UL(9)
              do ik=2,4
                  qv(ik-1)=FL(ik)-wv*UL(ik)
              enddo
