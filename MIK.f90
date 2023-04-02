@@ -13,8 +13,6 @@
     include "Help_func.f90"
     include "Move_func.f90"
 	
-	!@cuf include "cuf_kernel.cuf"
-	
 
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
 
@@ -34,11 +32,20 @@
     use GEO_PARAM
     implicit none
     real(8), intent(in) :: x, y
-    end function
+	end function
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function  tetrahedron(t1, t2, t3, t4)
+    implicit none
+    real(8), intent(in) :: t1(3), t2(3), t3(3), t4(3)
+	end function
 
     end interface
 
 	end module My_func
+	
+	
+	!@cuf include "cuf_kernel.cuf"
 
     ! Вспомогательные функции
 
@@ -104,7 +111,51 @@
     Vy = Vr * sin(the_2) * sin(phi_2) + Vtheta * cos(the_2) * sin(phi_2) + Vphi * cos(phi_2);
     Vz = Vr * cos(the_2) - Vtheta * sin(the_2);
 
-    end subroutine dekard_skorost
+	end subroutine dekard_skorost
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function  tetrahedron(t1, t2, t3, t4)
+    implicit none
+	
+    real(8), intent(in) :: t1(3), t2(3), t3(3), t4(3)
+	real(8) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4
+    real(8) :: a1, b1, c1, a2, b2, c2, a3, b3, c3
+    real(8) :: det
+	
+	x1 = t1(1)
+	y1 = t1(2)
+	z1 = t1(3)
+	
+	x2 = t2(1)
+	y2 = t2(2)
+	z2 = t2(3)
+	
+	x3 = t3(1)
+	y3 = t3(2)
+	z3 = t3(3)
+	
+	x4 = t4(1)
+	y4 = t4(2)
+	z4 = t4(3)
+
+	a1 = x2 - x1
+    b1 = y2 - y1
+    c1 = z2 - z1
+    a2 = x3 - x1
+    b2 = y3 - y1
+    c2 = z3 - z1
+    a3 = x4 - x1
+    b3 = y4 - y1
+    c3 = z4 - z1
+
+    ! вычисление определителя матрицы
+    det = a1 * (b2 * c3 - b3 * c2) - b1 * (a2 * c3 - a3 * c2) + c1 * (a2 * b3 - a3 * b2)
+
+    ! вычисление объема тетраэдра
+    tetrahedron = abs(det) / 6.0
+	
+
+    end function tetrahedron
 
     ! ****************************************************************************************************************************************************
     ! Блок функций для начального построения сетки
@@ -1354,21 +1405,12 @@
 	! Пробежимся по всем ячейкам и зададим какие-то условия, если нужно
 	N1 = size(gl_Cell_par(1, :))
 	
-	!do k = 1, N1
-	!	dist = norm2(gl_Cell_center(:, k))
-	!	dist2 = sqrt((gl_Cell_center(1, k) + 10.0)**2 + gl_Cell_center(2, k)**2 + gl_Cell_center(3, k)**2)
-	!	if (dist2 < 30.0) then
-	!		gl_Cell_par_MF(1, 2, k) = 0.0002
-	!		gl_Cell_par_MF(2, 2, k) = -2.54
-	!		gl_Cell_par_MF(3, 2, k) = 0.0
-	!		gl_Cell_par_MF(4, 2, k) = 0.0
-	!		!call Inner_conditions(k)
-	!	end if
-	!	
-	!end do
-	
-    
-
+	do k = 1, N1
+		dist = norm2(gl_Cell_center(:, k))
+		dist2 = sqrt((gl_Cell_center(1, k) + 10.0)**2 + gl_Cell_center(2, k)**2 + gl_Cell_center(3, k)**2)
+		
+		
+	end do
 
     end subroutine Initial_conditions
 
@@ -1377,13 +1419,15 @@
     ! Либо её можно использовать в проверке геометрии сетки
     use STORAGE
     use GEO_PARAM
+	use My_func
     implicit none
 
     integer :: Ngran, iter
-    real(8) :: p(3, 4), Vol, D
+    real(8) :: p(3, 4), Vol, D, m(3, 4)
     real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
-    real(8) :: dist, di, gr_center(3)
+    real(8) :: dist, di, gr_center(3), ger1, ger2, ger3, ger
     integer :: i, j, k, ll, grc
+	real(8) :: pp(3, 8)
 
     ! Цикл по граням - считаем площадь грани, её нормаль
     Ngran = size(gl_all_Gran(1,:))
@@ -1443,14 +1487,53 @@
 
         gl_Gran_center(:, iter) = gr_center
 
+		
         c(1) = a(2) * b(3) - a(3) * b(2)
         c(2) = a(3) * b(1) - a(1) * b(3)
         c(3) = a(1) * b(2) - a(2) * b(1)
 
-        S = norm2(C)  ! S = S/2
+        S = norm2(c)  ! S = S/2
         c = c/S
         S = S/2.0
-
+		gl_Gran_square(iter) = S
+		
+		! Альтернативное вычисление площади грани:
+		S = 0.0
+		ger1 = norm2(p(:,1) - p(:,2))
+		ger2 = norm2(p(:,3) - p(:,2))
+		ger3 = norm2(p(:,1) - p(:,3))
+		ger = (ger1 + ger2 + ger3) / 2.0
+        ! вычисление площади по формуле Герона
+        S = sqrt(ger * (ger - ger1) * (ger - ger2) * (ger - ger3))
+		
+		ger1 = norm2(p(:,1) - p(:,4))
+		ger2 = norm2(p(:,3) - p(:,4))
+		ger = (ger1 + ger2 + ger3) / 2.0
+        ! вычисление площади по формуле Герона
+        S = S + sqrt(ger * (ger - ger1) * (ger - ger2) * (ger - ger3))
+		
+		if((S - gl_Gran_square(iter))/S * 100 > 1E-5) then
+		    print*, S, gl_Gran_square(iter), (S - gl_Gran_square(iter))/S * 100
+		    PAUSE
+		end if
+		
+		
+		if (grc == 4) then
+			m(:, 1) = (p(:, 1) + p(:, 2))/2.0
+			m(:, 2) = (p(:, 2) + p(:, 3))/2.0
+			m(:, 3) = (p(:, 3) + p(:, 4))/2.0
+			m(:, 4) = (p(:, 4) + p(:, 1))/2.0
+			a = m(:,3) - m(:,1)
+            b = m(:,4) - m(:,2)
+			c(1) = a(2) * b(3) - a(3) * b(2)
+            c(2) = a(3) * b(1) - a(1) * b(3)
+            c(3) = a(1) * b(2) - a(2) * b(1)
+			S = norm2(c)  ! S = S/2
+            c = c/S
+		end if
+		
+		gl_Gran_normal(:, iter) = c
+		
         ! Можно один раз проверить, правильно ли ориентирована нормаль!\
         
         
@@ -1466,8 +1549,7 @@
         end if
 
         ! Нужно записать площадь грани и нормаль в общий массив!
-        gl_Gran_normal(:, iter) = c
-        gl_Gran_square(iter) = S
+        
 
         !if (S < 0.000001) then
         !    print *, "ERROR 134443   gran = 0 ", c, a, b
@@ -1526,11 +1608,11 @@
                         c = c/4.0
                     else
                         do j = 1,8
-                            if (j == 5 .or. j == 6) CYCLE
+                            ! if (j == 5 .or. j == 6) CYCLE
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x(i), gl_y(i), gl_z(i)/)
                         end do
-                        c = c/6.0
+                        c = c/8.0   ! 6  ----------------------------------------------------------------------------
                     end if
                 else
                     if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then
@@ -1542,11 +1624,11 @@
                         c = c/5.0
                     else
                         do j = 1,8
-                            if (j == 5 .or. j == 8) CYCLE
+                            ! if (j == 5 .or. j == 8) CYCLE        ! ----------------------------------------------------------------------------
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x(i), gl_y(i), gl_z(i)/)
                         end do
-                        c = c/6.0
+                        c = c/8.0                            ! 6  ----------------------------------------------------------------------------
                     end if
                 end if
             end if
@@ -1588,9 +1670,30 @@
 
         gl_Cell_Volume(iter) = Vol
         gl_Cell_dist(iter) = dist
+		
+		! Альтернативное вычисление объёма пирамиды
 
         !        print*, Vol, ll
         !        pause
+		
+		!do j = 1, 8
+  !              i = gl_all_Cell(j, iter)
+  !              pp(:, j) = (/gl_x(i), gl_y(i), gl_z(i)/)
+		!end do
+		!
+		!Vol = tetrahedron(pp(:, 1), pp(:, 2), pp(:, 4), pp(:, 5)) + tetrahedron(pp(:, 2), pp(:, 3), pp(:, 4), pp(:, 7)) + &
+		!	tetrahedron(pp(:, 4), pp(:, 5), pp(:, 7), pp(:, 8)) + tetrahedron(pp(:, 2), pp(:, 4), pp(:, 5), pp(:, 7))
+		!
+		!if (gl_Cell_number(2, iter) /= 1) then
+		!    gl_Cell_Volume(iter) = Vol
+		!end if
+		
+		!print*, gl_Cell_type(i), gl_Cell_number(1, iter), gl_Cell_number(2, iter), gl_Cell_number(3, iter), gl_Cell_Volume(iter), Vol, &
+		!	(gl_Cell_Volume(iter) - Vol)/Vol * 100
+		!print*, c
+		!print*, "_______________________________________"
+		!PAUSE
+		
 
     end do
 
@@ -2055,9 +2158,9 @@
                 if(s2 == -1) then  ! Набегающий поток
                     dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 2) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 3) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
+                    fluid2(:, 1) = fluid1(:, 1)
+                    fluid2(:, 2) = fluid1(:, 2)
+                    fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
                     dist = gl_Cell_dist(s1)
@@ -2655,7 +2758,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 20000 * 2 * 2   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 20000 * 2 * 9   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
@@ -2740,9 +2843,9 @@
                 if(s2 == -1) then  ! Набегающий поток
                     dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 2) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 3) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
+                    fluid2(:, 1) = fluid1(:, 1)
+                    fluid2(:, 2) = fluid1(:, 2)
+                    fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
                     dist = gl_Cell_dist(s1)
@@ -2963,7 +3066,6 @@
 		    call Print_surface_2D()
             call Print_Setka_2D()
             call Print_par_2D()
-			call Initial_conditions()
 		end if
 		
 		
@@ -3832,8 +3934,9 @@
     use STORAGE
 
     implicit none
-    integer(4) :: n1, n2, n3, i, j, k, j1
+    integer(4) :: N1, N2, N3, i, j, k, j1
     integer(4) :: a1, a2, a3
+	real(8) :: c(3), SS
 
     if (par_developer_info) print *, "Geometry_check: Proverka 1"
     ! Проверяем каждому ли лучу задали все точки (не осталось ли неинициализированных)
@@ -3942,8 +4045,38 @@
         if( ANY(gl_Cell_neighbour(:, j1) == gl_Gran_neighbour(2, i)) == .FALSE.) then
             pause "ERROR 1775"
         end if
-    end do
-
+	end do
+	
+	if (par_developer_info) print *, "Geometry_check: Proverka 4"
+	! Проверяем сумму нормалей на площадь грани в каждой ячейке
+	N1 = size(gl_all_Cell(1, :))
+    do i = 1, N1
+		c = 0.0
+		do j = 1, 6
+		    j1 = gl_Cell_gran(j, i)
+			a1 = 1
+			if (j1 == 0) CYCLE
+			if (gl_Gran_neighbour(2, j1) == i) a1 = -1
+			c = c + gl_Gran_square(j1) * gl_Gran_normal(:, j1) * a1
+			if( (norm2(gl_Gran_normal(:, j1)) - 1.0) > 0.0001 ) print*, "ERROR 5678ijhgftydwed3"
+		end do
+		!print*, "________________"
+		!print*, gl_Cell_type(i), gl_Cell_number(1, i), gl_Cell_number(2, i), gl_Cell_number(3, i), norm2(c), gl_Cell_Volume(i)
+		!print*, gl_x(gl_all_Cell(1, i)), gl_y(gl_all_Cell(1, i)), gl_z(gl_all_Cell(1, i))
+		!print*, gl_x(gl_all_Cell(2, i)), gl_y(gl_all_Cell(2, i)), gl_z(gl_all_Cell(2, i))
+		!print*, gl_x(gl_all_Cell(3, i)), gl_y(gl_all_Cell(3, i)), gl_z(gl_all_Cell(3, i))
+		!print*, gl_x(gl_all_Cell(4, i)), gl_y(gl_all_Cell(4, i)), gl_z(gl_all_Cell(4, i))
+		!print*, gl_x(gl_all_Cell(5, i)), gl_y(gl_all_Cell(5, i)), gl_z(gl_all_Cell(5, i))
+		!print*, gl_x(gl_all_Cell(6, i)), gl_y(gl_all_Cell(6, i)), gl_z(gl_all_Cell(6, i))
+		!print*, gl_x(gl_all_Cell(7, i)), gl_y(gl_all_Cell(7, i)), gl_z(gl_all_Cell(7, i))
+		!print*, gl_x(gl_all_Cell(8, i)), gl_y(gl_all_Cell(8, i)), gl_z(gl_all_Cell(8, i))
+		!print*, "________________"
+		!PAUSE
+		if (norm2(c) > 1E-10) print*, "Error 2966765gvbfv ", gl_Cell_type(i), gl_Cell_number(1, i), gl_Cell_number(2, i), gl_Cell_number(3, i), norm2(c)
+	end do
+	
+	
+	
 
     if (par_developer_info) print *, "Geometry_check: OK"
 
@@ -3985,7 +4118,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(24)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(28)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -4024,9 +4157,10 @@
 
     !call Print_par_2D()
     
-    call Start_GD_move()
 	
-	!call CUDA_START_GD_3()
+    !call Start_GD_move()
+	
+	call CUDA_START_GD_3()
     
     !do i = 1, 1
     !    !if(mod(i, 1000) == 0) print*, i
@@ -4057,7 +4191,7 @@
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    call Save_setka_bin(24)
+    call Save_setka_bin(29)
     ! Variables
 
     !pause

@@ -1,6 +1,5 @@
 ! Для запуска на Линукс нужно изменить расширение файла на cuf
 
-	 include "cuf_Solvers.cuf"
 	
 module MY_CUDA
 	 use cudafor
@@ -21,7 +20,7 @@ module MY_CUDA
     real(8), constant :: dev_par_n_H_LISM_
     real(8), constant :: dev_par_Kn
 	 
-	! Создаём набор необходимых массивов, аналогичных массивам на хосте
+	! Создаём набор необходимых массивов для неподвижной сетки, аналогичных массивам на хосте
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour(:,:)
 	 integer(4), device, allocatable :: dev_gl_Gran_info(:)         ! (:) классификатор грани (см. схему)
 	 integer(4), device, allocatable :: dev_gl_Cell_info(:)
@@ -40,6 +39,29 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_all_Cell_inner(:)
 	 character,  device, allocatable :: dev_gl_Cell_type(:)
 	 integer(4),  device, allocatable :: dev_gl_Cell_number(:, :)
+	 real(8), device, allocatable :: dev_gl_x(:)   ! набор z-координат узлов сетки    !MOVE
+     real(8), device, allocatable :: dev_gl_y(:)   ! набор z-координат узлов сетки    !MOVE
+     real(8), device, allocatable :: dev_gl_z(:)   ! набор z-координат узлов сетки    !MOVE
+	 
+	 ! Создаём набор массивов для подвижной сетки, аналогичных массивам на хосте
+	 
+	 real(8), device, allocatable :: dev_gl_Vx(:)   ! набор z-координат узлов сетки    !MOVE
+     real(8), device, allocatable :: dev_gl_Vy(:)   ! набор z-координат узлов сетки    !MOVE
+     real(8), device, allocatable :: dev_gl_Vz(:)   ! набор z-координат узлов сетки    !MOVE
+     integer(4), device, allocatable :: dev_gl_Point_num(:)   ! Сколько граней записали свою скорость движения в данный узел      !MOVE    
+     real(8), device, allocatable :: dev_gl_x2(:, :)   ! (:, 2) набор x-координат узлов сетки     !MOVE
+     real(8), device, allocatable :: dev_gl_y2(:, :)   ! (:, 2) набор y-координат узлов сетки     !MOVE
+     real(8), device, allocatable :: dev_gl_z2(:, :)   ! (:, 2) набор z-координат узлов сетки     !MOVE
+	 real(8), device, allocatable :: dev_gl_Cell_Volume2(:, :)           ! (всего ячеек, 2) Набор объёмов ячеек   !MOVE
+     real(8), device, allocatable :: dev_gl_Cell_center2(:, :, :)             ! (3, :) Центр каждой ячейки  4444444444444444  !MOVE
+	 real(8), device, allocatable :: dev_gl_Gran_normal2(:, :, :)       ! (3, :, 2) Нормаль грани                       !MOVE
+     real(8), device, allocatable :: dev_gl_Gran_center2(:, :, :)       ! (3, :, 2)                          !Move
+     real(8), device, allocatable :: dev_gl_Gran_square2(:, :)         ! (:, 2) Площадь грани          !MOVE
+	 integer(4), device, allocatable :: dev_gl_Contact(:)       ! Контакт (не входит в начальное построение сетки, ищется в отдельной функции Find_Surface
+     integer(4), device, allocatable :: dev_gl_TS(:)
+     integer(4), device, allocatable :: dev_gl_BS(:)
+	 integer(4), device, allocatable :: dev_gl_all_Gran(:,:)       ! Все грани (4,:) имеют по 4 узла
+	 
 	 
 	 real(8), device :: time_all
 	 real(8), device :: time_step
@@ -85,6 +107,20 @@ module MY_CUDA
       dimension qqq(5),qqq1(5),qqq2(5)
 	end subroutine chlld_gd
 	
+	attributes(device) subroutine chlld(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq)
+	
+      implicit real*8 (a-h,o-z)
+      
+      real(8), intent(out) :: dsl, dsp, dsc
+      real(8), intent(in) :: al, be, ge, w
+      integer(4), intent(in) :: n_state
+      dimension qqq(8),qqq1(8),qqq2(8)
+	  
+	  end subroutine chlld
+	
     end interface
 	
 	contains 
@@ -105,6 +141,10 @@ module MY_CUDA
 		 Ncell = size(gl_Cell_par(1, :))
 		 Ngran = size(gl_Gran_neighbour(1, :))
 		
+		 allocate(dev_gl_x(size(gl_x(:))))
+		 allocate(dev_gl_y(size(gl_x(:))))
+		 allocate(dev_gl_z(size(gl_x(:))))
+		 
 		 allocate(dev_gl_Gran_neighbour(2, Ngran))
 		 allocate(dev_gl_Gran_info(Ngran))
 		 allocate(dev_gl_Cell_par(9, Ncell))
@@ -128,6 +168,94 @@ module MY_CUDA
 		 time_step = 10000.0
 	
 	end subroutine Set_CUDA
+	
+	subroutine Alloc_CUDA_move()
+		use GEO_PARAM
+		use STORAGE
+		implicit none
+		integer(4) :: Ncell, Ngran, Npoint
+	
+		 if (allocated(dev_gl_Vx) == .True.) then
+		 	STOP "Function Set_CUDA_move vizvana neskolko raz!!! Dopustimo tolko 1 raz!"    
+		 end if
+		
+		 if (allocated(gl_Cell_par) == .False.) then
+		 	STOP "Function Set_storage ne vizvana, Set_CUDA_move precrashaet rabotu"    
+		 end if
+	
+		 Ncell = size(gl_Cell_par(1, :))
+		 Ngran = size(gl_Gran_neighbour(1, :))
+		 Npoint = size(gl_x(:))
+		
+		 
+		 allocate(dev_gl_Vx(Npoint))
+		 allocate(dev_gl_Vy(Npoint))
+		 allocate(dev_gl_Vz(Npoint))
+		 
+		 allocate(dev_gl_Point_num(Npoint))
+		 allocate(dev_gl_x2(Npoint, 2))
+		 allocate(dev_gl_y2(Npoint, 2))
+		 allocate(dev_gl_z2(Npoint, 2))
+		 
+		 allocate(dev_gl_Cell_Volume2(Ncell, 2))
+		 allocate(dev_gl_Cell_center2(3, Ncell, 2))
+		 allocate(dev_gl_Gran_normal2(3, Ngran, 2))
+		 allocate(dev_gl_Gran_center2(3, Ngran, 2))
+		 allocate(dev_gl_Gran_square2(Ngran, 2))
+		 
+		 allocate(dev_gl_Contact(size(gl_Contact(:))))
+		 allocate(dev_gl_TS(size(gl_TS(:))))
+		 allocate(dev_gl_BS(size(gl_BS(:))))
+		 allocate(dev_gl_all_Gran(4, Ngran))
+		 
+		 
+	end subroutine Alloc_CUDA_move
+	
+	subroutine Set_CUDA_move()
+		use STORAGE
+		implicit none
+	
+		dev_gl_Vx = 0.0
+        dev_gl_Vy = 0.0
+        dev_gl_Vz = 0.0
+        dev_gl_Point_num = 0
+        dev_gl_x2(:, 1) = dev_gl_x
+        dev_gl_x2(:, 2) = dev_gl_x
+        dev_gl_y2(:, 1) = dev_gl_y
+        dev_gl_y2(:, 2) = dev_gl_y
+        dev_gl_z2(:, 1) = dev_gl_z
+        dev_gl_z2(:, 2) = dev_gl_z
+        dev_gl_Cell_Volume2(:, 1) = dev_gl_Cell_Volume
+        dev_gl_Cell_Volume2(:, 2) = dev_gl_Cell_Volume
+        dev_gl_Gran_normal2(:, :, 1) = dev_gl_Gran_normal
+        dev_gl_Gran_normal2(:, :, 2) = dev_gl_Gran_normal
+        dev_gl_Gran_center2(:, :, 1) = dev_gl_Gran_center
+        dev_gl_Gran_center2(:, :, 2) = dev_gl_Gran_center
+        dev_gl_Cell_center2(:, :, 1) = dev_gl_Cell_center
+        dev_gl_Cell_center2(:, :, 2) = dev_gl_Cell_center
+        dev_gl_Gran_square2(:, 1) = dev_gl_Gran_square
+        dev_gl_Gran_square2(:, 2) = dev_gl_Gran_square
+		dev_gl_Contact = gl_Contact
+		dev_gl_TS = gl_TS
+		dev_gl_BS = gl_BS
+		dev_gl_all_Gran = gl_all_Gran
+	end subroutine Set_CUDA_move
+	
+	subroutine Set_CUDA_move_reverse(now2)
+		implicit none
+		integer(4), intent(in) :: now2
+		
+		dev_gl_x = dev_gl_x2(:, now2)
+        dev_gl_y = dev_gl_y2(:, now2)
+        dev_gl_z = dev_gl_z2(:, now2)
+        dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+        dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+        dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+        dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+        dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+		
+	end subroutine Set_CUDA_move_reverse
+		
 	
 	subroutine Send_data_to_Cuda()
 		use GEO_PARAM
@@ -162,8 +290,6 @@ module MY_CUDA
 		 dev_par_Kn = par_Kn
 		 dev_par_pi_8 = par_pi_8
 		 
-		 
-	
 	end subroutine Send_data_to_Cuda
 	
 	subroutine Send_data_to_Host()
@@ -172,6 +298,20 @@ module MY_CUDA
 		gl_Cell_par = dev_gl_Cell_par
 		gl_Cell_par_MF = dev_gl_Cell_par_MF
 	end subroutine Send_data_to_Host
+	
+	subroutine Send_data_to_Host_move()
+		use GEO_PARAM
+		use STORAGE
+		
+		gl_x = dev_gl_x
+        gl_y = dev_gl_y
+        gl_z = dev_gl_z
+        gl_Cell_Volume = dev_gl_Cell_Volume
+        gl_Gran_normal = dev_gl_Gran_normal
+        gl_Gran_center = dev_gl_Gran_center
+        gl_Cell_center = dev_gl_Cell_center
+        gl_Gran_square = dev_gl_Gran_square
+	end subroutine Send_data_to_Host_move
 	
 	
 	attributes(device) real(8) function dev_norm2(x)
@@ -251,6 +391,9 @@ module MY_CUDA
 	
 	end module MY_CUDA
 	
+	
+	include "cuf_Solvers.cuf"
+	 
 	attributes(global) subroutine CUF_hellow()
 	
 	print*, "Hellow from CUDA"
@@ -263,6 +406,18 @@ module MY_CUDA
 	use STORAGE
     use GEO_PARAM
 	use MY_CUDA
+	implicit none
+    integer :: step, now, now2, step2
+	
+	call Set_CUDA()
+	call Send_data_to_Cuda()
+	call Alloc_CUDA_move()
+	call Set_CUDA_move()
+	
+	
+	
+	
+	
 	
 	
 	end subroutine CUDA_START_GD_move
@@ -294,7 +449,7 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
 	
-	step_all = 20000 * 5 * 6 * 2
+	step_all = 20000 * 2 * 6
 	
 	do step = 1, step_all
 		
@@ -584,9 +739,9 @@ module MY_CUDA
                 if(s2 == -1) then  ! Набегающий поток
                     dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 2) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
-                    fluid2(:, 3) = (/0.0001_8, 0.0_8, 0.0_8, 0.0_8, 0.0001_8/)
+                    fluid2(:, 1) = fluid1(:, 1)
+                    fluid2(:, 2) = fluid1(:, 2)
+                    fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
                     dist = gl_Cell_dist(s1)

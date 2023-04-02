@@ -69,7 +69,7 @@
         ray(3), norm, b1, b2, c1, c2, koef1, koef2, koef3
     
     koef1 = 0.3
-    koef2 = 0.3
+    koef2 = 1.0
     koef3 = 0.3
     
     ! Пробегаемся по всем граням и вычисляем скорости их движения
@@ -522,7 +522,8 @@
 			if (j < N2) then
 			    yzel2 = gl_RAY_B(par_n_HP, j + 1, k)
 			else
-				yzel2 = gl_RAY_O(1, 1, k)
+				!yzel2 = gl_RAY_O(1, 1, k)
+				CYCLE
 			end if
 			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
@@ -624,55 +625,57 @@
     N1 = size(gl_RAY_O(:, 1, 1))
 
     ! Цикл движения точек на лучах O  
-    do k = 1, N3
-        do j = 1, N2
+	if (.False.) then   ! Можно отключить этот цикл
+        do k = 1, N3
+            do j = 1, N2
 			
-			! Контакт
-			yzel = gl_RAY_O(1, j, k)
-			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			    ! Контакт
+			    yzel = gl_RAY_O(1, j, k)
+			    Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
-			if (j < N2) then
-			    yzel2 = gl_RAY_O(1, j + 1, k)
-			else
-				yzel2 = yzel
-			end if
-			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			    if (j < N2) then
+			        yzel2 = gl_RAY_O(1, j + 1, k)
+			    else
+				    yzel2 = yzel
+			    end if
+			    Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
-			if (k > 1) then
-			    yzel2 = gl_RAY_O(1, j, k - 1)
-			else
-			    yzel2 = gl_RAY_O(1, j, N3)
-			end if
-			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			    if (k > 1) then
+			        yzel2 = gl_RAY_O(1, j, k - 1)
+			    else
+			        yzel2 = gl_RAY_O(1, j, N3)
+			    end if
+			    Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
-			if (j > 1) then
-			    yzel2 = gl_RAY_O(1, j - 1, k)
-			else
-				yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
-			end if
-			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			    if (j > 1) then
+			        yzel2 = gl_RAY_O(1, j - 1, k)
+			    else
+				    CYCLE
+				    !yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
+			    end if
+			    Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
-			if(k < N3) then
-			    yzel2 = gl_RAY_O(1, j, k + 1)
-			else
-				yzel2 = gl_RAY_O(1, j, 1)
-			end if
-			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			    if(k < N3) then
+			        yzel2 = gl_RAY_O(1, j, k + 1)
+			    else
+				    yzel2 = gl_RAY_O(1, j, 1)
+			    end if
+			    Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
-			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			else
-				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			end if
+			    if (gl_Point_num(yzel) > 0) then
+			        vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			    else
+				    vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			    end if
 			
 			
-			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			    gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+			    gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+			    gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
-		end do
-	end do
-	
+		    end do
+	    end do
+	end if
 	
 	
 	
@@ -1255,19 +1258,19 @@
             else
                 if (gl_all_Cell(2, iter) == gl_all_Cell(6, iter)) then
                     if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then
-                        do j = 1,8
+                        do j = 1,8   ! Особая ячейка типа 4
                             if (j == 4 .or. j == 5 .or. j == 6 .or. j == 8) CYCLE
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
                         c = c/4.0
                     else
-                        do j = 1,8
-                            if (j == 5 .or. j == 6) CYCLE
+                        do j = 1,8         ! Особая ячейка типа 2
+                            ! if (j == 5 .or. j == 6) CYCLE             ! Попробовали убрать такой расчёт центра!
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
-                        c = c/6.0
+                        c = c/8.0    ! 6 ----------------------------------------------------------------------------
                     end if
                 else
                     if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then
@@ -1277,13 +1280,13 @@
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
                         c = c/5.0
-                    else
+                    else            ! Особая ячейка типа 5
                         do j = 1,8
-                            if (j == 5 .or. j == 8) CYCLE
+                            ! if (j == 5 .or. j == 8) CYCLE    ! Попробовали убрать такой расчёт центра!
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
-                        c = c/6.0
+                        c = c/8.0   ! 6 ----------------------------------------------------------------------------
                     end if
                 end if
             end if
