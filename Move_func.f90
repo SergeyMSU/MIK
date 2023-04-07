@@ -304,7 +304,7 @@
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
     real(8), intent(in) :: Time
     integer, intent(in) :: now
-    real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+    real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), KORD(3)
     integer :: yzel, N1, N2, N3, i, j, k, yzel2
     real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2
     
@@ -472,35 +472,40 @@
 			! Ударная волна
 			
 			yzel = gl_RAY_B(par_n_TS, j, k)
-			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
 			if (j < N2) then
 			    yzel2 = gl_RAY_B(par_n_TS, j + 1, k)
 			else
 				yzel2 = gl_RAY_K(par_n_TS, size(gl_RAY_K(par_n_TS, :, k)), k)
 			end if
-			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (k > 1) then
 			    yzel2 = gl_RAY_B(par_n_TS, j, k - 1)
 			else
 			    yzel2 = gl_RAY_B(par_n_TS, j, N3)
 			end if
-			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (j > 1) then
 			    yzel2 = gl_RAY_B(par_n_TS, j - 1, k)
 			else
 				yzel2 = gl_RAY_A(par_n_TS, size( gl_RAY_A(par_n_TS, :, k)), k)
 			end if
-			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if(k < N3) then
 			    yzel2 = gl_RAY_B(par_n_TS, j, k + 1)
 			else
 				yzel2 = gl_RAY_B(par_n_TS, j, 1)
 			end if
-			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (gl_Point_num(yzel) > 0) then
 			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -517,7 +522,8 @@
 			! Контакт
 			
 			yzel = gl_RAY_B(par_n_HP, j, k)
-			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
 			if (j < N2) then
 			    yzel2 = gl_RAY_B(par_n_HP, j + 1, k)
@@ -525,28 +531,32 @@
 				!yzel2 = gl_RAY_O(1, 1, k)
 				CYCLE
 			end if
-			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (k > 1) then
 			    yzel2 = gl_RAY_B(par_n_HP, j, k - 1)
 			else
 			    yzel2 = gl_RAY_B(par_n_HP, j, N3)
 			end if
-			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (j > 1) then
 			    yzel2 = gl_RAY_B(par_n_HP, j - 1, k)
 			else
 				yzel2 = gl_RAY_A(par_n_HP, size( gl_RAY_A(par_n_HP, :, k)), k)
 			end if
-			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if(k < N3) then
 			    yzel2 = gl_RAY_B(par_n_HP, j, k + 1)
 			else
 				yzel2 = gl_RAY_B(par_n_HP, j, 1)
 			end if
-			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (gl_Point_num(yzel) > 0) then
 			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -576,35 +586,40 @@
 			end if
 			
 			yzel = gl_RAY_K(par_n_TS, j, k)
-			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
 			if (j < N2) then
 			    yzel2 = gl_RAY_K(par_n_TS, j + 1, k)
 			else
 				yzel2 = gl_RAY_B(par_n_TS, size(gl_RAY_B(par_n_TS, :, k)), k)
 			end if
-			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (k > 1) then
 			    yzel2 = gl_RAY_K(par_n_TS, j, k - 1)
 			else
 			    yzel2 = gl_RAY_K(par_n_TS, j, N3)
 			end if
-			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (j > 1) then
 			    yzel2 = gl_RAY_K(par_n_TS, j - 1, k)
 			else
 				yzel2 = gl_RAY_K(par_n_TS, j, k + ceiling(1.0 * N3/2))
 			end if
-			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if(k < N3) then
 			    yzel2 = gl_RAY_K(par_n_TS, j, k + 1)
 			else
 				yzel2 = gl_RAY_K(par_n_TS, j, 1)
 			end if
-			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			if (gl_Point_num(yzel) > 0) then
 			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -631,36 +646,41 @@
 			
 			    ! Контакт
 			    yzel = gl_RAY_O(1, j, k)
-			    Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+				Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			    ! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
 			    if (j < N2) then
 			        yzel2 = gl_RAY_O(1, j + 1, k)
 			    else
 				    yzel2 = yzel
-			    end if
-			    Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				end if
+				Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+			    ! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			    if (k > 1) then
 			        yzel2 = gl_RAY_O(1, j, k - 1)
 			    else
 			        yzel2 = gl_RAY_O(1, j, N3)
-			    end if
-			    Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				end if
+				Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			    ! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			    if (j > 1) then
 			        yzel2 = gl_RAY_O(1, j - 1, k)
 			    else
 				    CYCLE
 				    !yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
-			    end if
-			    Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				end if
+				Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			    ! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			    if(k < N3) then
 			        yzel2 = gl_RAY_O(1, j, k + 1)
 			    else
 				    yzel2 = gl_RAY_O(1, j, 1)
-			    end if
-			    Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				end if
+				Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			    ! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
 			    if (gl_Point_num(yzel) > 0) then
 			        vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -703,7 +723,8 @@
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
             else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -713,16 +734,20 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
-            R_TS = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до TS
+			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
+			proect = DOT_PRODUCT(vel * Time, ER)
+            ! proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
+            KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+			R_TS = norm2(KORD + &
+                    proect * ER)  ! Новое расстояние до TS
             
             ! HP
             yzel = gl_RAY_A(par_n_HP, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
             else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -741,7 +766,8 @@
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
             else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -803,8 +829,9 @@
             yzel = gl_RAY_B(par_n_TS, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
-            else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			else
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -822,8 +849,9 @@
             yzel = gl_RAY_B(par_n_HP, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
-            else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			else
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -917,8 +945,9 @@
             yzel = gl_RAY_O(1, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
-            else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			else
+                !vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             
@@ -974,8 +1003,9 @@
             yzel = gl_RAY_K(par_n_TS, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
-            else
-                vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			else
+                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
             

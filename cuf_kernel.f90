@@ -414,10 +414,19 @@ module MY_CUDA
 	call Alloc_CUDA_move()
 	call Set_CUDA_move()
 	
+	time_all = 0.0                 ! Глобальное время (хранится на девайсе)
+	time_step = 1E-9               ! Шаг по времени (хранится на девайсе)
 	
+	now = 2
+	now2 = now
+	now = mod(now, 2) + 1
+        
 	
+	! Сначала вычисляем скорости движения поверхностей
 	
+	Cuda_Calc_move(now)
 	
+	call Cuda_Move_all(now) 
 	
 	
 	end subroutine CUDA_START_GD_move
