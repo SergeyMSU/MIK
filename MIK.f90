@@ -2769,6 +2769,12 @@
         
         ! Вычисляем новые скорости управляющих узлов
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
+		
+		!print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
+		!print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
+		!print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
+		!print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
+		!pause
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT)   
@@ -4159,6 +4165,8 @@
 	
     call Start_GD_move()
 	
+	!call CUDA_START_GD_move()
+	
 	!call CUDA_START_GD_3()
     
     !do i = 1, 1
@@ -4183,14 +4191,15 @@
     !gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) / (3.0)**2
 
 
-    call Print_surface_2D()
-    call Print_Setka_2D()
+    !call Print_surface_2D()
+    !call Print_Setka_2D()
+	
     !call Print_all_surface("C")
     !call Print_all_surface("B")
     !call Print_all_surface("T")
 	
-    call Print_par_2D()
-    call Save_setka_bin(31)
+    !call Print_par_2D()
+    !call Save_setka_bin(31)
     ! Variables
 
     !pause

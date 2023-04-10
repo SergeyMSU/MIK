@@ -88,11 +88,13 @@
         
         call chlld(2, normal(1), normal(2), normal(3), &
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+		
         
         dsl = dsl * koef1
         
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
         a2 = sqrt(ggg * qqq2(5)/qqq2(1))
+		
         
         if (norm2(qqq1(2:4)) <= a1 .and. norm2(qqq2(2:4)) <= a2) then ! Записываем скорость во все узлы
             do j = 1, 4
@@ -101,6 +103,7 @@
                 gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
                 gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
                 gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+				
             end do
             CYCLE  ! Заканчиваем с этой гранью, переходим к следующей
         end if
@@ -113,12 +116,15 @@
                 ray = ray/norm
                 v1 = DOT_PRODUCT(qqq1(2:4), ray)
                 v2 = DOT_PRODUCT(qqq2(2:4), ray)
+				
                 
                 if (v1 >= 0 .or. v2 >= 0) then
+					
                     gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsl
                     gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
                     gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
                     gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+					
                     CYCLE   ! Переходим к следующему узлу
                 end if
                 
@@ -140,6 +146,7 @@
                     gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
                     gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
                     gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+					
                     CYCLE
                 end if
                 
@@ -738,8 +745,7 @@
 			proect = DOT_PRODUCT(vel * Time, ER)
             ! proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
             KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			R_TS = norm2(KORD + &
-                    proect * ER)  ! Новое расстояние до TS
+			R_TS = norm2(KORD + proect * ER)  ! Новое расстояние до TS
             
             ! HP
             yzel = gl_RAY_A(par_n_HP, j, k)
@@ -757,9 +763,9 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))
-            R_HP = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до HP
+            proect = DOT_PRODUCT(vel * Time, ER)
+			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+            R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
             
             ! BS
             yzel = gl_RAY_A(par_n_BS, j, k)
@@ -777,9 +783,9 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))
-            R_BS = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до BS
+            proect = DOT_PRODUCT(vel * Time, ER)
+			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+            R_BS = norm2(KORD + proect * ER)  ! Новое расстояние до BS
             
             ! Далее обычный цикл нахождения координат точек, такой же, как и при построении сетки
             do i = 1, N1
@@ -830,7 +836,6 @@
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
 			else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
@@ -841,16 +846,16 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
-            R_TS = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до TS
+			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
+            proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
+			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+            R_TS = norm2(KORD + proect * ER)  ! Новое расстояние до TS
             
             ! HP
             yzel = gl_RAY_B(par_n_HP, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
 			else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
@@ -861,9 +866,9 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))
-            R_HP = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до HP
+            proect = DOT_PRODUCT(vel * Time, ER)
+			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+            R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
                 
             do i = 1, N1
 
@@ -908,7 +913,8 @@
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
-                R_BS = norm2((/0.0_8, gl_y2(yzel, now2), gl_z2(yzel, now2)/))  ! Новое расстояние до BS
+				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+                R_BS = norm2(ER)  ! Новое расстояние до BS
             
             do i = 1, N1
                 
@@ -946,7 +952,6 @@
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
 			else
-                !vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
@@ -957,16 +962,18 @@
             gl_Vy(yzel) = 0.0_8
             gl_Vz(yzel) = 0.0_8
             
-            proect = DOT_PRODUCT(vel * Time, (/0.0_8, cos(phi), sin(phi)/) )  !  Находим проекцию перемещения на радиус вектор луча
-            R_HP = norm2((/0.0_8, gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/0.0_8, cos(phi), sin(phi)/) )  ! Новое расстояние до HP
+			ER(1) = 0.0_8; ER(2) = cos(phi); ER(3) = sin(phi)
+            proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
+			KORD(1) = 0.0_8; KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
+            R_HP = norm2(KORD + proect * ER )  ! Новое расстояние до HP
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
             x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
             
             ! BS     Нужно взять положение BS из её положения на крайнем луче A
             yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
-            R_BS = norm2((/0.0_8, gl_y2(yzel, now2), gl_z2(yzel, now2)/))  ! Новое расстояние до BS
+			KORD(1) = 0.0_8; KORD(2) = gl_y2(yzel, now2); KORD(3) = gl_z2(yzel, now2)
+            R_BS = norm2(KORD)  ! Новое расстояние до BS
             
             do i = 1, N1
                 yzel = gl_RAY_O(i, j, k)
@@ -1004,7 +1011,6 @@
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
 			else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
             end if
@@ -1015,9 +1021,10 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
-            R_TS = norm2((/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) + &
-                    proect * (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  ! Новое расстояние до TS
+			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
+            proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
+            KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
+			R_TS = norm2(KORD + proect * ER)  ! Новое расстояние до TS
             
             do i = 1, N1
 

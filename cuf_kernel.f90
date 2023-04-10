@@ -19,6 +19,8 @@ module MY_CUDA
 	 real(8), constant :: dev_par_n_p_LISM
     real(8), constant :: dev_par_n_H_LISM_
     real(8), constant :: dev_par_Kn
+	
+	integer(4), device :: dev_mutex_1
 	 
 	! —оздаЄм набор необходимых массивов дл€ неподвижной сетки, аналогичных массивам на хосте
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour(:,:)
@@ -60,13 +62,26 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_Contact(:)       !  онтакт (не входит в начальное построение сетки, ищетс€ в отдельной функции Find_Surface
      integer(4), device, allocatable :: dev_gl_TS(:)
      integer(4), device, allocatable :: dev_gl_BS(:)
+	 integer(4), device, allocatable :: dev_gl_Vel_gran(:)        ! —корость граней (дл€ движени€ граней - которые выдел€ютс€) 
+	 ! нужно было дл€ избежани€ атомарных операции и безпроблемного доступа к пам€ти
+	 
 	 integer(4), device, allocatable :: dev_gl_all_Gran(:,:)       ! ¬се грани (4,:) имеют по 4 узла
+	 
+	 ! Ћучи, на которых распологаютс€ точки сетки - так 
+    integer(4), device, allocatable :: dev_gl_RAY_A(:,:,:)   ! Ќабор ј-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_B(:,:,:)   ! Ќабор B-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_C(:,:,:)   ! Ќабор C-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_O(:,:,:)   ! Ќабор O-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_K(:,:,:)   ! Ќабор K-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_D(:,:,:)   ! Ќабор D-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+    integer(4), device, allocatable :: dev_gl_RAY_E(:,:,:)   ! Ќабор E-лучей размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
 	 
 	 
 	 real(8), device :: time_all
 	 real(8), device :: time_step
 	 
 	 interface
+	 
 	 
 	 attributes(device) subroutine spherical_skorost(z, x, y, Vz, Vx, Vy, Vr, Vphi, Vtheta)
     use My_func
@@ -164,8 +179,9 @@ module MY_CUDA
 		 allocate(dev_gl_Cell_type( size(gl_Cell_type(:))  ))
 		 allocate(dev_gl_Cell_number(3,  size(gl_Cell_number(1, :))  ))
 		 
+		 dev_mutex_1 = 0
 		 time_all = 0.0
-		 time_step = 10000.0
+		 time_step = 1E-8
 	
 	end subroutine Set_CUDA
 	
@@ -209,6 +225,15 @@ module MY_CUDA
 		 allocate(dev_gl_all_Gran(4, Ngran))
 		 
 		 
+		 allocate(dev_gl_RAY_A, MOLD = gl_RAY_A)
+		 allocate(dev_gl_RAY_B, MOLD = gl_RAY_B)
+		 allocate(dev_gl_RAY_C, MOLD = gl_RAY_C)
+		 allocate(dev_gl_RAY_O, MOLD = gl_RAY_O)
+		 allocate(dev_gl_RAY_K, MOLD = gl_RAY_K)
+		 allocate(dev_gl_RAY_D, MOLD = gl_RAY_D)
+		 allocate(dev_gl_RAY_E, MOLD = gl_RAY_E)
+		 
+		 
 	end subroutine Alloc_CUDA_move
 	
 	subroutine Set_CUDA_move()
@@ -216,6 +241,8 @@ module MY_CUDA
 		implicit none
 	
 		dev_gl_Vx = 0.0
+		gl_Vx = dev_gl_Vx
+		print*, "238 uegfehyftg  ", gl_Vx(26)
         dev_gl_Vy = 0.0
         dev_gl_Vz = 0.0
         dev_gl_Point_num = 0
@@ -239,9 +266,18 @@ module MY_CUDA
 		dev_gl_TS = gl_TS
 		dev_gl_BS = gl_BS
 		dev_gl_all_Gran = gl_all_Gran
+		dev_gl_RAY_A  = gl_RAY_A
+		dev_gl_RAY_B  = gl_RAY_B
+		dev_gl_RAY_C = gl_RAY_C
+		dev_gl_RAY_O = gl_RAY_O
+		dev_gl_RAY_K = gl_RAY_K
+		dev_gl_RAY_D = gl_RAY_D
+		dev_gl_RAY_E = gl_RAY_E
+		 
 	end subroutine Set_CUDA_move
 	
 	subroutine Set_CUDA_move_reverse(now2)
+	! ƒл€ чего эта функци€????????????????????????????????????????????????????????????????????????
 		implicit none
 		integer(4), intent(in) :: now2
 		
@@ -276,6 +312,10 @@ module MY_CUDA
 		 dev_gl_all_Cell_inner = gl_all_Cell_inner
 		 dev_gl_Cell_type = gl_Cell_type
 		 dev_gl_Cell_number = gl_Cell_number
+		 
+		 dev_gl_x = gl_x
+		 dev_gl_y = gl_y
+		 dev_gl_z = gl_z
 		 
 		 dev_ggg = ggg
 		 dev_par_Velosity_inf = par_Velosity_inf
@@ -391,7 +431,6 @@ module MY_CUDA
 	
 	end module MY_CUDA
 	
-	
 	include "cuf_Solvers.cuf"
 	 
 	attributes(global) subroutine CUF_hellow()
@@ -407,12 +446,19 @@ module MY_CUDA
     use GEO_PARAM
 	use MY_CUDA
 	implicit none
-    integer :: step, now, now2, step2
+    integer :: step, now, now2, step2, i, alla2(100), Num
+	integer(4):: ierrSync, ierrAsync, mkj
+	integer(4), device :: alla(100), nrn(3)
+	integer(4), device :: dev_now
 	
 	call Set_CUDA()
 	call Send_data_to_Cuda()
 	call Alloc_CUDA_move()
 	call Set_CUDA_move()
+	
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 0: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 0: ', cudaGetErrorString(cudaGetLastError())
 	
 	time_all = 0.0                 ! √лобальное врем€ (хранитс€ на девайсе)
 	time_step = 1E-9               ! Ўаг по времени (хранитс€ на девайсе)
@@ -420,13 +466,48 @@ module MY_CUDA
 	now = 2
 	now2 = now
 	now = mod(now, 2) + 1
+	
+	gl_Vx = dev_gl_Vx;
+	print*, "459 gbhygtfvghg  ", gl_Vx(26)
         
+	print*, "START 452"
+	
+	!  !$cuf kernel do <<<*, *>>>
+    !   do i = 1, 100
+	!	mkj = i
+	!	nrn(1) = i
+	!	nrn(2) = i + 1
+	!	nrn(3) = i + 2
+	!	alla(i) = nrn(1) + nrn(2) + nrn(3) + mkj
+	!end do
+	!
+	!alla2 = alla
+	!print*, alla2
 	
 	! —начала вычисл€ем скорости движени€ поверхностей
+	Num = size(dev_gl_TS)
+	print*, "Num = ", Num
 	
-	Cuda_Calc_move(now)
+	!call Cuda_Calc_move(now)
 	
-	call Cuda_Move_all(now) 
+	dev_now = now
+	call Cuda_Calc_move_TS<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
+	
+	gl_Vx = dev_gl_Vx;
+	gl_Vy = dev_gl_Vy;
+	gl_Vz = dev_gl_Vz;
+	
+	print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
+	print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
+	print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
+	print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
+	return
+	
+	! call Cuda_Move_all(now) 
 	
 	
 	end subroutine CUDA_START_GD_move
