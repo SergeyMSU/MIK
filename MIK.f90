@@ -2770,11 +2770,6 @@
         ! Вычисляем новые скорости управляющих узлов
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
 		
-		!print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
-		!print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
-		!print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
-		!print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
-		!pause
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT)   
@@ -4165,7 +4160,7 @@
 	
     call Start_GD_move()
 	
-	!call CUDA_START_GD_move()
+	! call CUDA_START_GD_move()
 	
 	!call CUDA_START_GD_3()
     

@@ -170,9 +170,11 @@
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
         dsc = dsc * koef2
+		
         
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
         a2 = sqrt(ggg * qqq2(5)/qqq2(1))
+		
         
         if (norm2(qqq1(2:4)) <= a1 .and. norm2(qqq2(2:4)) <= a2) then ! Записываем скорость во все узлы
             do j = 1, 4
@@ -374,6 +376,7 @@
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			
 			
 			! Контакт
 			

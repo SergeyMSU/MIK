@@ -20,7 +20,14 @@ module MY_CUDA
     real(8), constant :: dev_par_n_H_LISM_
     real(8), constant :: dev_par_Kn
 	
+	integer(4), constant :: dev_par_n_TS
+	integer(4), constant :: dev_par_n_HP
+	integer(4), constant :: dev_par_n_BS
+	
 	integer(4), device :: dev_mutex_1
+	integer(4), device :: dev_mutex_2
+	integer(4), device :: dev_mutex_3
+	integer(4), device :: dev_mutex_4
 	 
 	! Создаём набор необходимых массивов для неподвижной сетки, аналогичных массивам на хосте
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour(:,:)
@@ -62,7 +69,7 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_Contact(:)       ! Контакт (не входит в начальное построение сетки, ищется в отдельной функции Find_Surface
      integer(4), device, allocatable :: dev_gl_TS(:)
      integer(4), device, allocatable :: dev_gl_BS(:)
-	 integer(4), device, allocatable :: dev_gl_Vel_gran(:)        ! Скорость граней (для движения граней - которые выделяются) 
+	 real(8), device, allocatable :: dev_gl_Vel_gran(:)        ! Скорость граней (для движения граней - которые выделяются) 
 	 ! нужно было для избежания атомарных операции и безпроблемного доступа к памяти
 	 
 	 integer(4), device, allocatable :: dev_gl_all_Gran(:,:)       ! Все грани (4,:) имеют по 4 узла
@@ -180,8 +187,11 @@ module MY_CUDA
 		 allocate(dev_gl_Cell_number(3,  size(gl_Cell_number(1, :))  ))
 		 
 		 dev_mutex_1 = 0
+		 dev_mutex_2 = 0
+		 dev_mutex_3 = 0
+		 dev_mutex_4 = 0
 		 time_all = 0.0
-		 time_step = 1E-8
+		 time_step = 1.0 ! 0.00000000001
 	
 	end subroutine Set_CUDA
 	
@@ -218,6 +228,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_normal2(3, Ngran, 2))
 		 allocate(dev_gl_Gran_center2(3, Ngran, 2))
 		 allocate(dev_gl_Gran_square2(Ngran, 2))
+		 allocate(dev_gl_Vel_gran(Ngran))
 		 
 		 allocate(dev_gl_Contact(size(gl_Contact(:))))
 		 allocate(dev_gl_TS(size(gl_TS(:))))
@@ -241,8 +252,6 @@ module MY_CUDA
 		implicit none
 	
 		dev_gl_Vx = 0.0
-		gl_Vx = dev_gl_Vx
-		print*, "238 uegfehyftg  ", gl_Vx(26)
         dev_gl_Vy = 0.0
         dev_gl_Vz = 0.0
         dev_gl_Point_num = 0
@@ -273,6 +282,7 @@ module MY_CUDA
 		dev_gl_RAY_K = gl_RAY_K
 		dev_gl_RAY_D = gl_RAY_D
 		dev_gl_RAY_E = gl_RAY_E
+		dev_gl_Vel_gran = 0.0
 		 
 	end subroutine Set_CUDA_move
 	
@@ -329,6 +339,9 @@ module MY_CUDA
 		 dev_par_n_H_LISM_ = par_n_H_LISM_
 		 dev_par_Kn = par_Kn
 		 dev_par_pi_8 = par_pi_8
+		 dev_par_n_TS = par_n_TS
+		 dev_par_n_BS = par_n_BS
+		 dev_par_n_HP = par_n_HP
 		 
 	end subroutine Send_data_to_Cuda
 	
@@ -447,9 +460,9 @@ module MY_CUDA
 	use MY_CUDA
 	implicit none
     integer :: step, now, now2, step2, i, alla2(100), Num
-	integer(4):: ierrSync, ierrAsync, mkj
-	integer(4), device :: alla(100), nrn(3)
+	integer(4):: ierrSync, ierrAsync, nx, ny
 	integer(4), device :: dev_now
+	type(dim3) :: grid, tBlock
 	
 	call Set_CUDA()
 	call Send_data_to_Cuda()
@@ -461,51 +474,80 @@ module MY_CUDA
 		write(*,*) 'Error ASync start 0: ', cudaGetErrorString(cudaGetLastError())
 	
 	time_all = 0.0                 ! Глобальное время (хранится на девайсе)
-	time_step = 1E-9               ! Шаг по времени (хранится на девайсе)
+	time_step = 1.0               ! Шаг по времени (хранится на девайсе)
 	
 	now = 2
 	now2 = now
 	now = mod(now, 2) + 1
 	
-	gl_Vx = dev_gl_Vx;
-	print*, "459 gbhygtfvghg  ", gl_Vx(26)
         
 	print*, "START 452"
 	
-	!  !$cuf kernel do <<<*, *>>>
-    !   do i = 1, 100
-	!	mkj = i
-	!	nrn(1) = i
-	!	nrn(2) = i + 1
-	!	nrn(3) = i + 2
-	!	alla(i) = nrn(1) + nrn(2) + nrn(3) + mkj
-	!end do
-	!
-	!alla2 = alla
-	!print*, alla2
 	
 	! Сначала вычисляем скорости движения поверхностей
-	Num = size(dev_gl_TS)
-	print*, "Num = ", Num
+	tBlock = dim3(32, 8, 1)
 	
-	!call Cuda_Calc_move(now)
 	
+	! Вычисляем движения узлов на каждой поверхности
+	Num = size(gl_TS)
 	dev_now = now
 	call Cuda_Calc_move_TS<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
 	
+	Num = size(gl_Contact)
+	call Cuda_Calc_move_HP<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
+	
+	Num = size(gl_BS)
+	call Cuda_Calc_move_BS<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
+	
+	! Сначала делаем три цикла поверхностного натяжения
+	nx = size(gl_RAY_A(1, 1, :))
+    ny = size(gl_RAY_A(1, :, 1))
+	grid = dim3( ceiling(real(nx)/tBlock%x), &
+		ceiling(real(ny)/tBlock%y), 1)
+	
+	call Cuda_Move_all_1 <<< grid, tBlock>>> (dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
+		write (*,*) 'Error Sinc start 4: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 4: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Vx = dev_gl_Vx;
-	gl_Vy = dev_gl_Vy;
-	gl_Vz = dev_gl_Vz;
 	
-	print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
-	print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
-	print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
-	print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
+	nx = size(gl_RAY_B(1, 1, :))
+    ny = size(gl_RAY_B(1, :, 1))
+	grid = dim3( ceiling(real(nx)/tBlock%x), &
+		ceiling(real(ny)/tBlock%y), 1)
+	
+	call Cuda_Move_all_2 <<< grid, tBlock>>> (dev_now)
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 5: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 5: ', cudaGetErrorString(cudaGetLastError())
+	
+	! Теперь собственно циклы движения точек
+	
+	gl_x2 = dev_gl_x2
+	
+	print*, gl_x2(1, 1), gl_x2(1, 2)
+	print*, gl_x2(13, 1), gl_x2(13, 2)
+	print*, gl_x2(145, 1), gl_x2(145, 2)
+	print*, gl_x2(345, 1), gl_x2(345, 2)
 	return
+	
+	!gl_Vx = dev_gl_Vx;
+	!gl_Vy = dev_gl_Vy;
+	!gl_Vz = dev_gl_Vz;
+	!
+	!print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(1)) ), gl_Vy( gl_all_Gran(1, gl_Contact(1)) ), gl_Vz( gl_all_Gran(1, gl_Contact(1)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(13)) ), gl_Vy( gl_all_Gran(1, gl_Contact(13)) ), gl_Vz( gl_all_Gran(1, gl_Contact(13)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_BS(1)) ), gl_Vy( gl_all_Gran(1, gl_BS(1)) ), gl_Vz( gl_all_Gran(1, gl_BS(1)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_BS(2)) ), gl_Vy( gl_all_Gran(1, gl_BS(2)) ), gl_Vz( gl_all_Gran(1, gl_BS(2)) )
+	!print*, gl_Vx( gl_all_Gran(1, gl_BS(3)) ), gl_Vy( gl_all_Gran(1, gl_BS(3)) ), gl_Vz( gl_all_Gran(1, gl_BS(3)) )
+	!return
 	
 	! call Cuda_Move_all(now) 
 	
