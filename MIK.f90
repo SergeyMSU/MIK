@@ -4194,7 +4194,7 @@
     !call Print_all_surface("T")
 	
     !call Print_par_2D()
-    !call Save_setka_bin(31)
+    call Save_setka_bin(31)
     ! Variables
 
     !pause
