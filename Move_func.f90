@@ -1280,30 +1280,30 @@
             c = c/8.0
         else
             if (gl_all_Cell(1, iter) == gl_all_Cell(2, iter)) then
-                if (gl_all_Cell(4, iter) == gl_all_Cell(8, iter)) then
+                if (gl_all_Cell(4, iter) == gl_all_Cell(8, iter)) then  !  ласс €чейки = 4
                     do j = 1,8
-                        if (j == 2 .or. j == 5 .or. j == 6 .or. j == 8) CYCLE
+                        ! if (j == 2 .or. j == 5 .or. j == 6 .or. j == 8) CYCLE
                         i = gl_all_Cell(j, iter)
                         c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                     end do
-                    c = c/4.0
+                    c = c/8.0  ! 4
                 else
                     do j = 1,8
-                        if (j == 2 .or. j == 5 .or. j == 6) CYCLE
+                        ! if (j == 2 .or. j == 5 .or. j == 6) CYCLE
                         i = gl_all_Cell(j, iter)
                         c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                     end do
-                    c = c/5.0
+                    c = c/8.0
                 end if
             else
                 if (gl_all_Cell(2, iter) == gl_all_Cell(6, iter)) then
-                    if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then
+                    if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then !  ласс €чейки = 1
                         do j = 1,8   ! ќсоба€ €чейка типа 4
-                            if (j == 4 .or. j == 5 .or. j == 6 .or. j == 8) CYCLE
+                            ! if (j == 4 .or. j == 5 .or. j == 6 .or. j == 8) CYCLE
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
-                        c = c/4.0
+                        c = c/8.0
                     else
                         do j = 1,8         ! ќсоба€ €чейка типа 2
                             ! if (j == 5 .or. j == 6) CYCLE             ! ѕопробовали убрать такой расчЄт центра!
@@ -1315,11 +1315,11 @@
                 else
                     if (gl_all_Cell(4, iter) == gl_all_Cell(5, iter)) then
                         do j = 1,8
-                            if (j == 4 .or. j == 5 .or. j == 8) CYCLE
+                            ! if (j == 4 .or. j == 5 .or. j == 8) CYCLE
                             i = gl_all_Cell(j, iter)
                             c = c + (/gl_x2(i, now), gl_y2(i, now), gl_z2(i, now)/)
                         end do
-                        c = c/5.0
+                        c = c/8.0
                     else            ! ќсоба€ €чейка типа 5
                         do j = 1,8
                             ! if (j == 5 .or. j == 8) CYCLE    ! ѕопробовали убрать такой расчЄт центра!

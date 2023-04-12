@@ -8,7 +8,7 @@
     real(8), parameter :: par_R_character = 35.6505         ! Характерный размер в задаче (расстояние до TS на начальном этапе построения сетки)
     real(8), parameter :: par_koeff_HP = 1.3            ! На сколько умножить характерный размер для получения HP
     real(8), parameter :: par_koeff_BS = 2.0            ! На сколько умножить характерный размер для получения BS
-    real(8), parameter :: par_R0 = 0.256505         ! Характерный размер 1 а.е. (внутренней сферы) Там находится вторая точка на лучах от цетра (первая находится в нуле)
+    real(8), parameter :: par_R0 = 0.197035         ! Характерный размер 1 а.е. (внутренней сферы) Там находится вторая точка на лучах от цетра (первая находится в нуле)
     ! параметр нужен для геометрической точности сетки eps = par_R_character/10000
     real(8), parameter :: par_R_END = 300.0         ! 
     real(8), parameter :: par_R_LEFT = -390.0         ! 
@@ -23,14 +23,19 @@
 	real(8), parameter :: par_nat_HP = 0.0002                ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = 0.0002                ! Коэффициент натяжения внешней ударной волны 0.0001
     
-    real(8), parameter :: par_a_2 = 0.130724_8        ! Параметр в сечении перезарядки
-    real(8), parameter :: par_n_p_LISM = 3.0_8         ! в перезарядке
+    real(8), parameter :: par_a_2 = 0.130738_8        ! Параметр в сечении перезарядки
+    real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_Kn = 41.0358   !0.4326569808         ! в перезарядке
+    real(8), parameter :: par_Kn = 49.9018   !0.4326569808         ! в перезарядке
     
     real(8), parameter :: par_chi_real = 1.0_8      ! С каким хи считаем реально
-    real(8), parameter :: par_chi = 40.1984_8      ! С каким хи надо было бы считать
-    real(8), parameter :: par_Velosity_inf = -2.54494_8
+    real(8), parameter :: par_chi = 41.6479_8      ! С каким хи надо было бы считать
+    real(8), parameter :: par_Velosity_inf = -2.54279_8
+	real(8), parameter :: par_Mach_alf = 12.8816_8
+	real(8), parameter :: par_Mach_0 = 6.44_8
+	real(8), parameter :: par_B_inf = 13.9666_8
+	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
+	real(8), parameter :: par_k_Br = 0.00197035_8
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри
     
@@ -130,7 +135,7 @@
     
     real(8), allocatable :: gl_Gran_normal(:,:)       ! (3, :) Нормаль грани   4444444444444444
     real(8), allocatable :: gl_Gran_square(:)         ! (:) Площадь грани
-    real(8), allocatable :: gl_Gran_POTOK(:,:)       ! (9, :) поток грани
+    real(8), allocatable :: gl_Gran_POTOK(:,:)       ! (10, :) поток грани    последний - дивергенция магнитного поля для очистки
     real(8), allocatable :: gl_Gran_POTOK_MF(:,:,:)       ! (5, 4, :) поток грани мультифлюидных жидкостей
     real(8), allocatable :: gl_Gran_center(:,:)       ! (3, :) 
     integer(4), allocatable :: gl_Gran_info(:)         ! (:) классификатор грани (см. схему)
@@ -222,7 +227,7 @@
     allocate(gl_Gran_normal(3, n1))
     allocate(gl_Gran_square(n1))
     allocate(gl_Gran_info(n1))
-    allocate(gl_Gran_POTOK(9, n1))
+    allocate(gl_Gran_POTOK(10, n1))
     allocate(gl_Gran_POTOK_MF(5, 4, n1))
     allocate(gl_Gran_center(3, n1))
     
