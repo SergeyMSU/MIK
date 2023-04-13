@@ -106,6 +106,9 @@
     r_2 = sqrt(x * x + y * y + z * z);
     the_2 = acos(z / r_2);
     phi_2 = polar_angle(x, y);
+	
+	!print*, r_2, the_2, phi_2, Vr, Vphi, Vtheta
+	!print*, sin(the_2), cos(phi_2), cos(the_2), sin(phi_2)
 
     Vx = Vr * sin(the_2) * cos(phi_2) + Vtheta * cos(the_2) * cos(phi_2) - Vphi * sin(phi_2);
     Vy = Vr * sin(the_2) * sin(phi_2) + Vtheta * cos(the_2) * sin(phi_2) + Vphi * cos(phi_2);
@@ -1358,20 +1361,34 @@
     c = gl_Cell_center(:, ncell)
 	r = norm2(c)
 	
+	
 	cc = MATMUL(Matr2, c)
 	
-	!print*, c
+	!cc(1) = 1.0
+	!cc(2) = -1.0
+	!cc(3) = 1.0
+	!r = norm2(cc)
+	
+	!print*, acos(1.0), acos(0.5), acos(0.0), acos(-1.0)
 	!print*, cc
 	!Pause
 	
-	BE = sqrt(cpi4)/(par_Mach_alf * r)
-	BR = sqrt(cpi4)/(par_Mach_alf * r * r) * par_k_Br
+	BE = sqrt(cpi4 * par_kk)/(par_Mach_alf * r)
+	BR = 0.0_8 ! par_kk * sqrt(cpi4)/(par_Mach_alf * r * r) * par_k_Br
 	the = acos(cc(3)/r)
 	
-	call dekard_skorost(cc(1), cc(2), cc(3), BR, BE * sin(the), 0.0_8, V1, V2, V3)
+	!print*, "Be = ", BE, sin(the), the
+	
+	call dekard_skorost(cc(3), cc(1), cc(2), BR, BE * sin(the), 0.0_8, V3, V1, V2)
+	
+	
 	vv(1) = V1
 	vv(2) = V2
 	vv(3) = V3
+	
+	! print*, vv
+	!PAUSE
+	
 	cc = MATMUL(Matr, vv)
 	
     ro = par_kk/(par_chi**2 * r**2)
@@ -1537,6 +1554,7 @@
 		gl_Gran_square(iter) = S
 		
 		! Альтернативное вычисление площади грани:
+		if (.False.) then
 		S = 0.0
 		ger1 = norm2(p(:,1) - p(:,2))
 		ger2 = norm2(p(:,3) - p(:,2))
@@ -1553,9 +1571,10 @@
 		
 		if((S - gl_Gran_square(iter))/S * 100 > 1E-3) then
 		    print*, "1516 GGFGYTFYG  ",  S, gl_Gran_square(iter), (S - gl_Gran_square(iter))/S * 100
-		    PAUSE
+			print*, gr_center
+		    ! PAUSE
 		end if
-		
+		end if
 		
 		if (grc == 4) then
 			m(:, 1) = (p(:, 1) + p(:, 2))/2.0
@@ -3499,7 +3518,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 20000 * 4   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 20000 * 2   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
@@ -4935,7 +4954,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(32)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(33)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -5011,7 +5030,7 @@
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    call Save_setka_bin(32)
+    call Save_setka_bin(34)
     ! Variables
     call Print_Contact_3D()
 	

@@ -969,6 +969,12 @@
             proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
 			KORD(1) = 0.0_8; KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
             R_HP = norm2(KORD + proect * ER )  ! Новое расстояние до HP
+			
+			! Блокируем схлопывание контакта к оси
+			if(R_HP < 27.0_8) then
+				R_HP = 27.0_8
+			end if
+			
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
             x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
