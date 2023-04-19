@@ -3560,6 +3560,11 @@
         call Move_all(now, TT)   
         
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
+		
+	!	print*, gl_Cell_Volume2(1, now2)
+	!print*, gl_Cell_Volume2(10, now2)
+	!print*, gl_Cell_Volume2(100, now2)
+	!pause
         
         ngran = size(gl_all_Gran_inner(:))
         ncell = size(gl_all_Cell_inner(:))

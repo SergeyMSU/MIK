@@ -64,6 +64,7 @@ module MY_CUDA
      real(8), device, allocatable :: dev_gl_x2(:, :)   ! (:, 2) набор x-координат узлов сетки     !MOVE
      real(8), device, allocatable :: dev_gl_y2(:, :)   ! (:, 2) набор y-координат узлов сетки     !MOVE
      real(8), device, allocatable :: dev_gl_z2(:, :)   ! (:, 2) набор z-координат узлов сетки     !MOVE
+	 integer(4), device, allocatable :: dev_gl_all_Cell(:,:)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
 	 real(8), device, allocatable :: dev_gl_Cell_Volume2(:, :)           ! (всего ячеек, 2) Набор объёмов ячеек   !MOVE
      real(8), device, allocatable :: dev_gl_Cell_center2(:, :, :)             ! (3, :) Центр каждой ячейки  4444444444444444  !MOVE
 	 real(8), device, allocatable :: dev_gl_Gran_normal2(:, :, :)       ! (3, :, 2) Нормаль грани                       !MOVE
@@ -226,6 +227,7 @@ module MY_CUDA
 		 allocate(dev_gl_x2(Npoint, 2))
 		 allocate(dev_gl_y2(Npoint, 2))
 		 allocate(dev_gl_z2(Npoint, 2))
+		 allocate(dev_gl_all_Cell(8, size(gl_all_Cell(1, :))  ))
 		 
 		 allocate(dev_gl_Cell_Volume2(Ncell, 2))
 		 allocate(dev_gl_Cell_center2(3, Ncell, 2))
@@ -265,6 +267,7 @@ module MY_CUDA
         dev_gl_y2(:, 2) = dev_gl_y
         dev_gl_z2(:, 1) = dev_gl_z
         dev_gl_z2(:, 2) = dev_gl_z
+		dev_gl_all_Cell = gl_all_Cell
         dev_gl_Cell_Volume2(:, 1) = dev_gl_Cell_Volume
         dev_gl_Cell_Volume2(:, 2) = dev_gl_Cell_Volume
         dev_gl_Gran_normal2(:, :, 1) = dev_gl_Gran_normal
@@ -468,7 +471,7 @@ module MY_CUDA
 	implicit none
     integer :: step, now, now2, step2, i, alla2(100), Num
 	integer(4):: ierrSync, ierrAsync, nx, ny
-	integer(4), device :: dev_now
+	integer(4), device :: dev_now, dev_now2
 	type(dim3) :: grid, tBlock
 	
 	call Set_CUDA()
@@ -498,6 +501,7 @@ module MY_CUDA
 	! Вычисляем движения узлов на каждой поверхности (из задачи о распаде разрыва)
 	Num = size(gl_TS)
 	dev_now = now
+	dev_now2 = now2
 	call Cuda_Calc_move_TS<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
 	
@@ -505,20 +509,14 @@ module MY_CUDA
 	call Cuda_Calc_move_HP<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Vx = dev_gl_Vx
-	print*, " 0DO == ", gl_Vx(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1))
 	
 	Num = size(gl_BS)
 	call Cuda_Calc_move_BS<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Vx = dev_gl_Vx
-	print*, " 0DO == ", gl_Vx(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1))
 	
 	! Делаем три цикла поверхностного натяжения (по разным лучам, как на хосте) -------------------------------------------------------------------------
 	
-	gl_Vx = dev_gl_Vx
-	print*, " 1DO == ", gl_Vx(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1))
 	
 	nx = size(gl_RAY_A(1, 1, :))
     ny = size(gl_RAY_A(1, :, 1))
@@ -530,8 +528,6 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 4: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 4: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Vx = dev_gl_Vx
-	print*, " 2DO == ", gl_Vx(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1))
 	
 	nx = size(gl_RAY_B(1, 1, :))
     ny = size(gl_RAY_B(1, :, 1))
@@ -555,9 +551,6 @@ module MY_CUDA
 	
 	! Теперь собственно циклы движения точек ---------------------------------------------------------------------------------------------------------
 	
-	gl_y2 = dev_gl_y2
-	print*, " DO == ", gl_y2(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1), now2)
-	
 	nx = size(gl_RAY_A(1, 1, :))
     ny = size(gl_RAY_A(1, :, 1))
 	grid = dim3( ceiling(real(nx)/tBlock%x), &
@@ -567,9 +560,6 @@ module MY_CUDA
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 7: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 7: ', cudaGetErrorString(cudaGetLastError())
-	
-	gl_y2 = dev_gl_y2
-	print*, " POSLE == ", gl_y2(gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), 1), now2)
 	
 	
 	nx = size(gl_RAY_B(1, 1, :))
@@ -635,7 +625,23 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 13: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 13: ', cudaGetErrorString(cudaGetLastError())
 	
+	! Теперь посчитаем новые объёмы и площади граней  ---------------------------------------------------------------------------------------------------------
 	
+	Num = size(gl_all_Gran(1,:))
+	call Cuda_calc_all_Gran_move_1 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по граням
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+	
+	Num = size(gl_all_Cell(1,:))
+	call Cuda_calc_all_Gran_move_2 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по ячейкам
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+	
+	gl_Gran_normal2 = dev_gl_Gran_normal2
+	gl_Gran_square2 = dev_gl_Gran_square2
+	gl_Cell_Volume2 = dev_gl_Cell_Volume2
 	gl_x2 = dev_gl_x2
 	gl_y2 = dev_gl_y2
 	gl_z2 = dev_gl_z2
@@ -643,40 +649,10 @@ module MY_CUDA
 	gl_Vy = dev_gl_Vy
 	gl_Vz = dev_gl_Vz
 	
-	print*, gl_x2(gl_RAY_A(10, 1, 1), now2)
-	print*, gl_y2(gl_RAY_A(14, 4, 4), now2)
-	print*, gl_z2(gl_RAY_A(18, 8, 5), now2)
-	print*, "---------------------------------------------------"
+	print*, gl_Cell_Volume2(1, now2)
+	print*, gl_Cell_Volume2(10, now2)
+	print*, gl_Cell_Volume2(100, now2)
 	
-	print*, gl_x2(gl_RAY_B(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_B(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_B(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
-	
-	print*, gl_x2(gl_RAY_C(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_C(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_C(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
-	
-	print*, gl_x2(gl_RAY_O(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_O(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_O(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
-	
-	print*, gl_x2(gl_RAY_K(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_K(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_K(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
-	
-	print*, gl_x2(gl_RAY_D(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_D(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_D(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
-	
-	print*, gl_x2(gl_RAY_E(3, 1, 1), now2)
-	print*, gl_y2(gl_RAY_E(6, 4, 4), now2)
-	print*, gl_z2(gl_RAY_E(5, 6, 5), now2)
-	print*, "---------------------------------------------------"
 	
 	return
 	

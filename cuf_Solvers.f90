@@ -531,8 +531,6 @@
             vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
 		end if
 	
-	if(j == size(gl_RAY_A(1, :, 1)) .and. k == 1) write(*, *) "B546 ", vel(1), vel(2), vel(3), &
-				gl_Point_num(yzel), gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
             
         ! Обнулим для следующего успользования
         gl_Point_num(yzel) = 0
@@ -546,7 +544,6 @@
 		ER2  = KORD + ER2
         R_BS = norm2(ER2)  ! Новое расстояние до BS
 		
-		if(j == size(gl_RAY_A(1, :, 1)) .and. k == 1) write(*, *) "A546 ", R_BS, the, phi
             
         ! Далее обычный цикл нахождения координат точек, такой же, как и при построении сетки
         do i = 1, N1
@@ -662,8 +659,6 @@
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
 			end if
 
-			!if(k == 1 .and. j == 1) write(*,*) "0 - ", gl_Point_num(yzel), vel(1), vel(2), vel(3)
-			!if(k == 1 .and. j == 1) write(*,*) "00 - ", the, phi, par_triple_point, par_pi_8, N2
             
             ! Обнулим для следующего успользования
             gl_Point_num(yzel) = 0
@@ -676,7 +671,6 @@
 			ER2 = KORD + proect * ER
             R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
-			!if(k == 1 .and. j == 1) write(*,*) "1 - ", KORD(1), ER(1), ER(2), ER(3), proect, R_TS, R_HP
                 
             do i = 1, N1
 
@@ -692,7 +686,6 @@
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 				end if
 				
-				!if(k == 1 .and. j == 1 .and. i == 3) write(*,*) "2 - ", r
 
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = r * cos(the)
@@ -768,7 +761,6 @@
 				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
                 R_BS = norm2(ER)  ! Новое расстояние до BS
 				
-				!if(k == 1 .and. j == 1) write(*,*) "AS - ", R_BS, ER(1), ER(2), ER(3), phi, "|||", x, y, z, rr, "|||", now2, yzel
             
             do i = 1, N1
                 
@@ -1165,6 +1157,188 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
+	
+	attributes(global) subroutine Cuda_calc_all_Gran_move_1(now)   
+	! Движение точек на E - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	integer :: Ngran, iter
+    real(8) :: p(3, 4), Vol, D
+    real(8) :: a(3), b(3), c(3), S
+    real(8) :: dist, di, gr_center(3)
+    integer :: i, j, k, ll, grc, ii, now2
+
+    !print*, "calc_all_Gran_move"
+    now2 = mod(now, 2) + 1 
+    ! Цикл по граням - считаем площадь грани, её нормаль
+    Ngran = size(gl_all_Gran(1,:))
+	
+	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	if(iter > Ngran) return
+	
+	grc = 0
+    p = 0.0
+    a = 0.0
+    b = 0.0
+    c = 0.0
+    gr_center = 0.0
+
+
+    do j = 1, 4
+        i = gl_all_Gran(j, iter)
+		p(1,j) = gl_x2(i, now); p(2,j) = gl_y2(i, now); p(3,j) = gl_z2(i, now)
+    end do
+    a = p(:,3) - p(:,1)
+    b = p(:,4) - p(:,2)
+
+    ! Нужно сохранить центр грани
+    gr_center = p(:, 1)
+    grc = 1
+    if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
+        grc = grc + 1
+        gr_center = gr_center + p(:,2)
+    end if
+
+    if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
+        grc = grc + 1
+        gr_center = gr_center + p(:,3)
+    end if
+
+    if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) &
+        .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
+        grc = grc + 1
+        gr_center = gr_center + p(:,4)
+    end if
+
+    gr_center = gr_center/grc
+
+    gl_Gran_center2(:, iter, now) = gr_center
+
+    c(1) = a(2) * b(3) - a(3) * b(2)
+    c(2) = a(3) * b(1) - a(1) * b(3)
+    c(3) = a(1) * b(2) - a(2) * b(1)
+
+    S = norm2(c)  ! S = S/2
+    c = c/S
+    S = S/2.0
+
+
+    ! Нужно записать площадь грани и нормаль в общий массив!
+    gl_Gran_normal2(:, iter, now) = c
+    gl_Gran_square2(iter, now) = S
+	
+	end subroutine Cuda_calc_all_Gran_move_1
+	
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_calc_all_Gran_move_2(now)   
+	! Движение точек на E - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+		gl_Cell_gran => dev_gl_Cell_gran
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	integer :: Ngran, iter
+    real(8) :: p(3, 4), Vol, D
+    real(8) :: a(3), b(3), c(3), S
+    real(8) :: dist, di, gr_center(3)
+    integer :: i, j, k, ll, grc, ii, now2
+
+    !print*, "calc_all_Gran_move"
+    now2 = mod(now, 2) + 1 
+	
+    Ngran = size(gl_all_Cell(1,:))
+	
+	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	if(iter > Ngran) return
+	
+	Vol = 0.0
+        ll = 0
+        dist = 10000.0 * par_R_character
+        c = 0.0
+		
+		do j = 1, 8
+                i = gl_all_Cell(j, iter)
+				c(1) = c(1) + gl_x2(i, now)
+				c(2) = c(2) + gl_y2(i, now)
+				c(3) = c(3) + gl_z2(i, now)
+        end do
+        c = c/8.0
+
+        gl_Cell_center2(:, iter, now) = c
+
+
+        ! Вычислили центр ячейки теперь считаем объём пирамиды на каждую грань
+        do j = 1, 6
+            i = gl_Cell_gran(j, iter)   ! Берём по очереди все грани ячейки
+
+            if (i == 0) CYCLE
+            k = gl_all_Gran(1, i)  ! Номер первого узла грани
+			b(1) = gl_x2(k, now)
+			b(2) = gl_y2(k, now)
+			b(3) = gl_z2(k, now)
+            a = gl_Gran_normal2(:,i, now)
+            di = dabs(DOT_PRODUCT(c,a) - DOT_PRODUCT(a,b))  ! Расстояние от точки до плоскости
+            Vol = Vol + gl_Gran_square2(i, now) * di/3.0
+            dist = MIN(dist, di)
+            ll = ll + 1
+        end do
+
+
+
+        gl_Cell_Volume2(iter, now) = Vol
+        gl_Cell_dist(iter) = dist
+	
+	
+	end subroutine Cuda_calc_all_Gran_move_2
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	attributes(global) subroutine Cuda_Calc_move_TS(now)
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
