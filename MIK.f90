@@ -39,6 +39,29 @@
     implicit none
     real(8), intent(in) :: t1(3), t2(3), t3(3), t4(3)
 	end function
+	
+	!@cuf attributes(host, device) & 
+	    subroutine chlld_Q(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq, null_bn1)
+      ! Q - маяк, показывающий в какой области мы находимся
+      ! n_state = 0-3 - какой метод используем
+      ! al,be,ge - нормаль
+      ! w - скорость грани
+      ! qqq1,qqq2 - переменные с двух сторон
+      ! dsl,dsp,dsc - поверхности разрывов
+      ! qqq - выходные потоки
+		! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
+      implicit real*8 (a-h,o-z)
+      
+      real(8), intent(out) :: dsl, dsp, dsc
+      real(8), intent(in) :: al, be, ge, w
+      integer(4), intent(in) :: n_state
+	  logical, intent(in), optional :: null_bn1
+	  
+      dimension qqq(9),qqq1(9),qqq2(9)
+	  end subroutine
 
     end interface
 
@@ -1374,7 +1397,7 @@
 	!Pause
 	
 	BE = sqrt(cpi4 * par_kk)/(par_Mach_alf * r)
-	BR = 0.0_8 ! par_kk * sqrt(cpi4)/(par_Mach_alf * r * r) * par_k_Br
+	BR = -par_kk * sqrt(cpi4)/(par_Mach_alf * r * r) * par_k_Br
 	the = acos(cc(3)/r)
 	
 	!print*, "Be = ", BE, sin(the), the
@@ -1413,15 +1436,13 @@
     
     
     ! Перенормировка параметров, если это необходимо
-    !ncell = size(gl_all_Cell(1, :))
-    !
-    !do gr = 1, ncell
-    !    qqq = gl_Cell_par(:, gr)
-    !    if(qqq(9)/qqq(1) < 50.0) then
-    !            gl_Cell_par(2:4, gr) = qqq(2:4) * (par_chi/par_chi_real)
-    !            gl_Cell_par(1, gr) = qqq(1) / (par_chi/par_chi_real)**2
-    !    end if
-    !end do
+    ncell = size(gl_all_Cell(1, :))
+    
+    do gr = 1, ncell
+        if( gl_x(gl_all_Cell(1, gr)) > 200.0) then
+                gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+        end if
+    end do
     
     
     ! Задаём граничные условия (параметры в первых ячейках на внутренней сфере)
@@ -1572,23 +1593,23 @@
 		if((S - gl_Gran_square(iter))/S * 100 > 1E-3) then
 		    print*, "1516 GGFGYTFYG  ",  S, gl_Gran_square(iter), (S - gl_Gran_square(iter))/S * 100
 			print*, gr_center
-		    ! PAUSE
+		    PAUSE
 		end if
 		end if
 		
-		if (grc == 4) then
-			m(:, 1) = (p(:, 1) + p(:, 2))/2.0
-			m(:, 2) = (p(:, 2) + p(:, 3))/2.0
-			m(:, 3) = (p(:, 3) + p(:, 4))/2.0
-			m(:, 4) = (p(:, 4) + p(:, 1))/2.0
-			a = m(:,3) - m(:,1)
-            b = m(:,4) - m(:,2)
-			c(1) = a(2) * b(3) - a(3) * b(2)
-            c(2) = a(3) * b(1) - a(1) * b(3)
-            c(3) = a(1) * b(2) - a(2) * b(1)
-			S = norm2(c)  ! S = S/2
-            c = c/S
-		end if
+		!if (grc == 4) then
+		!	m(:, 1) = (p(:, 1) + p(:, 2))/2.0
+		!	m(:, 2) = (p(:, 2) + p(:, 3))/2.0
+		!	m(:, 3) = (p(:, 3) + p(:, 4))/2.0
+		!	m(:, 4) = (p(:, 4) + p(:, 1))/2.0
+		!	a = m(:,3) - m(:,1)
+  !          b = m(:,4) - m(:,2)
+		!	c(1) = a(2) * b(3) - a(3) * b(2)
+  !          c(2) = a(3) * b(1) - a(1) * b(3)
+  !          c(3) = a(1) * b(2) - a(2) * b(1)
+		!	S = norm2(c)  ! S = S/2
+  !          c = c/S
+		!end if
 		
 		gl_Gran_normal(:, iter) = c
 		
@@ -1957,6 +1978,7 @@
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
+	use My_func
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2053,7 +2075,7 @@
             !print*, POTOK
             !print*, qqq1, qqq2
             call chlld_Q(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
-                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, .False.)
             !print*, POTOK
             !pause
             !
@@ -2126,6 +2148,7 @@
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
+	use My_func
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2461,6 +2484,7 @@
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
+	use My_func
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2756,6 +2780,7 @@
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
+	use My_func
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2808,15 +2833,15 @@
                 qqq1(9) = qqq1(9) * rad1**2 / rad2**2
                 qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
                 ! Скорости сносим в сферической С.К.
-                call spherical_skorost(gl_Cell_center(1, s1), gl_Cell_center(2, s1), gl_Cell_center(3, s1), &
-                    qqq1(2), qqq1(3), qqq1(4), aa, bb, cc)
-                call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
-                    aa, bb, cc, qqq1(2), qqq1(3), qqq1(4))
+                call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+                    qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+                call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                    aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
 
-                call spherical_skorost(gl_Cell_center(1, s1), gl_Cell_center(2, s1), gl_Cell_center(3, s1), &
-                    fluid1(2, 1), fluid1(3, 1), fluid1(4, 1), aa, bb, cc)
-                call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
-                    aa, bb, cc, fluid1(2, 1), fluid1(3, 1), fluid1(4, 1))
+                call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+                    fluid1(4, 1), fluid1(2, 1), fluid1(3, 1), aa, bb, cc)
+                call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                    aa, bb, cc, fluid1(4, 1), fluid1(2, 1), fluid1(3, 1))
             end if
 
             if (s2 >= 1) then
@@ -2832,15 +2857,15 @@
                     qqq2(1) = qqq2(1) * rad1**2 / rad2**2
                     qqq2(9) = qqq2(9) * rad1**2 / rad2**2
                     qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-                    call spherical_skorost(gl_Cell_center(1, s2), gl_Cell_center(2, s2), gl_Cell_center(3, s2), &
-                        qqq2(2), qqq2(3), qqq2(4), aa, bb, cc)
-                    call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
-                        aa, bb, cc, qqq2(2), qqq2(3), qqq2(4))
+                    call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+                        qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+                    call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                        aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
 
-                    call spherical_skorost(gl_Cell_center(1, s2), gl_Cell_center(2, s2), gl_Cell_center(3, s2), &
-                        fluid2(2, 1), fluid2(3, 1), fluid2(4, 1), aa, bb, cc)
-                    call dekard_skorost(gl_Gran_center(1, gr), gl_Gran_center(2, gr), gl_Gran_center(3, gr), &
-                        aa, bb, cc, fluid2(2, 1), fluid2(3, 1), fluid2(4, 1))
+                    call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+                        fluid2(4, 1), fluid2(2, 1), fluid2(3, 1), aa, bb, cc)
+                    call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                        aa, bb, cc, fluid2(4, 1), fluid2(2, 1), fluid2(3, 1))
                 end if
 
             else  ! В случае граничных ячеек - граничные условия
@@ -2877,7 +2902,7 @@
             end if
 
 
-            call chlld_Q(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+            call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
@@ -3120,7 +3145,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 20000 * 2 * 4   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 20000 * 2 * 4 * 4   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
@@ -3458,7 +3483,7 @@
     use My_func
     implicit none
     integer :: step, now, now2, step2
-    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
+    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
     real(8) :: dist, dsl, dsc, dsp
@@ -3470,7 +3495,7 @@
 
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
-    logical :: l_1
+    logical :: l_1, null_bn
 
 
     ! Сначала подготовим все массивы для правильного движения
@@ -3517,8 +3542,8 @@
 
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
-    time = 0.00000000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
-    do step = 1, 20000 * 2   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    time = 1.0_8 ! 0.0000001               ! Начальная инициализация шага по времени (в данной программе это не нужно, так как шаг вычисляется налету)
+    do step = 1, 30000 * 8   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
@@ -3528,8 +3553,8 @@
         time = 100000.0
         
         ! Вычисляем новые скорости управляющих узлов
-        call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
 		
+        call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT)   
@@ -3545,15 +3570,17 @@
         ngran = size(gl_all_Gran(1, :))
         ncell = size(gl_all_Cell(1, :))
         
-        !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc) &
+        !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn) &
         !$omp & reduction(min:time)
         do gr = 1, ngran
+			metod = 2
             if(gl_Gran_info(gr) == 2) CYCLE
             POTOK = 0.0
             s1 = gl_Gran_neighbour(1, gr)
             s2 = gl_Gran_neighbour(2, gr)
             qqq1 = gl_Cell_par(:, s1)
             fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
+			null_bn = .False.
 
             ! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -3636,9 +3663,13 @@
             
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
+			
+			if(gl_Gran_type(gr) == 1) metod = 3
+			
+			if(gl_Gran_type(gr) == 2) null_bn = .True.
             
-            call chlld_Q(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+            call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 			
@@ -3846,7 +3877,7 @@
         
         call Start_MGD_3_inner(3)
 		
-		if (mod(step, 1000) == 0) then
+		if (mod(step, 10000) == 0 .or. step == 1000 .or. step == 3000) then
 		    call Print_surface_2D()
             call Print_Setka_2D()
             call Print_par_2D()
@@ -4312,7 +4343,7 @@
 
     open(1, file = 'print_par_2D.txt')
     write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
-    write(1,*) "'bx', 'by', 'bz', 'Volume', 'Mach', 'Q',"
+    write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q',"
     write(1,*) "'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
     write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
     write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
@@ -4326,7 +4357,7 @@
             c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
             m = gl_Cell_A(i, j, kk)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*) c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -4336,7 +4367,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -4346,7 +4377,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -4360,7 +4391,7 @@
             m = gl_Cell_A(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -4370,7 +4401,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -4380,7 +4411,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -4945,7 +4976,6 @@
 	
 	print*, "START PROGRAM"
 	
-	!pause
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
@@ -4954,7 +4984,8 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(33)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(46)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
     call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -4968,6 +4999,8 @@
     call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
     !call Print_Cell(1, 2, 1, "C")
     !call Print_all_Cell()
+    call Print_par_2D()
+	call Print_surface_2D()
     call Print_Setka_2D()
     !call Print_cell_and_neighbour(1,2,1)
     !call Print_gran()
@@ -4984,6 +5017,7 @@
     call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
 
 
+
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
     !gl_Cell_par_MF(1, 1, :) =  gl_Cell_par_MF(1, 1, :) * (par_chi/par_chi_real)**2
@@ -4996,7 +5030,7 @@
 	
     call Start_MGD_move()
 	
-	! call CUDA_START_GD_move()
+	!call CUDA_START_GD_move()
 	
 	!call CUDA_START_GD_3()
     
@@ -5030,7 +5064,7 @@
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    call Save_setka_bin(34)
+    !call Save_setka_bin(47)
     ! Variables
     call Print_Contact_3D()
 	

@@ -7,7 +7,7 @@
 !******7**10**********************************************************70
 
 	
-	attributes(global) subroutine Cuda_Move_all_1(now)
+	attributes(global) subroutine Cuda_Move_all_1(now)  ! Поверхностное натяжение на А - лучах
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -193,7 +193,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-	attributes(global) subroutine Cuda_Move_all_2(now)
+	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на B лучах
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -326,377 +326,309 @@
 	
 	end subroutine Cuda_Move_all_2
 	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
-	
-	
-	
-	subroutine Cuda_Move_all(now)
+	attributes(global) subroutine Cuda_Move_all_3(now)   ! Поверхностное натяжение на B лучах
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
 	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+	integer, intent(in) :: now
+	
+	real(8) :: Time
+    real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+    integer :: i, j, k
+	
+	integer(4):: N2, N3
+	integer(4) :: yzel, yzel2
+	
+	
+	N3 = size(gl_RAY_K(1, 1, :))
+    N2 = size(gl_RAY_K(1, :, 1))
+	  
+	Time = time_step
+	
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	if (k /= 1 .and. j == 1) then
+            return
+	end if
+			
+	yzel = gl_RAY_K(par_n_TS, j, k)
+	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+	
+	
+			
+	if (j < N2) then
+		yzel2 = gl_RAY_K(par_n_TS, j + 1, k)
+	else
+		yzel2 = gl_RAY_B(par_n_TS, size(gl_RAY_B(par_n_TS, :, k)), k)
+	end if
+	Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+	
+			
+	if (k > 1) then
+		yzel2 = gl_RAY_K(par_n_TS, j, k - 1)
+	else
+		yzel2 = gl_RAY_K(par_n_TS, j, N3)
+	end if
+	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			
+	if (j > 1) then
+		yzel2 = gl_RAY_K(par_n_TS, j - 1, k)
+	else
+		yzel2 = gl_RAY_K(par_n_TS, j, k + ceiling(1.0 * N3/2))
+	end if
+	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			
+	if(k < N3) then
+		yzel2 = gl_RAY_K(par_n_TS, j, k + 1)
+	else
+		yzel2 = gl_RAY_K(par_n_TS, j, 1)
+	end if
+	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			
+	if (gl_Point_num(yzel) > 0) then
+		vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+	else
+		vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+	end if
+		
+			
+	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+	gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+		
+	
+	end subroutine Cuda_Move_all_3
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_A(now)   
+	! Движение точек на А - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+	use GEO_PARAM
+	use cudafor
+	
 	implicit none
     integer, intent(in) :: now
 	
 	real(8), device :: Time
-    real(8), device :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), KORD(3), ER2(3)
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
-    integer:: i, j, k, yzel2
-    real(8), device :: the, phi, r, x, y, z, rr, xx, x2, y2, z2
+    integer:: i, j, k
+    real(8), device :: the, phi, r
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
-	integer(4):: ierrSync, ierrAsync, a1, a2, a3, N1, N2, N3
+	integer(4):: N1, N2, N3
 	integer(4) :: yzel
-	
-	print*, "START A "
 	
     now2 = mod(now, 2) + 1  
 	Time = time_step
 	
-	print*, "START B "
-	! Поверхностное натяжение ------------------------------------------------------------------------------
-	
 	N3 = size(gl_RAY_A(1, 1, :))
     N2 = size(gl_RAY_A(1, :, 1))
-    N1 = size(gl_RAY_A(:, 1, 1))
+	N1 = size(gl_RAY_A(:, 1, 1))
+	  
 	
-	print*, "START C "
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
 	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
+	if(k > N3 .or. j > N2) return
 	
-	print*, "START D "
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A1 ", a1, a2, a3, par_n_TS
+	if (k /= 1 .and. j == 1) then
+                    return
+            end if
+            
+        ! Вычисляем координаты текущего луча в пространстве
+        the = (j - 1) * par_pi_8/2.0/(N2 - 1)
+        phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            
+        ! TS
+        yzel = gl_RAY_A(par_n_TS, j, k)
+        if(gl_Point_num(yzel) == 0) then
+            vel = 0.0
+        else
+            ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
+            vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
+        end if
+            
+        ! Обнулим для следующего использования
+        gl_Point_num(yzel) = 0
+        gl_Vx(yzel) = 0.0
+        gl_Vy(yzel) = 0.0
+        gl_Vz(yzel) = 0.0
+            
+		ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
+		proect = DOT_PRODUCT(vel * Time, ER)
+        ! proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
+        KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+		ER2 = proect * ER
+		ER2  = KORD + ER2
+		R_TS = norm2(ER2)  ! Новое расстояние до TS
+            
+        ! HP
+        yzel = gl_RAY_A(par_n_HP, j, k)
+        if(gl_Point_num(yzel) == 0) then
+            vel = 0.0
+        else
+            ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
+            vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
+        end if
+            
+        ! Обнулим для следующего успользования
+        gl_Point_num(yzel) = 0
+        gl_Vx(yzel) = 0.0
+        gl_Vy(yzel) = 0.0
+        gl_Vz(yzel) = 0.0
+            
+        proect = DOT_PRODUCT(vel * Time, ER)
+		KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+		ER2 = proect * ER
+		ER2  = KORD + ER2
+        R_HP = norm2(ER2)  ! Новое расстояние до HP
+            
+        ! BS
+        yzel = gl_RAY_A(par_n_BS, j, k)
+        if(gl_Point_num(yzel) == 0) then
+            vel = 0.0
+        else
+            ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
+			vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
+            vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
+		end if
 	
-	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-	
-	N3 = size(gl_RAY_K(1, 1, :))
-    N2 = size(gl_RAY_K(1, :, 1))
-    N1 = size(gl_RAY_K(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A3 ", a1, a2, a3
-    ! Цикл движения точек на лучах K  
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-			
-			if (k /= 1 .and. j == 1) then
-                    CYCLE
-			end if
-			
-			yzel = gl_RAY_K(par_n_TS, j, k)
-			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
-			
-			if (j < N2) then
-			    yzel2 = gl_RAY_K(par_n_TS, j + 1, k)
-			else
-				yzel2 = gl_RAY_B(par_n_TS, size(gl_RAY_B(par_n_TS, :, k)), k)
-			end if
-			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			if (k > 1) then
-			    yzel2 = gl_RAY_K(par_n_TS, j, k - 1)
-			else
-			    yzel2 = gl_RAY_K(par_n_TS, j, N3)
-			end if
-			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			if (j > 1) then
-			    yzel2 = gl_RAY_K(par_n_TS, j - 1, k)
-			else
-				yzel2 = gl_RAY_K(par_n_TS, j, k + ceiling(1.0 * N3/2))
-			end if
-			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
-			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			if(k < N3) then
-			    yzel2 = gl_RAY_K(par_n_TS, j, k + 1)
-			else
-				yzel2 = gl_RAY_K(par_n_TS, j, 1)
-			end if
-			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			else
-				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			end if
-			
-			
-			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
-			
-		end do
-	end do
-	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-	
-	N3 = size(gl_RAY_O(1, 1, :))
-    N2 = size(gl_RAY_O(1, :, 1))
-    N1 = size(gl_RAY_O(:, 1, 1))
-
-    ! Цикл движения точек на лучах O  
-	if (.False.) then   ! Можно отключить этот цикл
+	if(j == size(gl_RAY_A(1, :, 1)) .and. k == 1) write(*, *) "B546 ", vel(1), vel(2), vel(3), &
+				gl_Point_num(yzel), gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
+            
+        ! Обнулим для следующего успользования
+        gl_Point_num(yzel) = 0
+        gl_Vx(yzel) = 0.0
+        gl_Vy(yzel) = 0.0
+        gl_Vz(yzel) = 0.0
+            
+        proect = DOT_PRODUCT(vel * Time, ER)
+		KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+		ER2 = proect * ER
+		ER2  = KORD + ER2
+        R_BS = norm2(ER2)  ! Новое расстояние до BS
 		
-		!$cuf kernel do(2) <<<*, *>>>
-        do k = 1, N3
-            do j = 1, N2
-			
-			    ! Контакт
-			    yzel = gl_RAY_O(1, j, k)
-				Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-			    ! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
-			
-			    if (j < N2) then
-			        yzel2 = gl_RAY_O(1, j + 1, k)
-			    else
-				    yzel2 = yzel
-				end if
-				Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-			    ! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			    if (k > 1) then
-			        yzel2 = gl_RAY_O(1, j, k - 1)
-			    else
-			        yzel2 = gl_RAY_O(1, j, N3)
-				end if
-				Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-			    ! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			    if (j > 1) then
-			        yzel2 = gl_RAY_O(1, j - 1, k)
-			    else
-				    CYCLE
-				    !yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
-				end if
-				Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
-			    ! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			    if(k < N3) then
-			        yzel2 = gl_RAY_O(1, j, k + 1)
-			    else
-				    yzel2 = gl_RAY_O(1, j, 1)
-				end if
-				Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-			    ! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			
-			    if (gl_Point_num(yzel) > 0) then
-			        vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			    else
-				    vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-			    end if
-			
-			
-			    gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-			    gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-			    gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
-			
-		    end do
-	    end do
-	end if
-	
-	
-	
-	! Конец поверхностного натяжения --------------------------------------------------------------------------------------------------------------------
-	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-    
-    N3 = size(gl_RAY_A(1, 1, :))
-    N2 = size(gl_RAY_A(1, :, 1))
-    N1 = size(gl_RAY_A(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A4 ", a1, a2, a3
-	
-    ! Цикл движения точек на лучах А  ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
+		if(j == size(gl_RAY_A(1, :, 1)) .and. k == 1) write(*, *) "A546 ", R_BS, the, phi
             
-            if (k /= 1 .and. j == 1) then
-                    CYCLE
-            end if
-            
-            ! Вычисляем координаты текущего луча в пространстве
-            the = (j - 1) * par_pi_8/2.0/(N2 - 1)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
-            
-            ! TS
-            yzel = gl_RAY_A(par_n_TS, j, k)
-            if(gl_Point_num(yzel) == 0) then
-                vel = 0.0
-            else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
-				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
-                vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
-            end if
-            
-            ! Обнулим для следующего использования
-            gl_Point_num(yzel) = 0
-            gl_Vx(yzel) = 0.0
-            gl_Vy(yzel) = 0.0
-            gl_Vz(yzel) = 0.0
-            
-			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
-			proect = DOT_PRODUCT(vel * Time, ER)
-            ! proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
-            KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = proect * ER
-			ER2  = KORD + ER2
-			R_TS = norm2(ER2)  ! Новое расстояние до TS
-            
-            ! HP
-            yzel = gl_RAY_A(par_n_HP, j, k)
-            if(gl_Point_num(yzel) == 0) then
-                vel = 0.0
-            else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
-				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
-                vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
-            end if
-            
-            ! Обнулим для следующего успользования
-            gl_Point_num(yzel) = 0
-            gl_Vx(yzel) = 0.0
-            gl_Vy(yzel) = 0.0
-            gl_Vz(yzel) = 0.0
-            
-            proect = DOT_PRODUCT(vel * Time, ER)
-			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = proect * ER
-			ER2  = KORD + ER2
-            R_HP = norm2(ER2)  ! Новое расстояние до HP
-            
-            ! BS
-            yzel = gl_RAY_A(par_n_BS, j, k)
-            if(gl_Point_num(yzel) == 0) then
-                vel = 0.0
-            else
-                ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
-				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
-                vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
-            end if
-            
-            ! Обнулим для следующего успользования
-            gl_Point_num(yzel) = 0
-            gl_Vx(yzel) = 0.0
-            gl_Vy(yzel) = 0.0
-            gl_Vz(yzel) = 0.0
-            
-            proect = DOT_PRODUCT(vel * Time, ER)
-			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = proect * ER
-			ER2  = KORD + ER2
-            R_BS = norm2(ER2)  ! Новое расстояние до BS
-            
-            ! Далее обычный цикл нахождения координат точек, такой же, как и при построении сетки
-            do i = 1, N1
+        ! Далее обычный цикл нахождения координат точек, такой же, как и при построении сетки
+        do i = 1, N1
                 
-                if (i == 1) then
-                    CYCLE
-                end if
+            if (i == 1) then
+                CYCLE
+            end if
 
-                yzel = gl_RAY_A(i, j, k)
-                ! Вычисляем координаты точки на луче
+            yzel = gl_RAY_A(i, j, k)
+            ! Вычисляем координаты точки на луче
 
-                ! до TS
-                if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
-                    !print *, r
-                    !pause
-                else if (i <= par_n_HP) then  
-                    r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-                else if (i <= par_n_BS) then 
-                    r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
-                else
-                    r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**par_kk2
-                end if
+            ! до TS
+            if (i <= par_n_TS) then  ! До расстояния = R_TS
+                r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
+					
+            else if (i <= par_n_HP) then  
+                r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+            else if (i <= par_n_BS) then 
+                r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+            else
+                r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**par_kk2
+            end if
 
-                ! Записываем новые координаты
-                gl_x2(yzel, now2) = r * cos(the)
-                gl_y2(yzel, now2) = r * sin(the) * cos(phi)
-                gl_z2(yzel, now2) = r * sin(the) * sin(phi)
+            ! Записываем новые координаты
+            gl_x2(yzel, now2) = r * cos(the)
+            gl_y2(yzel, now2) = r * sin(the) * cos(phi)
+            gl_z2(yzel, now2) = r * sin(the) * sin(phi)
                 
-            end do
         end do
-	end do
-    
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
 	
-    N3 = size(gl_RAY_B(1, 1, :))
+	
+	end subroutine Cuda_Move_all_A
+	
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_B(now)   
+	! Движение точек на B - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_B(1, 1, :))
     N2 = size(gl_RAY_B(1, :, 1))
-    N1 = size(gl_RAY_B(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A5 ", a1, a2, a3
-    ! Цикл движения точек на лучах B  ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-            
-            ! Вычисляем координаты текущего луча в пространстве
+	N1 = size(gl_RAY_B(:, 1, 1))
+	  
+	
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
             phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
             
@@ -718,8 +650,7 @@
 			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
             proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = proect * ER
-			ER2  = KORD + ER2
+			ER2 = KORD + proect * ER
             R_TS = norm2(ER2)  ! Новое расстояние до TS
             
             ! HP
@@ -729,7 +660,10 @@
 			else
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
-            end if
+			end if
+
+			!if(k == 1 .and. j == 1) write(*,*) "0 - ", gl_Point_num(yzel), vel(1), vel(2), vel(3)
+			!if(k == 1 .and. j == 1) write(*,*) "00 - ", the, phi, par_triple_point, par_pi_8, N2
             
             ! Обнулим для следующего успользования
             gl_Point_num(yzel) = 0
@@ -739,9 +673,10 @@
             
             proect = DOT_PRODUCT(vel * Time, ER)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = proect * ER
-			ER2  = KORD + ER2
+			ER2 = KORD + proect * ER
             R_HP = norm2(ER2)  ! Новое расстояние до HP
+			
+			!if(k == 1 .and. j == 1) write(*,*) "1 - ", KORD(1), ER(1), ER(2), ER(3), proect, R_TS, R_HP
                 
             do i = 1, N1
 
@@ -755,7 +690,9 @@
                     r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
-                end if
+				end if
+				
+				!if(k == 1 .and. j == 1 .and. i == 3) write(*,*) "2 - ", r
 
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = r * cos(the)
@@ -764,27 +701,60 @@
                 
                
             end do
-        end do
-	end do
 	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-    
-    N3 = size(gl_RAY_C(1, 1, :))
+	
+	end subroutine Cuda_Move_all_B
+	
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_C(now)   
+	! Движение точек на C - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r,  x, y, z, rr
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_C(1, 1, :))
     N2 = size(gl_RAY_C(1, :, 1))
-    N1 = size(gl_RAY_C(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A6 ", a1, a2, a3
-    ! Цикл движения точек на лучах C  ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-            
-            ! Вычисляем координаты текущего луча в пространстве
+	N1 = size(gl_RAY_C(:, 1, 1))
+	  
+	
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	
+	! Вычисляем координаты текущего луча в пространстве
                 phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 
                 ! Вычисляем координаты точки на луче
@@ -797,6 +767,8 @@
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
                 R_BS = norm2(ER)  ! Новое расстояние до BS
+				
+				!if(k == 1 .and. j == 1) write(*,*) "AS - ", R_BS, ER(1), ER(2), ER(3), phi, "|||", x, y, z, rr, "|||", now2, yzel
             
             do i = 1, N1
                 
@@ -816,27 +788,59 @@
                 
 
             end do
-        end do
-	end do
 	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-
-    N3 = size(gl_RAY_O(1, 1, :))
+	
+	
+	end subroutine Cuda_Move_all_C
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_O(now)   
+	! Движение точек на O - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r, x, xx
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_O(1, 1, :))
     N2 = size(gl_RAY_O(1, :, 1))
-    N1 = size(gl_RAY_O(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A7 ", a1, a2, a3
-
-    ! Цикл движения точек на лучах O   ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+	N1 = size(gl_RAY_O(:, 1, 1))
+	  
+	
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
             yzel = gl_RAY_O(1, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
@@ -881,101 +885,162 @@
                 gl_z2(yzel, now2) = r * sin(phi)
                 
             end do
-        end do
-	end do
-    
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
 	
-    N3 = size(gl_RAY_K(1, 1, :))
+	
+	end subroutine Cuda_Move_all_O
+	
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_K(now)   
+	! Движение точек на B - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_K(1, 1, :))
     N2 = size(gl_RAY_K(1, :, 1))
-    N1 = size(gl_RAY_K(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A8 ", a1, a2, a3
+	N1 = size(gl_RAY_K(:, 1, 1))
+	  
 	
-    ! Цикл движения точек на лучах K  ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	if (k /= 1 .and. j == 1) return
+	
+	! Вычисляем координаты текущего луча в пространстве
+    the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
+    phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
             
-             ! Вычисляем координаты текущего луча в пространстве
-            the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
             
-            if (k /= 1 .and. j == 1) CYCLE
+    yzel = gl_RAY_K(par_n_TS, j, k)
+    if(gl_Point_num(yzel) == 0) then
+        vel = 0.0
+	else
+		vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
+        vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
+    end if
             
-            yzel = gl_RAY_K(par_n_TS, j, k)
-            if(gl_Point_num(yzel) == 0) then
-                vel = 0.0
-			else
-				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
-                vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
-            end if
+    ! Обнулим для следующего использования
+    gl_Point_num(yzel) = 0
+    gl_Vx(yzel) = 0.0
+    gl_Vy(yzel) = 0.0
+    gl_Vz(yzel) = 0.0
             
-            ! Обнулим для следующего использования
-            gl_Point_num(yzel) = 0
-            gl_Vx(yzel) = 0.0
-            gl_Vy(yzel) = 0.0
-            gl_Vz(yzel) = 0.0
+	ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
+    proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
+    KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
+	ER2 = proect * ER
+	ER2  = KORD + ER2
+	R_TS = norm2(ER2)  ! Новое расстояние до TS
             
-			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
-            proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
-            KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
-			ER2 = proect * ER
-			ER2  = KORD + ER2
-			R_TS = norm2(ER2)  ! Новое расстояние до TS
-            
-            do i = 1, N1
+    do i = 1, N1
 
-                if (i == 1) CYCLE
+        if (i == 1) CYCLE
                 
-                ! Вычисляем координаты точки на луче
-                yzel = gl_RAY_K(i, j, k)
-                r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+        ! Вычисляем координаты точки на луче
+        yzel = gl_RAY_K(i, j, k)
+        r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
 
 
-                ! Записываем новые координаты
-                gl_x2(yzel, now2) = r * cos(the)
-                gl_y2(yzel, now2) = r * sin(the) * cos(phi)
-                gl_z2(yzel, now2) = r * sin(the) * sin(phi)
+        ! Записываем новые координаты
+        gl_x2(yzel, now2) = r * cos(the)
+        gl_y2(yzel, now2) = r * sin(the) * cos(phi)
+        gl_z2(yzel, now2) = r * sin(the) * sin(phi)
                 
                 
-            end do
-        end do
-	end do
-    
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-    
-     N3 = size(gl_RAY_D(1, 1, :))
+    end do
+	
+	
+	
+	end subroutine Cuda_Move_all_K
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_D(now)   
+	! Движение точек на D - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r, x, y, z, xx
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_D(1, 1, :))
     N2 = size(gl_RAY_D(1, :, 1))
-    N1 = size(gl_RAY_D(:, 1, 1))
-
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A9 ", a1, a2, a3
+	N1 = size(gl_RAY_D(:, 1, 1))
+	  
 	
-    ! Цикл движения точек на лучах D ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-            
-            ! Вычисляем координаты текущего луча в пространстве
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	if (k /= 1 .and. j == 1) return
+	
+	! Вычисляем координаты текущего луча в пространстве
                 phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
                 
             do i = 1, N1
 
                 if (i == 1) CYCLE
 
-                if (k /= 1 .and. j == 1) CYCLE
-
-                
                 ! Вычисляем координаты точки на луче
 
                 if (j < N2) then
@@ -999,55 +1064,87 @@
                 gl_z2(yzel, now2) = r * sin(phi)
                 
             end do
-        end do
-	end do
 	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
-    
-    N3 = size(gl_RAY_E(1, 1, :))
+	
+	end subroutine Cuda_Move_all_D
+	
+	
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	
+	attributes(global) subroutine Cuda_Move_all_E(now)   
+	! Движение точек на E - лучах
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+    integer, intent(in) :: now
+	
+	real(8), device :: Time
+    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+	real(8) :: R_TS, proect, R_HP, R_BS
+    integer:: i, j, k
+    real(8), device :: the, phi, r, x, y, z, x2, y2, z2
+    integer :: now2             ! Эти параметры мы сейчас меняем на основе now
+	
+	integer(4):: N1, N2, N3
+	integer(4) :: yzel
+	
+    now2 = mod(now, 2) + 1  
+	Time = time_step
+	
+	N3 = size(gl_RAY_E(1, 1, :))
     N2 = size(gl_RAY_E(1, :, 1))
-    N1 = size(gl_RAY_E(:, 1, 1))
-    
-	a1 = N1
-	a2 = N2
-	a3 = N3
-	print*, "START A10 ", a1, a2, a3
+	N1 = size(gl_RAY_E(:, 1, 1))
+	  
 	
-    ! Цикл движения точек на лучах E  ************************************************************
-	!$cuf kernel do(2) <<<*, *>>>
-    do k = 1, N3
-        do j = 1, N2
-            do i = 1, N1
+	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+	
+	if(k > N3 .or. j > N2) return
+	
+	do i = 1, N1
 
-                if (i == 1) CYCLE
+        if (i == 1) CYCLE
 
-                if (i == N1) CYCLE
+        if (i == N1) CYCLE
 
-                x = gl_x2(gl_RAY_E(1, j, k), now2)
-                y = gl_y2(gl_RAY_E(1, j, k), now2)
-                z = gl_z2(gl_RAY_E(1, j, k), now2)
+        x = gl_x2(gl_RAY_E(1, j, k), now2)
+        y = gl_y2(gl_RAY_E(1, j, k), now2)
+        z = gl_z2(gl_RAY_E(1, j, k), now2)
 
-                x2 = gl_x2(gl_RAY_O(1, j, k), now2)
-                y2 = gl_y2(gl_RAY_O(1, j, k), now2)
-                z2 = gl_z2(gl_RAY_O(1, j, k), now2)
+        x2 = gl_x2(gl_RAY_O(1, j, k), now2)
+        y2 = gl_y2(gl_RAY_O(1, j, k), now2)
+        z2 = gl_z2(gl_RAY_O(1, j, k), now2)
 
-                yzel = gl_RAY_E(i, j, k)
+        yzel = gl_RAY_E(i, j, k)
 
-                gl_x2(yzel, now2) = x + (x2 - x) * (i - 1)/(N1 - 1)
-                gl_y2(yzel, now2) = y + (y2 - y) * (i - 1)/(N1 - 1)
-                gl_z2(yzel, now2) = z + (z2 - z) * (i - 1)/(N1 - 1)
+        gl_x2(yzel, now2) = x + (x2 - x) * (i - 1)/(N1 - 1)
+        gl_y2(yzel, now2) = y + (y2 - y) * (i - 1)/(N1 - 1)
+        gl_z2(yzel, now2) = z + (z2 - z) * (i - 1)/(N1 - 1)
                 
-            end do
-        end do
-	end do
+    end do
 	
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start: ', cudaGetErrorString(cudaGetLastError())
 	
-	end subroutine Cuda_Move_all
+	end subroutine Cuda_Move_all_E
+	
+	
+	
+	
+	
 	
 	
 	
@@ -1082,7 +1179,7 @@
 	
 	integer i, Num, gr, s1, s2, j, yzel
     real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3)
-    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2, koef1, koef2, koef3
+    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
 	
@@ -1093,9 +1190,6 @@
 	
 	if (i > Num) return
 	
-    koef1 = 0.3
-    koef2 = 0.7
-    koef3 = 0.3
 	metod = 2
 	www = 0.0
 	
@@ -1293,7 +1387,7 @@
 	
 	integer i, Num, gr, s1, s2, j, yzel
     real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3)
-    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2, koef1, koef2, koef3
+    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
 	
@@ -1303,9 +1397,6 @@
 	
 	if (i > Num) return
 	
-    koef1 = 0.3
-    koef2 = 1.0
-    koef3 = 0.3
 	metod = 2
 	www = 0.0
 	
@@ -1505,7 +1596,7 @@
 	
 	integer i, Num, gr, s1, s2, j, yzel
     real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3)
-    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2, koef3
+    real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
 	
@@ -1515,7 +1606,6 @@
 	
 	if (i > Num) return
 	
-    koef3 = 0.3
 	metod = 2
 	www = 0.0
 	

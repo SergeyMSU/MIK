@@ -12,7 +12,7 @@
 	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq)
+                                 qqq, null_bn1)
       ! Q - маяк, показывающий в какой области мы находимся
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
@@ -20,11 +20,15 @@
       ! qqq1,qqq2 - переменные с двух сторон
       ! dsl,dsp,dsc - поверхности разрывов
       ! qqq - выходные потоки
+		! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
       implicit real*8 (a-h,o-z)
       
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
+	  logical, intent(in), optional :: null_bn1
+	  
+	  logical :: null_bn
       
       dimension qqq(9),qqq1(9),qqq2(9)
       dimension FR(9),FL(9)
@@ -45,6 +49,12 @@
 !c-------  n_state=1   - two speed LAX (HLL,(Harten-Lax-van-Leer))
 !c-------  n_state=2   - two-state (3 speed) HLLC (Contact Discontinuity)
 !c-------  n_state=3   - multi-state (5 speed) HLLD (All Discontinuity)
+	  
+	  if(.not. present(null_bn1)) then ! Использовать неассоциированный
+    null_bn = .False. ! необязательный формальный параметр
+    else ! можно только в качестве аргумента
+    null_bn = null_bn1 ! функции PRESENT
+    end if
 
 
       pi=dacos(-x1)
@@ -53,7 +63,7 @@
       spi4=dsqrt(cpi4)
 
       eps=1.D-12
-      epsb=1.D-06
+      epsb=1.D-04   ! 1.D-06
       eps_p=1.D-06
       eps_d=1.D-03
       
@@ -206,7 +216,7 @@
 
             dsl=SL
             dsc=SM
-            dsp=SR
+            dsp= dmax1( (vR(1)+cR),(vL(1)+cL) )! SR	
 
 !            if(id_bn.eq.-1)then
 !c                   dsc=(vR(1)+vL(1))/2.d0
@@ -273,7 +283,7 @@
        enddo
 
 !c-------- choise for Bn [=UZ(6)] through fan:
-!       if(id_bn.eq.1)UZ(6)=x0
+       if(null_bn == .True.) UZ(6) = x0                           ! Это было закоменчено
         
 !c----
         if(n_state <= 1)then
@@ -366,7 +376,7 @@
            ezR=e2*suRm+(ptz*SM-ptR*vR(1)+UZ(6)*(sbv2-sbvz))/(SR-SM)
            ezL=e1*suLm+(ptz*SM-ptL*vL(1)+UZ(6)*(sbv1-sbvz))/(SL-SM)
 
-      if(dabs(UZ(6)).lt.epsb)then
+      if (dabs(UZ(6)) .lt. epsb)then  ! epsb
            vzR(2)=vR(2)
            vzR(3)=vR(3)
            vzL(2)=vL(2)
@@ -378,10 +388,10 @@
 	  endif
 	  
 	  ! Сгладим Скорость     Я добавил, не было изначально
-	  vzR(2)=UZ(3)/UZ(1)
-    vzR(3)=UZ(4)/UZ(1)
-    vzL(2)=vzR(2)
-    vzL(3)=vzR(3)
+	    vzR(2)=UZ(3)/UZ(1)
+        vzR(3)=UZ(4)/UZ(1)
+        vzL(2)=vzR(2)
+        vzL(3)=vzR(3)
 	! ! ! ! ! ! !
 	  
              UZL(1)=rzL
@@ -443,7 +453,25 @@
              do ik=6,8
                  qb(ik-5)=FR(ik)-wv*UR(ik)
              enddo
-           endif
+		   endif
+		   
+		   !c----- Bn
+             SN = dmax1(dabs(SL),dabs(SR))
+
+                     wbn=x0
+             if(wv.ge.SR)then
+                     wbn=wv*bR(1)
+             elseif(wv.le.SL)then
+                     wbn=wv*bL(1)
+             else
+                     wbn=wv*(bL(1)+bR(1))/x2
+             endif
+
+             qb(1)=-SN*(bR(1)-bL(1))-wbn
+			 
+			 if(null_bn == .True.) qb(1) = 0.0_8
+
+!c-----
 
         do i = 1,3
         qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
@@ -719,8 +747,9 @@
              endif
 
              qb(1)=-SN*(bR(1)-bL(1))-wbn
-
+            if(null_bn == .True.) qb(1) = 0.0_8
 !c-----
+			 
 
         do i = 1,3
         qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
@@ -937,7 +966,7 @@
 
             dsl=SL
             dsc=SM
-            dsp=SR
+            dsp= dmax1( (vR(1)+ 1.35 * cR),(vL(1)+ 1.35 * cL) )! SR
 
 !            if(id_bn.eq.-1)then
 !c                   dsc=(vR(1)+vL(1))/2.d0
@@ -1097,7 +1126,8 @@
            bzR(3)=bR(3)*suRm
            bzL(2)=bL(2)*suLm
            bzL(3)=bL(3)*suLm
-      endif
+	  endif
+	  
              UZL(1)=rzL
              UZL(5)=ezL
              UZR(1)=rzR
@@ -1151,7 +1181,23 @@
              do ik=6,8
                  qb(ik-5)=FR(ik)-wv*UR(ik)
              enddo
-           endif
+		   endif
+		   
+		   !c----- Bn
+             SN = dmax1(dabs(SL),dabs(SR))
+
+                     wbn=x0
+             if(wv.ge.SR)then
+                     wbn=wv*bR(1)
+             elseif(wv.le.SL)then
+                     wbn=wv*bL(1)
+             else
+                     wbn=wv*(bL(1)+bR(1))/x2
+             endif
+
+             qb(1)=-SN*(bR(1)-bL(1))-wbn
+
+!c-----
 
         do i = 1,3
         qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)

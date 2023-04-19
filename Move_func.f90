@@ -13,6 +13,7 @@
     do k = 1, size( gl_Cell_A(par_n_HP - 1, 1, :) )
         do j = 1, size( gl_Cell_A(par_n_HP - 1, :, 1) )
             gl_Contact(node) = gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k))
+			gl_Gran_type(gl_Contact(node)) = 2
             node = node + 1
         end do
     end do
@@ -20,6 +21,7 @@
     do k = 1, size( gl_Cell_C(par_n_HP - par_n_TS, 1, :) )
         do j = 1, size( gl_Cell_C(par_n_HP - par_n_TS, :, 1) )
             gl_Contact(node) = gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k))
+			gl_Gran_type(gl_Contact(node)) = 2
             node = node + 1
         end do
     end do
@@ -29,6 +31,7 @@
     do k = 1, size( gl_Cell_A(par_n_TS - 1, 1, :) )
         do j = 1, size( gl_Cell_A(par_n_TS - 1, :, 1) )
             gl_TS(node) = gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k))
+			gl_Gran_type(gl_TS(node)) = 1
             node = node + 1
         end do
     end do
@@ -36,6 +39,7 @@
     do k = 1, size( gl_Cell_B(par_n_TS - 1, 1, :) )
         do j = 1, size( gl_Cell_B(par_n_TS - 1, :, 1) )
             gl_TS(node) = gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k))
+			gl_Gran_type(gl_TS(node)) = 1
             node = node + 1
         end do
     end do
@@ -66,11 +70,11 @@
     
     integer :: i, Num, gr, s1, s2, j, yzel
     real(8) :: normal(3), qqq1(8), qqq2(8), dsl, dsp, dsc, POTOK(8), a1, a2, v1, v2, &
-        ray(3), norm, b1, b2, c1, c2, koef1, koef2, koef3
+        ray(3), norm, b1, b2, c1, c2
     
-    koef1 = 0.3
-    koef2 = 1.0
-    koef3 = 0.3
+    !koef1 = 0.3! 0.2
+    !koef2 = 1.0 ! 1.0
+    !koef3 = 0.7   ! 0.3
     
     ! ѕробегаемс€ по всем гран€м и вычисл€ем скорости их движени€
     
@@ -86,7 +90,7 @@
         qqq1 = gl_Cell_par(1:8, s1)
         qqq2 = gl_Cell_par(1:8, s2)
         
-        call chlld(2, normal(1), normal(2), normal(3), &
+        call chlld(2, normal(1), normal(2), normal(3), &  ! 2
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
 		
         
@@ -166,7 +170,7 @@
         qqq1 = gl_Cell_par(1:8, s1)
         qqq2 = gl_Cell_par(1:8, s2)
         
-        call chlld(2, normal(1), normal(2), normal(3), &
+        call chlld(3, normal(1), normal(2), normal(3), &  ! 2
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
         dsc = dsc * koef2
@@ -227,82 +231,84 @@
                 
         end do
         
-    end do
+	end do
     
     
     ! BS
+	if(.True.) then
     Num = size(gl_BS)
     
-    do i = 1, Num
+        do i = 1, Num
         
-        gr = gl_BS(i)
-    	s1 = gl_Gran_neighbour(1, gr)
-        s2 = gl_Gran_neighbour(2, gr)
-        normal = gl_Gran_normal2(:, gr, now)
-        qqq1 = gl_Cell_par(1:8, s1)
-        qqq2 = gl_Cell_par(1:8, s2)
+            gr = gl_BS(i)
+    	    s1 = gl_Gran_neighbour(1, gr)
+            s2 = gl_Gran_neighbour(2, gr)
+            normal = gl_Gran_normal2(:, gr, now)
+            qqq1 = gl_Cell_par(1:8, s1)
+            qqq2 = gl_Cell_par(1:8, s2)
         
-        call chlld(2, normal(1), normal(2), normal(3), &
-                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+            call chlld(2, normal(1), normal(2), normal(3), &  ! 2
+                    0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-        dsp = dsp * koef3
+            dsp = dsp * koef3
         
-        a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! —корости звука
-        a2 = sqrt(ggg * qqq2(5)/qqq2(1))
+            a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! —корости звука
+            a2 = sqrt(ggg * qqq2(5)/qqq2(1))
         
-        if (norm2(qqq1(2:4)) <= a1 .and. norm2(qqq2(2:4)) <= a2) then ! «аписываем скорость во все узлы
+            if (norm2(qqq1(2:4)) <= a1 .and. norm2(qqq2(2:4)) <= a2) then ! «аписываем скорость во все узлы
+                do j = 1, 4
+            	    yzel = gl_all_Gran(j, gr)
+                    gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
+                    gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
+                    gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
+                    gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+                end do
+                CYCLE  ! «аканчиваем с этой гранью, переходим к следующей
+            end if
+        
             do j = 1, 4
-            	yzel = gl_all_Gran(j, gr)
-                gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
-                gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
-                gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
-                gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+            	    yzel = gl_all_Gran(j, gr)
+                
+                    ray = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) - gl_Gran_center2(:, gr, now)
+                    norm = norm2(ray)
+                    ray = ray/norm
+                    v1 = DOT_PRODUCT(qqq1(2:4), ray)
+                    v2 = DOT_PRODUCT(qqq2(2:4), ray)
+                
+                    if (v1 >= 0 .or. v2 >= 0) then
+                        gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
+                        gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
+                        gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
+                        gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+                        CYCLE   ! ѕереходим к следующему узлу
+                    end if
+                
+                    b1 = DOT_PRODUCT(qqq1(6:8), ray)
+                    b2 = DOT_PRODUCT(qqq2(6:8), ray)
+                
+                    c1 = dabs(b1)/dsqrt(4.0 * par_pi_8 * qqq1(1))
+                    c2 = dabs(b2)/dsqrt(4.0 * par_pi_8 * qqq2(1))
+                
+                    b1 = norm2(qqq1(6:8))
+                    b2 = norm2(qqq2(6:8))
+                
+                    ! ≈сли модуль скорости меньше чем максимум из скорости звука и альфвеновской скорости звука по этому направлению
+                    if( dabs(v1) <= max(a1, 0.5 * (sqrt(b1 * b1/(4.0 * par_pi_8 * qqq1(1)) + a1 * a1+ 2.0 * a1 * c1) &
+                        + sqrt(b1 * b1/(4.0 * par_pi_8 * qqq1(1)) + a1 * a1 - 2.0 * a1 * c1)  ) ) &
+                        .and. dabs(v2) <= max(a2, 0.5 * (sqrt(b2 * b2/(4.0 * par_pi_8 * qqq2(1)) + a2 * a2+ 2.0 * a2 * c2) &
+                        + sqrt(b2 * b2/(4.0 * par_pi_8 * qqq2(1)) + a2 * a2 - 2.0 * a2 * c2)  ) ) ) then
+                        gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
+                        gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
+                        gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
+                        gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+                        CYCLE
+                    end if
+                
             end do
-            CYCLE  ! «аканчиваем с этой гранью, переходим к следующей
-        end if
         
-        do j = 1, 4
-            	yzel = gl_all_Gran(j, gr)
-                
-                ray = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/) - gl_Gran_center2(:, gr, now)
-                norm = norm2(ray)
-                ray = ray/norm
-                v1 = DOT_PRODUCT(qqq1(2:4), ray)
-                v2 = DOT_PRODUCT(qqq2(2:4), ray)
-                
-                if (v1 >= 0 .or. v2 >= 0) then
-                    gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
-                    gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
-                    gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
-                    gl_Point_num(yzel) = gl_Point_num(yzel) + 1
-                    CYCLE   ! ѕереходим к следующему узлу
-                end if
-                
-                b1 = DOT_PRODUCT(qqq1(6:8), ray)
-                b2 = DOT_PRODUCT(qqq2(6:8), ray)
-                
-                c1 = dabs(b1)/dsqrt(4.0 * par_pi_8 * qqq1(1))
-                c2 = dabs(b2)/dsqrt(4.0 * par_pi_8 * qqq2(1))
-                
-                b1 = norm2(qqq1(6:8))
-                b2 = norm2(qqq2(6:8))
-                
-                ! ≈сли модуль скорости меньше чем максимум из скорости звука и альфвеновской скорости звука по этому направлению
-                if( dabs(v1) <= max(a1, 0.5 * (sqrt(b1 * b1/(4.0 * par_pi_8 * qqq1(1)) + a1 * a1+ 2.0 * a1 * c1) &
-                    + sqrt(b1 * b1/(4.0 * par_pi_8 * qqq1(1)) + a1 * a1 - 2.0 * a1 * c1)  ) ) &
-                    .and. dabs(v2) <= max(a2, 0.5 * (sqrt(b2 * b2/(4.0 * par_pi_8 * qqq2(1)) + a2 * a2+ 2.0 * a2 * c2) &
-                    + sqrt(b2 * b2/(4.0 * par_pi_8 * qqq2(1)) + a2 * a2 - 2.0 * a2 * c2)  ) ) ) then
-                    gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsp
-                    gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsp
-                    gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsp
-                    gl_Point_num(yzel) = gl_Point_num(yzel) + 1
-                    CYCLE
-                end if
-                
         end do
-        
-    end do
-    
+	end if
+	
     end subroutine Calc_move   
     
     subroutine Move_all(now, Time)  ! ѕередвигаем точки в соответствии со скоростью движение узлов на поверхност€х разрыва
@@ -583,6 +589,7 @@
 	end do
 	
 	
+	
 	N3 = size(gl_RAY_K(1, 1, :))
     N2 = size(gl_RAY_K(1, :, 1))
     N1 = size(gl_RAY_K(:, 1, 1))
@@ -599,6 +606,8 @@
 			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
 			
+			
+			
 			if (j < N2) then
 			    yzel2 = gl_RAY_K(par_n_TS, j + 1, k)
 			else
@@ -606,6 +615,7 @@
 			end if
 			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
 			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			
 			
 			if (k > 1) then
 			    yzel2 = gl_RAY_K(par_n_TS, j, k - 1)
@@ -644,6 +654,8 @@
 			
 		end do
 	end do
+	
+	
 	
 	N3 = size(gl_RAY_O(1, 1, :))
     N2 = size(gl_RAY_O(1, :, 1))
@@ -711,7 +723,12 @@
 	
 	!  онец поверхностного нат€жени€ --------------------------------------------------------------------------------------------------------------------
 	
+	!print*, gl_x2(gl_RAY_B(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_B(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_B(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
     
+		
     N3 = size(gl_RAY_A(1, 1, :))
     N2 = size(gl_RAY_A(1, :, 1))
     N1 = size(gl_RAY_A(:, 1, 1))
@@ -778,7 +795,8 @@
                 ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Ќашли скорость движени€ этого узла
-            end if
+			end if
+			
             
             ! ќбнулим дл€ следующего успользовани€
             gl_Point_num(yzel) = 0
@@ -789,6 +807,7 @@
             proect = DOT_PRODUCT(vel * Time, ER)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
             R_BS = norm2(KORD + proect * ER)  ! Ќовое рассто€ние до BS
+			
             
             ! ƒалее обычный цикл нахождени€ координат точек, такой же, как и при построении сетки
             do i = 1, N1
@@ -820,8 +839,9 @@
                 
             end do
         end do
-    end do
+	end do
     
+		
     N3 = size(gl_RAY_B(1, 1, :))
     N2 = size(gl_RAY_B(1, :, 1))
     N1 = size(gl_RAY_B(:, 1, 1))
@@ -861,7 +881,8 @@
 			else
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Ќашли скорость движени€ этого узла
-            end if
+			end if
+			
             
             ! ќбнулим дл€ следующего успользовани€
             gl_Point_num(yzel) = 0
@@ -872,6 +893,7 @@
             proect = DOT_PRODUCT(vel * Time, ER)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
             R_HP = norm2(KORD + proect * ER)  ! Ќовое рассто€ние до HP
+			
                 
             do i = 1, N1
 
@@ -885,7 +907,8 @@
                     r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! ƒо рассто€ни€ = par_R_character * 1.3
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
-                end if
+				end if
+				
 
                 ! «аписываем новые координаты
                 gl_x2(yzel, now2) = r * cos(the)
@@ -895,8 +918,9 @@
                
             end do
         end do
-    end do
+	end do
     
+	
     N3 = size(gl_RAY_C(1, 1, :))
     N2 = size(gl_RAY_C(1, :, 1))
     N1 = size(gl_RAY_C(:, 1, 1))
@@ -918,6 +942,7 @@
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
                 R_BS = norm2(ER)  ! Ќовое рассто€ние до BS
+				
             
             do i = 1, N1
                 
@@ -1128,8 +1153,44 @@
                 
             end do
         end do
-    end do
-
+	end do
+ !
+	!
+	!print*, gl_x2(gl_RAY_A(10, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_A(14, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_A(18, 8, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_B(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_B(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_B(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_C(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_C(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_C(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_O(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_O(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_O(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_K(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_K(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_K(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_D(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_D(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_D(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!
+	!print*, gl_x2(gl_RAY_E(3, 1, 1), now2)
+	!print*, gl_y2(gl_RAY_E(6, 4, 4), now2)
+	!print*, gl_z2(gl_RAY_E(5, 6, 5), now2)
+	!print*, "---------------------------------------------------"
+	!pause
     
     
     end subroutine Move_all
@@ -1239,17 +1300,17 @@
         ! ћожно один раз проверить, правильно ли ориентирована нормаль!\
 
         
-        call Get_center_move(gl_Gran_neighbour(1, iter), node1, now)
-        node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
-        node1 = node2 - node1
-        
-        if(DOT_PRODUCT(node1, c) < 0.0) then
-            print*, c
-            print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
-            print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
-            print*, iter
-            pause
-        end if
+        !call Get_center_move(gl_Gran_neighbour(1, iter), node1, now)
+        !node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
+        !node1 = node2 - node1
+        !
+        !if(DOT_PRODUCT(node1, c) < 0.0) then
+        !    print*, c
+        !    print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
+        !    print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
+        !    print*, iter
+        !    pause
+        !end if
 
         ! Ќужно записать площадь грани и нормаль в общий массив!
         gl_Gran_normal2(:, iter, now) = c
