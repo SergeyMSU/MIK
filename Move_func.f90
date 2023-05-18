@@ -95,7 +95,9 @@
 		
         
         dsl = dsl * koef1
-        
+		
+        !if(i == 50) write(*,*) dsl
+		
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
         a2 = sqrt(ggg * qqq2(5)/qqq2(1))
 		
@@ -175,7 +177,7 @@
         
         dsc = dsc * koef2
 		
-        
+        !if(i == 2) write(*,*) dsc
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
         a2 = sqrt(ggg * qqq2(5)/qqq2(1))
 		
@@ -251,6 +253,13 @@
                     0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
             dsp = dsp * koef3
+			!if(i == 2) then
+		 !       write(*,*) dsp
+		 !       write(*,*) normal(1), normal(2), normal(3)
+		 !       write(*,*) 2
+		 !       write(*,*) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8)
+		 !       write(*,*) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8)
+	  !      end if
         
             a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
             a2 = sqrt(ggg * qqq2(5)/qqq2(1))
@@ -326,7 +335,7 @@
     now2 = mod(now, 2) + 1   
 	
 	! Поверхностное натяжение ------------------------------------------------------------------------------
-	
+	if (.True.) then
 	N3 = size(gl_RAY_A(1, 1, :))
     N2 = size(gl_RAY_A(1, :, 1))
     N1 = size(gl_RAY_A(:, 1, 1))
@@ -655,7 +664,7 @@
 		end do
 	end do
 	
-	
+	end if
 	
 	N3 = size(gl_RAY_O(1, 1, :))
     N2 = size(gl_RAY_O(1, :, 1))
@@ -766,6 +775,8 @@
             ! proect = DOT_PRODUCT(vel * Time, (/cos(the), sin(the) * cos(phi), sin(the) * sin(phi)/))  !  Находим проекцию перемещения на радиус вектор луча
             KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
 			R_TS = norm2(KORD + proect * ER)  ! Новое расстояние до TS
+			
+			!if(j == 1 .and. k==1) write(*,*) "=    ", gl_x2(yzel, now)
             
             ! HP
             yzel = gl_RAY_A(par_n_HP, j, k)
@@ -836,6 +847,8 @@
                 gl_x2(yzel, now2) = r * cos(the)
                 gl_y2(yzel, now2) = r * sin(the) * cos(phi)
                 gl_z2(yzel, now2) = r * sin(the) * sin(phi)
+				
+				!if(j == 1 .and. k==1 .and. i==20)  write(*,*) "=    ", gl_x2(yzel, now2)
                 
             end do
         end do

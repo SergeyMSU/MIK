@@ -35,6 +35,7 @@ module MY_CUDA
 	! Создаём набор необходимых массивов для неподвижной сетки, аналогичных массивам на хосте
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour(:,:)
 	 integer(4), device, allocatable :: dev_gl_Gran_info(:)         ! (:) классификатор грани (см. схему)
+	 integer(4), device, allocatable :: dev_gl_Gran_type(:)         ! (:) классификатор грани (см. схему)
 	 integer(4), device, allocatable :: dev_gl_Cell_info(:)
 	 real(8), device, allocatable :: dev_gl_Cell_par(:, :)
 	 real(8), device, allocatable :: dev_gl_Cell_par_MF(:,:,:)
@@ -90,6 +91,8 @@ module MY_CUDA
 	 
 	 real(8), device :: time_all
 	 real(8), device :: time_step
+	 real(8), device :: time_step2
+	 real(8), device :: dev_time_step_inner
 	 
 	 interface
 	 
@@ -174,6 +177,7 @@ module MY_CUDA
 		 
 		 allocate(dev_gl_Gran_neighbour(2, Ngran))
 		 allocate(dev_gl_Gran_info(Ngran))
+		 allocate(dev_gl_Gran_type(Ngran))
 		 allocate(dev_gl_Cell_par(9, Ncell))
 		 allocate(dev_gl_Cell_par_MF(5, 4, Ncell))
 		 allocate(dev_gl_Cell_center(3, Ncell))
@@ -182,7 +186,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_center(3, Ngran))
 		 allocate(dev_gl_Cell_dist(Ncell))
 		 allocate(dev_gl_Cell_Volume(Ncell))
-		 allocate(dev_gl_Gran_POTOK(9, Ngran))
+		 allocate(dev_gl_Gran_POTOK( size(gl_Gran_POTOK(:, 1))  , Ngran))
 		 allocate(dev_gl_Gran_POTOK_MF(5, 4, Ngran))
 		 allocate(dev_gl_Cell_info(Ncell))
 		 allocate(dev_gl_Cell_gran(6, Ncell))
@@ -323,6 +327,7 @@ module MY_CUDA
 		 dev_gl_Cell_dist = gl_Cell_dist
 		 dev_gl_Cell_Volume = gl_Cell_Volume
 		 dev_gl_Gran_info = gl_Gran_info
+		 dev_gl_Gran_type = gl_Gran_type
 		 dev_gl_Cell_info = gl_Cell_info
 		 dev_gl_Cell_gran = gl_Cell_gran
 		 dev_gl_all_Gran_inner = gl_all_Gran_inner
@@ -362,18 +367,20 @@ module MY_CUDA
 		gl_Cell_par_MF = dev_gl_Cell_par_MF
 	end subroutine Send_data_to_Host
 	
-	subroutine Send_data_to_Host_move()
+	subroutine Send_data_to_Host_move(now)
 		use GEO_PARAM
 		use STORAGE
+		implicit none
+		integer, intent(in) :: now
+		gl_x = dev_gl_x2(:, now)
+        gl_y = dev_gl_y2(:, now)
+        gl_z = dev_gl_z2(:, now)
+        gl_Cell_Volume = dev_gl_Cell_Volume2(:, now)
+        gl_Gran_normal = dev_gl_Gran_normal2(:, :, now)
+        gl_Gran_center = dev_gl_Gran_center2(:, :, now)
+        gl_Cell_center = dev_gl_Cell_center2(:, :, now)
+        gl_Gran_square = dev_gl_Gran_square2(:, now)
 		
-		gl_x = dev_gl_x
-        gl_y = dev_gl_y
-        gl_z = dev_gl_z
-        gl_Cell_Volume = dev_gl_Cell_Volume
-        gl_Gran_normal = dev_gl_Gran_normal
-        gl_Gran_center = dev_gl_Gran_center
-        gl_Cell_center = dev_gl_Cell_center
-        gl_Gran_square = dev_gl_Gran_square
 	end subroutine Send_data_to_Host_move
 	
 	
@@ -463,16 +470,20 @@ module MY_CUDA
 	end subroutine CUF_hellow
 	
 	
-	subroutine CUDA_START_GD_move()
-	! На подвижной сетке! Без магнитных полей, с мультифлюидом
+	
+	subroutine CUDA_START_MGD_move()
+	! На подвижной сетке! с мультифлюидом
 	use STORAGE
     use GEO_PARAM
 	use MY_CUDA
 	implicit none
     integer :: step, now, now2, step2, i, alla2(100), Num
-	integer(4):: ierrSync, ierrAsync, nx, ny
+	integer(4):: ierrSync, ierrAsync, nx, ny, ijk, istat
 	integer(4), device :: dev_now, dev_now2
+	real :: time_work
+	real(8) :: local1
 	type(dim3) :: grid, tBlock
+	type(cudaEvent) :: startEvent, stopEvent
 	
 	call Set_CUDA()
 	call Send_data_to_Cuda()
@@ -483,25 +494,48 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 0: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 0: ', cudaGetErrorString(cudaGetLastError())
 	
-	time_all = 0.0_8                 ! Глобальное время (хранится на девайсе)
-	time_step = 1.0_8              ! Шаг по времени (хранится на девайсе)
+	tBlock = dim3(32, 8, 1)
 	
 	now = 2
+	time_all = 0.0_8                 ! Глобальное время (хранится на девайсе)
+	time_step2 = 0.00002_8              ! Шаг по времени (хранится на девайсе)
+	
+	istat = cudaEventCreate(startEvent)
+	istat = cudaEventCreate(stopEvent)
+	istat = cudaEventRecord(startEvent, 0)
+	
+	! Главный цикл
+	do step = 1, 2000   ! ---------------------------------------------------------------------------------------------------
+		ierrAsync = cudaDeviceSynchronize()
+		if (mod(step, 200) == 0) then
+			local1 = time_step2
+			print*, "Step = ", step , "  step_time = ", local1
+		end if
+		
+	
+	time_step = time_step2
+	!$cuf kernel do <<<1,1>>>
+	do ijk = 1, 1
+		time_all =  time_all + time_step
+	end do
+	
+	time_step2 = 1000000_8       ! Шаг по времени (хранится на девайсе)
+	
 	now2 = now
 	now = mod(now, 2) + 1
-	
-        
-	print*, "START 45224234"
+	ierrAsync = cudaDeviceSynchronize()
+	dev_now = now
+	dev_now2 = now2
+	ierrAsync = cudaDeviceSynchronize()
+
 	
 	
 	! Сначала вычисляем скорости движения поверхностей
-	tBlock = dim3(32, 8, 1)
 	
 	
-	! Вычисляем движения узлов на каждой поверхности (из задачи о распаде разрыва)
+	! Вычисляем движения узлов на каждой поверхности (из задачи о распаде разрыва) 
+	! *** аналог функции Calc_move на хосте ***
 	Num = size(gl_TS)
-	dev_now = now
-	dev_now2 = now2
 	call Cuda_Calc_move_TS<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
 	
@@ -516,7 +550,7 @@ module MY_CUDA
 	
 	
 	! Делаем три цикла поверхностного натяжения (по разным лучам, как на хосте) -------------------------------------------------------------------------
-	
+	! *** аналог функции Move_all на хосте ***
 	
 	nx = size(gl_RAY_A(1, 1, :))
     ny = size(gl_RAY_A(1, :, 1))
@@ -625,7 +659,9 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 13: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 13: ', cudaGetErrorString(cudaGetLastError())
 	
+	
 	! Теперь посчитаем новые объёмы и площади граней  ---------------------------------------------------------------------------------------------------------
+	! *** аналог функции calc_all_Gran_move на хосте ***
 	
 	Num = size(gl_all_Gran(1,:))
 	call Cuda_calc_all_Gran_move_1 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по граням
@@ -639,42 +675,114 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Gran_normal2 = dev_gl_Gran_normal2
-	gl_Gran_square2 = dev_gl_Gran_square2
-	gl_Cell_Volume2 = dev_gl_Cell_Volume2
-	gl_x2 = dev_gl_x2
-	gl_y2 = dev_gl_y2
-	gl_z2 = dev_gl_z2
-	gl_Vx = dev_gl_Vx
-	gl_Vy = dev_gl_Vy
-	gl_Vz = dev_gl_Vz
 	
-	print*, gl_Cell_Volume2(1, now2)
-	print*, gl_Cell_Volume2(10, now2)
-	print*, gl_Cell_Volume2(100, now2)
-	
-	
-	return
-	
-	!gl_Vx = dev_gl_Vx;
-	!gl_Vy = dev_gl_Vy;
-	!gl_Vz = dev_gl_Vz;
+	! Для сравнения результатов с хостом
+	!gl_Gran_square = dev_gl_Gran_square2(:, now2) 
+	!gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2) 
+	!gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2) 
+	!gl_Gran_center = dev_gl_Gran_center2(:, :, now2) 
 	!
-	!print*, gl_Vx( gl_all_Gran(1, gl_TS(1)) ), gl_Vy( gl_all_Gran(1, gl_TS(1)) ), gl_Vz( gl_all_Gran(1, gl_TS(1)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_TS(2)) ), gl_Vy( gl_all_Gran(1, gl_TS(2)) ), gl_Vz( gl_all_Gran(1, gl_TS(2)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_TS(3)) ), gl_Vy( gl_all_Gran(1, gl_TS(3)) ), gl_Vz( gl_all_Gran(1, gl_TS(3)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(1)) ), gl_Vy( gl_all_Gran(1, gl_Contact(1)) ), gl_Vz( gl_all_Gran(1, gl_Contact(1)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(4)) ), gl_Vy( gl_all_Gran(1, gl_Contact(4)) ), gl_Vz( gl_all_Gran(1, gl_Contact(4)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_Contact(13)) ), gl_Vy( gl_all_Gran(1, gl_Contact(13)) ), gl_Vz( gl_all_Gran(1, gl_Contact(13)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_BS(1)) ), gl_Vy( gl_all_Gran(1, gl_BS(1)) ), gl_Vz( gl_all_Gran(1, gl_BS(1)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_BS(2)) ), gl_Vy( gl_all_Gran(1, gl_BS(2)) ), gl_Vz( gl_all_Gran(1, gl_BS(2)) )
-	!print*, gl_Vx( gl_all_Gran(1, gl_BS(3)) ), gl_Vy( gl_all_Gran(1, gl_BS(3)) ), gl_Vz( gl_all_Gran(1, gl_BS(3)) )
-	!return
+	!print*, gl_Gran_center(:, 30)
+	!print*, gl_Gran_center(:, 90)
+	!print*, gl_Gran_center(:, 830)
+	!print*, "_______"
+	!print*, gl_Gran_square(10)
+	!print*, gl_Gran_square(50)
+	!print*, gl_Gran_square(300)
+	!print*, "_______"
+	!print*, gl_Cell_Volume(10)
+	!print*, gl_Cell_Volume(50)
+	!print*, gl_Cell_Volume(300)
+	!print*, "_______"
+	!print*, gl_Gran_normal(:, 10)
+	!print*, gl_Gran_normal(:, 50)
+	!print*, gl_Gran_normal(:, 300)
+	!print*, "_______"
 	
-	! call Cuda_Move_all(now) 
+	
+	! Теперь нужен цикл по граням для решения задачи о распаде произвольного разрыва на них
 	
 	
-	end subroutine CUDA_START_GD_move
+	Num = size(gl_all_Gran(1, :))
+	call CUF_MGD_grans_MF <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по граням
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+
+	
+	Num = size(gl_all_Cell(1, :))
+	call CUF_MGD_cells_MF <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по ячейкам
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+	
+	gl_Cell_par = dev_gl_Cell_par
+	
+	!print*, "____"
+	!print*, gl_Cell_par(:, 10)
+	!print*, "____"
+	!print*, gl_Cell_par(:, 1000)
+	!print*, "____"
+	!print*, "____"
+	
+	
+	! Здесь нужно два цикла по внутренней области (сфере) ячеек и граней
+	
+	dev_gl_x = dev_gl_x2(:, now2)
+    dev_gl_y = dev_gl_y2(:, now2)
+    dev_gl_z = dev_gl_z2(:, now2)
+    dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+    dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+    dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+    dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+    dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+	
+	! Нужно обновить граничные условия на внутренней сфере (так как она немного подвигалась)
+	
+	if (mod(step, 100) == 0) then
+			gl_Cell_center = dev_gl_Cell_center
+			gl_Cell_par = dev_gl_Cell_par
+			gl_Cell_par_MF = dev_gl_Cell_par_MF
+			call Initial_conditions()
+			dev_gl_Cell_par = gl_Cell_par
+			dev_gl_Cell_par_MF = gl_Cell_par_MF
+	end if
+	
+	
+	do ijk = 1, 3  ! Несколько раз просчитываем внутреннюю область
+		dev_time_step_inner = 1000000.0
+		Num = size(gl_all_Gran_inner(:))
+		call CUF_MGD_grans_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+ 
+		Num = size(gl_all_Cell_inner(:))
+		call CUF_MGD_cells_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по ячейкам
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+	end do
+	
+	
+	dev_gl_Vx = 0.0
+    dev_gl_Vy = 0.0
+    dev_gl_Vz = 0.0
+    dev_gl_Point_num = 0
+	
+	end do
+	
+	istat = cudaEventRecord(stopEvent, 0)
+	istat = cudaEventSynchronize(stopEvent)
+	istat = cudaEventElapsedTime(time_work, startEvent, stopEvent)
+	print *, "CUDA Time work: ", (time_work)/(60*1000.0), "   in minutes"
+	
+	call Send_data_to_Host_move(now2)
+	call Send_data_to_Host()
+	
+	
+	
+	end subroutine CUDA_START_MGD_move
 	
 	
 	subroutine CUDA_START_GD_3()
