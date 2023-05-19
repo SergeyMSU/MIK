@@ -17,12 +17,18 @@
     real(8), parameter :: cpi4 = 12.56637061435917295384
     real(8), parameter :: ggg = (5.0/3.0)
     real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
+	real(8) :: par_R_inner = 5.0_8     ! До какого расстояния внутренняя сфера
 	
 	
 	
-	real(8), parameter :: par_nat_TS = 0.003                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 0.00005                ! Коэффициент натяжения контакта  0.0001
-	real(8), parameter :: par_nat_BS = 0.0002                ! Коэффициент натяжения внешней ударной волны 0.0002
+	real(8), parameter :: par_nat_TS = 0.0008_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
+	real(8), parameter :: par_nat_HP = 0.00006_8 !0.00005_8               ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_BS = 0.0002_8                ! Коэффициент натяжения внешней ударной волны 0.0002
+	
+	real(8), parameter :: koef1 = 0.06_8! 0.3      ! Коэффицинт запаздывания скорости ударной волны
+    real(8), parameter :: koef2 = 1.0_8 ! 1.0
+    real(8), parameter :: koef3 = 0.7_8   ! 0.3
+	
     
     real(8), parameter :: par_a_2 = 0.130738_8        ! Параметр в сечении перезарядки
     real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
@@ -44,9 +50,6 @@
     real(8), parameter :: par_kk2 = 2.0_8     ! Степень сгущения в головной области на бесконечности
     real(8), parameter :: par_kk3 = 1.8_8     ! Степень сгущения в хвосте
 	
-	real(8), parameter :: koef1 = 0.3_8! 0.2
-    real(8), parameter :: koef2 = 1.0_8 ! 1.0
-    real(8), parameter :: koef3 = 0.7_8   ! 0.3
 
     integer :: par_l_phi = 48 !4   ! Количество вращений двумерной сетки для получения трёхмерной (разрешение по углу phi)
                                 ! Должно делиться на 4 для удобного вывода результатов в плоскостях
@@ -115,8 +118,13 @@
     
     integer(4), allocatable :: gl_all_Cell_inner(:)   ! номера ячеек, которые находятся внутри (считаются отдельно)
     
-    integer(4), allocatable :: gl_Cell_neighbour(:,:)   ! Набор из 6 соседей для каждой ячейки (если номер соседа = 0, то его нет в этом направлении)
-    integer(4), allocatable :: gl_Cell_gran(:,:)        ! (6, :) Набор из 6 граней для каждой ячейки (если номер = 0, то грани нет в этом направлении)
+    integer(4), allocatable :: gl_Cell_neighbour(:,:)   ! Набор из 6 соседей для каждой ячейки 
+	! (если номер соседа = 0, то его нет в этом направлении)
+    ! -1   ! Граница (набегающий поток)
+	! -3   ! Граница верхний цилиндр
+	!  -2  ! Выходная граница
+	
+	integer(4), allocatable :: gl_Cell_gran(:,:)        ! (6, :) Набор из 6 граней для каждой ячейки (если номер = 0, то грани нет в этом направлении)
     integer(4), allocatable :: gl_Cell_info(:)        ! 
     
     real(8), allocatable :: gl_Cell_Volume(:)           ! Набор объёмов ячеек
@@ -135,6 +143,11 @@
     ! Блок граней ----------------- нужны для расчёта площадей, потоков, объёмов, нормалей и т.д.
     integer(4), allocatable :: gl_all_Gran(:,:)       ! Все грани (4,:) имеют по 4 узла
     integer(4), allocatable :: gl_Gran_neighbour(:,:) ! Соседи каждой грани (2,:) имеют по 2 соседа, нормаль ведёт от первого ко второму
+	! -1  -2  -3  бывает
+	
+	integer(4), allocatable :: gl_Gran_neighbour_TVD(:,:) ! TVD-Соседи каждой грани (2,:) имеют по 2 соседа
+	! 0 - значит соседа нет
+	! При этом первый TVD-сосед - это сосед первого обычного соседа. Т.е. нормаль грани тоже ведёт от первого ко второму
     
     real(8), allocatable :: gl_Gran_normal(:,:)       ! (3, :) Нормаль грани   4444444444444444
     real(8), allocatable :: gl_Gran_square(:)         ! (:) Площадь грани
@@ -142,6 +155,7 @@
     real(8), allocatable :: gl_Gran_POTOK_MF(:,:,:)       ! (5, 4, :) поток грани мультифлюидных жидкостей
     real(8), allocatable :: gl_Gran_center(:,:)       ! (3, :) 
 	integer(4), allocatable :: gl_Gran_type(:)      ! Показывает тип грани (0 - обычная, 1 - TS, 2 - HP)
+	integer(4), allocatable :: gl_Gran_scheme(:)      ! Показывает тип грани (0 - обычная, 1 - TS, 2 - HP)
     integer(4), allocatable :: gl_Gran_info(:)         ! (:) классификатор грани (см. схему) 
 	! для расчёта какие грани пропускать для внутренней сферы (бредово сделано, надо переделывать)
 	
@@ -230,10 +244,12 @@
     
     allocate(gl_all_Gran(4, n1))
     allocate(gl_Gran_neighbour(2, n1))
+	allocate(gl_Gran_neighbour_TVD(2, n1))
     allocate(gl_Gran_normal(3, n1))
     allocate(gl_Gran_square(n1))
     allocate(gl_Gran_info(n1))  
 	allocate(gl_Gran_type(n1))
+	allocate(gl_Gran_scheme(n1))
     allocate(gl_Gran_POTOK(10, n1))
     allocate(gl_Gran_POTOK_MF(5, 4, n1))
     allocate(gl_Gran_center(3, n1))
@@ -275,8 +291,9 @@
     gl_Cell_par = 0.0
     gl_Gran_center = 0.0
     gl_Gran_info = 0
-    gl_Cell_info = 0
+    gl_Cell_info = 2
 	gl_Gran_type = 0
+	gl_Gran_scheme = 2
     
     
     gl_Cell_A = -1
@@ -289,6 +306,7 @@
     
     gl_all_Gran = 0
     gl_Gran_neighbour = 0
+	gl_Gran_neighbour_TVD = 0
     
     gl_Contact = 0
     

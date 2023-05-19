@@ -19,6 +19,7 @@ module MY_CUDA
 	 real(8), constant :: dev_par_n_p_LISM
     real(8), constant :: dev_par_n_H_LISM_
     real(8), constant :: dev_par_Kn
+	real(8), constant :: dev_par_R_inner
 	
 	integer(4), constant :: dev_par_n_TS
 	integer(4), constant :: dev_par_n_HP
@@ -26,6 +27,8 @@ module MY_CUDA
 	integer(4), constant ::	dev_par_n_END
 	real(8), constant ::	dev_par_triple_point
 	integer(4), constant ::	dev_par_m_BC
+	integer(4), constant :: dev_par_n_IA
+	integer(4), constant :: dev_par_n_IB
 	
 	integer(4), device :: dev_mutex_1
 	integer(4), device :: dev_mutex_2
@@ -35,6 +38,7 @@ module MY_CUDA
 	! Создаём набор необходимых массивов для неподвижной сетки, аналогичных массивам на хосте
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour(:,:)
 	 integer(4), device, allocatable :: dev_gl_Gran_info(:)         ! (:) классификатор грани (см. схему)
+	 integer(4), device, allocatable :: dev_gl_Gran_scheme(:)
 	 integer(4), device, allocatable :: dev_gl_Gran_type(:)         ! (:) классификатор грани (см. схему)
 	 integer(4), device, allocatable :: dev_gl_Cell_info(:)
 	 real(8), device, allocatable :: dev_gl_Cell_par(:, :)
@@ -115,12 +119,13 @@ module MY_CUDA
 	attributes(device) subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1)
+                                 qqq, null_bn1, n_disc)
       implicit real*8 (a-h,o-z)
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
 	  logical, intent(in), optional :: null_bn1
+	  integer, intent(in), optional :: n_disc
       dimension qqq(9),qqq1(9),qqq2(9)
 	 end subroutine chlld_Q
 	 
@@ -140,7 +145,7 @@ module MY_CUDA
 	attributes(device) subroutine chlld(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq)
+                                 qqq, n_disc)
 	
       implicit real*8 (a-h,o-z)
       
@@ -148,6 +153,7 @@ module MY_CUDA
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
       dimension qqq(8),qqq1(8),qqq2(8)
+	  integer, intent(in), optional :: n_disc
 	  
 	  end subroutine chlld
 	
@@ -177,6 +183,7 @@ module MY_CUDA
 		 
 		 allocate(dev_gl_Gran_neighbour(2, Ngran))
 		 allocate(dev_gl_Gran_info(Ngran))
+		 allocate(dev_gl_Gran_scheme(Ngran))
 		 allocate(dev_gl_Gran_type(Ngran))
 		 allocate(dev_gl_Cell_par(9, Ncell))
 		 allocate(dev_gl_Cell_par_MF(5, 4, Ncell))
@@ -327,6 +334,7 @@ module MY_CUDA
 		 dev_gl_Cell_dist = gl_Cell_dist
 		 dev_gl_Cell_Volume = gl_Cell_Volume
 		 dev_gl_Gran_info = gl_Gran_info
+		 dev_gl_Gran_scheme = gl_Gran_scheme
 		 dev_gl_Gran_type = gl_Gran_type
 		 dev_gl_Cell_info = gl_Cell_info
 		 dev_gl_Cell_gran = gl_Cell_gran
@@ -350,6 +358,7 @@ module MY_CUDA
 		 dev_par_n_p_LISM = par_n_p_LISM
 		 dev_par_n_H_LISM_ = par_n_H_LISM_
 		 dev_par_Kn = par_Kn
+		 dev_par_R_inner = par_R_inner
 		 dev_par_pi_8 = par_pi_8
 		 dev_par_n_TS = par_n_TS
 		 dev_par_n_BS = par_n_BS
@@ -357,6 +366,8 @@ module MY_CUDA
 		 dev_par_n_END = par_n_END
 		 dev_par_triple_point = par_triple_point
 		 dev_par_m_BC = par_m_BC
+		 dev_par_n_IA = par_n_IA
+		 dev_par_n_IB = par_n_IB
 		 
 	end subroutine Send_data_to_Cuda
 	
@@ -505,9 +516,9 @@ module MY_CUDA
 	istat = cudaEventRecord(startEvent, 0)
 	
 	! Главный цикл
-	do step = 1, 2000   ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 38000 * 3 * 5   ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 200) == 0) then
+		if (mod(step, 5000) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
@@ -716,7 +727,7 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
 	
-	gl_Cell_par = dev_gl_Cell_par
+	!gl_Cell_par = dev_gl_Cell_par
 	
 	!print*, "____"
 	!print*, gl_Cell_par(:, 10)
@@ -739,17 +750,17 @@ module MY_CUDA
 	
 	! Нужно обновить граничные условия на внутренней сфере (так как она немного подвигалась)
 	
-	if (mod(step, 100) == 0) then
-			gl_Cell_center = dev_gl_Cell_center
-			gl_Cell_par = dev_gl_Cell_par
-			gl_Cell_par_MF = dev_gl_Cell_par_MF
-			call Initial_conditions()
-			dev_gl_Cell_par = gl_Cell_par
-			dev_gl_Cell_par_MF = gl_Cell_par_MF
-	end if
+	!if (mod(step, 100) == 0) then
+	!		gl_Cell_center = dev_gl_Cell_center
+	!		gl_Cell_par = dev_gl_Cell_par
+	!		gl_Cell_par_MF = dev_gl_Cell_par_MF
+	!		call Initial_conditions()
+	!		dev_gl_Cell_par = gl_Cell_par
+	!		dev_gl_Cell_par_MF = gl_Cell_par_MF
+	!end if
 	
 	
-	do ijk = 1, 3  ! Несколько раз просчитываем внутреннюю область
+	do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
 		dev_time_step_inner = 1000000.0
 		Num = size(gl_all_Gran_inner(:))
 		call CUF_MGD_grans_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
@@ -770,6 +781,18 @@ module MY_CUDA
     dev_gl_Vz = 0.0
     dev_gl_Point_num = 0
 	
+	
+	if (mod(step, 7000) == 0) then
+		print*, "PECHAT ", step
+		call Send_data_to_Host_move(now2)
+		call Send_data_to_Host()
+		call Print_surface_2D()
+		call Print_Setka_2D()
+		call Print_par_2D()
+		call Print_Contact_3D()
+	end if
+	
+	
 	end do
 	
 	istat = cudaEventRecord(stopEvent, 0)
@@ -779,7 +802,9 @@ module MY_CUDA
 	
 	call Send_data_to_Host_move(now2)
 	call Send_data_to_Host()
-	
+	call Print_surface_2D()
+    call Print_Setka_2D()
+    call Print_par_2D()
 	
 	
 	end subroutine CUDA_START_MGD_move

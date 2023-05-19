@@ -437,7 +437,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, &
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
 	use GEO_PARAM
 	use cudafor
 	
@@ -558,9 +559,12 @@
             ! Вычисляем координаты точки на луче
 
             ! до TS
-            if (i <= par_n_TS) then  ! До расстояния = R_TS
-                r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
-					
+			if (i <= par_n_IB) then  ! NEW
+                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+			else if (i <= par_n_TS) then  ! До расстояния = R_TS
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+            !if (i <= par_n_TS) then  ! До расстояния = R_TS
+            !    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
             else if (i <= par_n_HP) then  
                 r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
             else if (i <= par_n_BS) then 
@@ -599,7 +603,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
 	use GEO_PARAM
 	use cudafor
 	
@@ -684,8 +689,12 @@
                 ! Вычисляем координаты точки на луче
 
                 ! до TS
-                if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+				if (i <= par_n_IB) then  ! NEW
+                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+                else if (i <= par_n_TS) then  ! До расстояния = R_TS
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                !if (i <= par_n_TS) then  ! До расстояния = R_TS
+                !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 				end if
@@ -903,7 +912,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
 	use GEO_PARAM
 	use cudafor
 	
@@ -966,7 +976,14 @@
                 
         ! Вычисляем координаты точки на луче
         yzel = gl_RAY_K(i, j, k)
-        r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+		
+		if (i <= par_n_IB) then  ! NEW
+            r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+        else 
+            r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+		end if
+				
+        !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
 
 
         ! Записываем новые координаты
@@ -1385,6 +1402,7 @@
     dsl = dsl * koef1
 	
 	
+	
     a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
     a2 = sqrt(ggg * qqq2(5)/qqq2(1))
 	  
@@ -1584,6 +1602,15 @@
     normal = gl_Gran_normal2(:, gr, now)
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
+	
+	
+	! Вычтем нормальную компоненту магнитного поля
+	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	gl_Cell_par(6:8, s1) = qqq1(6:8)
+	gl_Cell_par(6:8, s2) = qqq2(6:8)
+	
+	
         
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
@@ -1978,7 +2005,8 @@
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
-		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info
+		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
+		gl_Gran_scheme => dev_gl_Gran_scheme
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
@@ -2106,13 +2134,22 @@
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 			
-			if(gl_Gran_type(gr) == 1) metod = 3
+			metod = gl_Gran_scheme(gr)
 			
-			if(gl_Gran_type(gr) == 2) null_bn = .True.
+			if(gl_Gran_type(gr) == 2) metod = 3
 			
-            
-            call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+			!if(gl_Gran_type(gr) == 2) null_bn = .True.
+			
+            if (.True.) then    !(gl_Gran_type(gr) == 1) then
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
+			else
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
+			end if
+	
+	
+	
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 			
@@ -2222,9 +2259,7 @@
 
             ! Определяем зону в которой находимся
             if(qqq(9)/qqq(1) < 50.0) then
-
-
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.3) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 4.0) then
                     zone = 1
                 else
                     zone = 2
@@ -2392,28 +2427,9 @@
                     fluid2(4, 1), fluid2(2, 1), fluid2(3, 1), aa, bb, cc)
                 call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
                     aa, bb, cc, fluid2(4, 1), fluid2(2, 1), fluid2(3, 1))
-            end if
+			end if
+	end if
 
-        else  ! В случае граничных ячеек - граничные условия
-            !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
-            if(s2 == -1) then  ! Набегающий поток
-                dist = gl_Cell_dist(s1)
-                qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                fluid2(:, 1) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                fluid2(:, 2) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                fluid2(:, 3) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
-            else  ! Здесь нужны мягкие условия (это задняя стенка)
-                dist = gl_Cell_dist(s1)
-                qqq2 = qqq1
-                fluid2 = fluid1
-                qqq2(5) = 1.0_8
-                if(qqq2(2) > par_Velosity_inf) then
-                    qqq2(2) = par_Velosity_inf ! Отсос жидкости
-                end if
-
-            end if
-        end if
 
 
         call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &

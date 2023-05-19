@@ -29,7 +29,9 @@
     write(1) 1
     write(1) gl_Cell_par_MF
     
-    write(1) 0
+    write(1) 1
+	write(1) par_n_IA, par_n_IB, par_R_inner
+	
     write(1) 0
     write(1) 0
     write(1) 0
@@ -97,10 +99,14 @@
     read(1) n
     if (n == 1) then
         read(1) gl_Cell_par_MF
-    end if
-    
+	end if
     
     read(1) n
+	if (n == 1) then
+        read(1) par_n_IA, par_n_IB, par_R_inner
+	end if
+	
+	
     read(1) n
     read(1) n
     read(1) n

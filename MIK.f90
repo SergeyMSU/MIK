@@ -12,6 +12,7 @@
     include "Solvers.f90"
     include "Help_func.f90"
     include "Move_func.f90"
+	include "TVD.f90"
 	
 
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
@@ -40,28 +41,28 @@
     real(8), intent(in) :: t1(3), t2(3), t3(3), t4(3)
 	end function
 	
-	!@cuf attributes(host, device) & 
-	    subroutine chlld_Q(n_state, al, be, ge, &
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq, null_bn1)
-      ! Q - маяк, показывающий в какой области мы находимся
-      ! n_state = 0-3 - какой метод используем
-      ! al,be,ge - нормаль
-      ! w - скорость грани
-      ! qqq1,qqq2 - переменные с двух сторон
-      ! dsl,dsp,dsc - поверхности разрывов
-      ! qqq - выходные потоки
-		! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
-      implicit real*8 (a-h,o-z)
-      
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-	  logical, intent(in), optional :: null_bn1
-	  
-      dimension qqq(9),qqq1(9),qqq2(9)
-	  end subroutine
+	! !@cuf attributes(host, device) & 
+	!    subroutine chlld_Q(n_state, al, be, ge, &
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq, null_bn1)
+ !     ! Q - маяк, показывающий в какой области мы находимся
+ !     ! n_state = 0-3 - какой метод используем
+ !     ! al,be,ge - нормаль
+ !     ! w - скорость грани
+ !     ! qqq1,qqq2 - переменные с двух сторон
+ !     ! dsl,dsp,dsc - поверхности разрывов
+ !     ! qqq - выходные потоки
+	!	! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
+ !     implicit real*8 (a-h,o-z)
+ !     
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+	!  logical, intent(in), optional :: null_bn1
+	!  
+ !     dimension qqq(9),qqq1(9),qqq2(9)
+	!  end subroutine
 
     end interface
 
@@ -1459,6 +1460,9 @@
             
             ncell = gl_Cell_A(2, j, k)
             call Inner_conditions(ncell)
+			
+			ncell = gl_Cell_A(3, j, k)
+            call Inner_conditions(ncell)
             
         end do
     end do
@@ -1474,6 +1478,9 @@
             call Inner_conditions(ncell)
             
             ncell = gl_Cell_B(2, j, k)
+            call Inner_conditions(ncell)
+			
+			ncell = gl_Cell_B(3, j, k)
             call Inner_conditions(ncell)
         end do
 	end do
@@ -1499,11 +1506,11 @@
 	use My_func
     implicit none
 
-    integer :: Ngran, iter
+    integer :: Ngran, iter, Ncell
     real(8) :: p(3, 4), Vol, D, m(3, 4)
     real(8) :: a(3), b(3), c(3), S, node1(3), node2(3)
     real(8) :: dist, di, gr_center(3), ger1, ger2, ger3, ger
-    integer :: i, j, k, ll, grc
+    integer :: i, j, k, ll, grc, N1, N2, N3
 	real(8) :: pp(3, 8)
 
     ! Цикл по граням - считаем площадь грани, её нормаль
@@ -1774,38 +1781,101 @@
 		!PAUSE
 		
 
-    end do
+	end do
 
 
     ! Вычислим, что за грань и ячейки       для разделения сетки на внутреннюю и внешнюю области, которые считаются отдельно
-    Ngran = size(gl_all_Gran(1,:))
-    gl_Gran_info = 0
-
-    do  iter = 1, Ngran
-        i = gl_Gran_neighbour(1, iter)
-        if (norm2(gl_Cell_center(:, i)) <= par_R0 * 45) then
-            gl_Cell_info(i) = 0                                        ! Внутренняя сфера
-            gl_Gran_info(iter) = gl_Gran_info(iter) + 1
-            if (norm2(gl_Cell_center(:, i)) >= par_R0 * 40) then
-                gl_Cell_info(i) = 1                                        ! Пограничный слой
-            end if
-        else
-            gl_Cell_info(i) = 2
-        end if
-
-        i = gl_Gran_neighbour(2, iter)
-        if (i < 1) CYCLE
-        if (norm2(gl_Cell_center(:, i)) <= par_R0 * 45) then
-            gl_Cell_info(i) = 0                                        ! Внутренняя сфера
-            gl_Gran_info(iter) = gl_Gran_info(iter) + 1
-            if (norm2(gl_Cell_center(:, i)) >= par_R0 * 40) then
-                gl_Cell_info(i) = 1                                        ! Пограничный слой
-            end if
-        else
-            gl_Cell_info(i) = 2
-        end if
-
-    end do
+	
+	! Цикл для ячеек
+	N1 = size(gl_Cell_A(:, 1, 1))
+	N2 = size(gl_Cell_A(1, :, 1))
+	N3 = size(gl_Cell_A(1, 1, :))
+	
+	gl_Gran_info = 0
+	
+	do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+				if(i < par_n_IA) then
+					 gl_Cell_info(gl_Cell_A(i, j, k)) = 0
+				else if (i < par_n_IB) then
+					 gl_Cell_info(gl_Cell_A(i, j, k)) = 1
+				else
+					 gl_Cell_info(gl_Cell_A(i, j, k)) = 2
+				end if
+			end do
+		end do
+	end do
+	
+	! Цикл для ячеек
+	N1 = size(gl_Cell_B(:, 1, 1))
+	N2 = size(gl_Cell_B(1, :, 1))
+	N3 = size(gl_Cell_B(1, 1, :))
+	
+	do k = 1, N3
+        do j = 1, N2
+            do i = 1, N1
+				if(i < par_n_IA) then
+					 gl_Cell_info(gl_Cell_B(i, j, k)) = 0
+				else if (i < par_n_IB) then
+					 gl_Cell_info(gl_Cell_B(i, j, k)) = 1
+				else
+					 gl_Cell_info(gl_Cell_B(i, j, k)) = 2
+				end if
+			end do
+		end do
+	end do
+	
+	Ncell = size(gl_all_Cell(1, :))
+	
+	do  iter = 1, Ncell
+		if(gl_Cell_info(iter) /= 0) CYCLE
+		do j = 1, 6
+			if(gl_Cell_gran(j,iter) > 0) then
+				gl_Gran_info(gl_Cell_gran(j,iter)) = 2
+			end if
+		end do
+	end do
+	
+	do  iter = 1, Ncell
+		if(gl_Cell_info(iter) /= 1) CYCLE
+		do j = 1, 6
+			if(gl_Cell_gran(j,iter) > 0) then
+				gl_Gran_info(gl_Cell_gran(j,iter)) = 1
+			end if
+		end do
+	end do
+	
+	
+	
+    !Ngran = size(gl_all_Gran(1,:))
+    !gl_Gran_info = 0
+    !
+    !do  iter = 1, Ngran
+    !    i = gl_Gran_neighbour(1, iter)
+    !    if (norm2(gl_Cell_center(:, i)) <= par_R0 * 45) then
+    !        gl_Cell_info(i) = 0                                        ! Внутренняя сфера
+    !        gl_Gran_info(iter) = gl_Gran_info(iter) + 1
+    !        if (norm2(gl_Cell_center(:, i)) >= par_R0 * 40) then
+    !            gl_Cell_info(i) = 1                                        ! Пограничный слой
+    !        end if
+    !    else
+    !        gl_Cell_info(i) = 2
+    !    end if
+    !
+    !    i = gl_Gran_neighbour(2, iter)
+    !    if (i < 1) CYCLE
+    !    if (norm2(gl_Cell_center(:, i)) <= par_R0 * 45) then
+    !        gl_Cell_info(i) = 0                                        ! Внутренняя сфера
+    !        gl_Gran_info(iter) = gl_Gran_info(iter) + 1
+    !        if (norm2(gl_Cell_center(:, i)) >= par_R0 * 40) then
+    !            gl_Cell_info(i) = 1                                        ! Пограничный слой
+    !        end if
+    !    else
+    !        gl_Cell_info(i) = 2
+    !    end if
+    !
+    !end do
 
 
     end subroutine calc_all_Gran
@@ -1818,6 +1888,7 @@
     use STORAGE
     use GEO_PARAM
     USE OMP_LIB
+	use Solvers
     implicit none
 
     integer(4), intent(in) :: steps
@@ -1979,6 +2050,7 @@
     use GEO_PARAM
     USE OMP_LIB
 	use My_func
+	use Solvers
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2149,6 +2221,7 @@
     use GEO_PARAM
     USE OMP_LIB
 	use My_func
+	use Solvers
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2485,6 +2558,7 @@
     use GEO_PARAM
     USE OMP_LIB
 	use My_func
+	use Solvers
     implicit none
 
     integer(4), intent(in) :: steps
@@ -2781,6 +2855,7 @@
     use GEO_PARAM
     USE OMP_LIB
 	use My_func
+	use Solvers
     implicit none
 
     integer(4), intent(in) :: steps
@@ -3083,6 +3158,7 @@
     use GEO_PARAM
     use STORAGE
     use My_func
+	use Solvers
     implicit none
     integer :: step, now, now2, step2
     integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
@@ -3102,7 +3178,7 @@
 
     ! Сначала подготовим все массивы для правильного движения
     if (allocated(gl_Vx) == .False.) then   ! Если движение запускается впервый раз, то нужно выделить память под используемые массивы и задать значения
-        allocate(gl_Vx(size(gl_x)))
+		allocate(gl_Vx(size(gl_x)))
         allocate(gl_Vy(size(gl_x)))
         allocate(gl_Vz(size(gl_x)))
         allocate(gl_Point_num(size(gl_x)))
@@ -3482,6 +3558,7 @@
     use STORAGE
     use My_func
 	USE OMP_LIB
+	use Solvers
     implicit none
     integer :: step, now, now2, step2
     integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod
@@ -3547,13 +3624,13 @@
     time = 0.00002_8               ! Начальная инициализация шага по времени 
     do step = 1, 2000   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 200) == 0) print*, "Step = ", step , "  step_time = ", time
+        if (mod(step, 1) == 0) print*, "Step = ", step , "  step_time = ", time
         now2 = now
         now = mod(now, 2) + 1
         
         TT = time
         time = 100000.0
-        
+        !TT = 0.0
         ! Вычисляем новые скорости управляющих узлов
 		
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
@@ -3562,6 +3639,9 @@
         call Move_all(now, TT)   
         
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
+		
+		!pause
+		!CYCLE
 		
 	!	print*, gl_Cell_Volume2(1, now2)
 	!print*, gl_Cell_Volume2(10, now2)
@@ -3689,14 +3769,24 @@
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 			
-			if(gl_Gran_type(gr) == 1) metod = 3
+			metod = gl_Gran_scheme(gr)
 			
-			if(gl_Gran_type(gr) == 2) null_bn = .True.
+			!if(gl_Gran_type(gr) == 1) metod = 2
 			
-            
-            call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+			!if(gl_Gran_type(gr) == 2) null_bn = .True.
+			
+             if (.True.) then !(gl_Gran_type(gr) == 1) then
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
-            time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+			else
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
+			end if
+			
+            !call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            !    wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
+            
+			time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 			
 			
@@ -3748,6 +3838,7 @@
             Volume2 = gl_Cell_Volume2(gr, now2)
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MF(:, :, gr)
+			
             ! Просуммируем потоки через грани
             do i = 1, 6
                 j = gl_Cell_gran(i, gr)
@@ -3905,6 +3996,7 @@
         
         !$omp end parallel
 		
+		
 		gl_Vx = 0.0
 		gl_Vy = 0.0
 		gl_Vz = 0.0
@@ -3926,9 +4018,9 @@
         gl_Cell_center = gl_Cell_center2(:, :, now2)
         gl_Gran_square = gl_Gran_square2(:, now2)
 		
-		if (mod(step, 100) == 0) then
-			call Initial_conditions()
-		end if
+		!if (mod(step, 100) == 0) then
+		!	call Initial_conditions()
+		!end if
         
         call Start_MGD_3_inner(3)
 		
@@ -5042,7 +5134,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(46)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(61)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5073,7 +5165,7 @@
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
     call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-
+    call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
@@ -5087,7 +5179,7 @@
 	
     !call Start_MGD_move()
 	
-	call CUDA_START_MGD_move()
+	 !call CUDA_START_MGD_move()
 	
 	!call CUDA_START_GD_3()
 	
@@ -5131,10 +5223,9 @@
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    call Save_setka_bin(47)
+    !call Save_setka_bin(62)
     ! Variables
     call Print_Contact_3D()
 	
-    pause
     end program MIK
 

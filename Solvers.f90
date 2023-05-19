@@ -5,6 +5,44 @@
 !******7**10**********************************************************70
 !**    shema HLLD(modification) for 3D MHD                           **
 !******7**10**********************************************************70
+	
+	module Solvers
+	
+	interface
+	
+	subroutine chlld(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq, n_disc)
+	
+	implicit real*8 (a-h,o-z)
+      real(8), intent(out) :: dsl, dsp, dsc
+      real(8), intent(in) :: al, be, ge, w
+      integer(4), intent(in) :: n_state
+	  integer, intent(in), optional :: n_disc
+      dimension qqq(8), qqq1(8),qqq2(8)
+	  
+	end subroutine chlld
+								 
+	subroutine chlld_Q(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq, null_bn1, n_disc)
+      implicit real*8 (a-h,o-z)
+      
+      real(8), intent(out) :: dsl, dsp, dsc
+      real(8), intent(in) :: al, be, ge, w
+      integer(4), intent(in) :: n_state
+	  logical, intent(in), optional :: null_bn1
+	  integer, intent(in), optional :: n_disc
+      
+      dimension qqq(9),qqq1(9),qqq2(9)
+	  
+	  end subroutine chlld_Q
+
+    end interface
+
+	end module Solvers
     
 
        ! Моя версия с добавлением Q (сделана из версии Д.Б.)
@@ -12,7 +50,7 @@
 	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1)
+                                 qqq, null_bn1, n_disc)
       ! Q - маяк, показывающий в какой области мы находимся
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
@@ -27,6 +65,7 @@
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
 	  logical, intent(in), optional :: null_bn1
+	  integer, intent(in), optional :: n_disc
 	  
 	  logical :: null_bn
       
@@ -41,9 +80,11 @@
       dimension vzL(3),vzR(3),bzL(3),bzR(3)
       dimension vzzL(3),vzzR(3),bzzL(3),bzzR(3)
       dimension aco(3,3),qv(3),qb(3)
+	  
+	  integer :: n_disco
 
       data x0,x1,x2,x3,x4,x5,x6,x7,x8,x9/0.,1.,2.,3.,4.,5.,6.,7.,8.,9./
-      data n_disco /1/  ! Выбор нахождения скорости крайних характеристик
+      ! data n_disco /1/  ! Выбор нахождения скорости крайних характеристик
 
 !c-------  n_state=0   - one speed LAX
 !c-------  n_state=1   - two speed LAX (HLL,(Harten-Lax-van-Leer))
@@ -54,9 +95,16 @@
     null_bn = .False. ! необязательный формальный параметр
     else ! можно только в качестве аргумента
     null_bn = null_bn1 ! функции PRESENT
-    end if
+	end if
+	
+	if(.not. present(n_disc)) then
+    n_disco = 1 
+    else 
+    n_disco = n_disc 
+	end if
 
-
+        
+	  
       pi=dacos(-x1)
       cpi4=x4*pi
       cpi8=x8*pi
@@ -773,7 +821,7 @@
 	  subroutine chlld(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq)
+                                 qqq, n_disc)
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
       ! w - скорость грани
@@ -785,6 +833,9 @@
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
+	  integer, intent(in), optional :: n_disc
+	  
+	  integer(4) :: n_disco
       
       dimension qqq(8),qqq1(8),qqq2(8)
       dimension FR(8),FL(8)
@@ -799,12 +850,18 @@
       dimension aco(3,3),qv(3),qb(3)
 
       data x0,x1,x2,x3,x4,x5,x6,x7,x8,x9/0.,1.,2.,3.,4.,5.,6.,7.,8.,9./
-      data n_disco /1/  ! Выбор нахождения скорости крайних характеристик
+      !data n_disco /1/  ! Выбор нахождения скорости крайних характеристик
 
 !c-------  n_state=0   - one speed LAX
 !c-------  n_state=1   - two speed LAX (HLL,(Harten-Lax-van-Leer))
 !c-------  n_state=2   - two-state (3 speed) HLLC (Contact Discontinuity)
 !c-------  n_state=3   - multi-state (5 speed) HLLD (All Discontinuity)
+	  
+	      if(.not. present(n_disc)) then
+        n_disco = 1 
+        else 
+        n_disco = n_disc 
+	    end if
 
 
       pi=dacos(-x1)

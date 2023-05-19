@@ -7,7 +7,7 @@
     implicit none
     integer :: j, k, node, num
 
-    ! Body of Find_Surface
+    ! HP
     node = 1
 
     do k = 1, size( gl_Cell_A(par_n_HP - 1, 1, :) )
@@ -15,6 +15,37 @@
             gl_Contact(node) = gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k))
 			gl_Gran_type(gl_Contact(node)) = 2
             node = node + 1
+			
+			! Вводим лакса поперёк разрыва 
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 1, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 2, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 2, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 2, j, k))) = 1
+			
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 1, j, k))) = 1
+			
         end do
     end do
 
@@ -33,6 +64,22 @@
             gl_TS(node) = gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k))
 			gl_Gran_type(gl_TS(node)) = 1
             node = node + 1
+			
+			! Вводим лакса поперёк разрыва 
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_TS - 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_TS - 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_TS - 1, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS - 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS - 1, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_TS, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS, j, k))) = 1
+			
         end do
     end do
 
@@ -41,6 +88,21 @@
             gl_TS(node) = gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k))
 			gl_Gran_type(gl_TS(node)) = 1
             node = node + 1
+			
+			! Вводим лакса поперёк разрыва 
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS, j, k))) = 1
         end do
     end do
 
@@ -58,23 +120,70 @@
     if (par_developer_info) print *, "Find_Surface: Contact", node - 1, size(gl_Contact)
     if (par_developer_info) print *, "Find_Surface: TS", node - 1, size(gl_TS)
     if (par_developer_info) print *, "Find_Surface: BS", node - 1, size(gl_BS)
+	
+	! Вводим Лакса на оси симметрии
+	
+	do k = 1, size( gl_Cell_A(1, 1, :) )
+        do j = 1, size( gl_Cell_A(:, 1, 1) )
+			! Вводим лакса поперёк
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 1, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(j, 1, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 1, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 1, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 1, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 2, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(j, 2, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 2, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 2, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 2, k))) = 1
+			
+        end do
+	end do
+	
+	do k = 1, size( gl_Cell_B(1, 1, :) )
+        do j = 1, size( gl_Cell_B(:, 1, 1) )
+			! Вводим лакса поперёк
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 1
+			if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 1, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 1, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 1, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 2, k))) = 1
+			if (gl_Cell_gran(4, gl_Cell_B(j, 2, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 2, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 2, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 2, k))) = 1
+			
+        end do
+	end do
+	
+	
 
     end subroutine Find_Surface
     
     subroutine Calc_move(now) ! Вычисляем скорости движения узлов (ключевых) с помощью распада на поверхностях разрыва(
     use STORAGE
     use GEO_PARAM
+	use Solvers
     implicit none
     
     integer, intent(in) :: now   ! Какиой номер параметров используется в вычислении движения
     
-    integer :: i, Num, gr, s1, s2, j, yzel
+    integer :: i, Num, gr, s1, s2, j, yzel, ndisc
     real(8) :: normal(3), qqq1(8), qqq2(8), dsl, dsp, dsc, POTOK(8), a1, a2, v1, v2, &
         ray(3), norm, b1, b2, c1, c2
     
     !koef1 = 0.3! 0.2
     !koef2 = 1.0 ! 1.0
     !koef3 = 0.7   ! 0.3
+	
+	ndisc = 0
     
     ! Пробегаемся по всем граням и вычисляем скорости их движения
     
@@ -91,7 +200,7 @@
         qqq2 = gl_Cell_par(1:8, s2)
         
         call chlld(2, normal(1), normal(2), normal(3), &  ! 2
-                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, 0)
 		
         
         dsl = dsl * koef1
@@ -831,10 +940,10 @@
                 ! Вычисляем координаты точки на луче
 
                 ! до TS
-                if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
-                    !print *, r
-                    !pause
+				if (i <= par_n_IB) then  ! NEW
+                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+                else if (i <= par_n_TS) then  ! До расстояния = R_TS
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
                 else if (i <= par_n_HP) then  
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
                 else if (i <= par_n_BS) then 
@@ -897,7 +1006,7 @@
 			end if
 			
             
-            ! Обнулим для следующего успользования
+            ! Обнулим для следующего использования
             gl_Point_num(yzel) = 0
             gl_Vx(yzel) = 0.0
             gl_Vy(yzel) = 0.0
@@ -916,8 +1025,12 @@
                 ! Вычисляем координаты точки на луче
 
                 ! до TS
-                if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+				if (i <= par_n_IB) then  ! NEW
+                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+                else if (i <= par_n_TS) then  ! До расстояния = R_TS
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                !if (i <= par_n_TS) then  ! До расстояния = R_TS
+                !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 				end if
@@ -1079,7 +1192,14 @@
                 
                 ! Вычисляем координаты точки на луче
                 yzel = gl_RAY_K(i, j, k)
-                r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+				
+				if (i <= par_n_IB) then  ! NEW
+                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+                else 
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+				end if
+					
+                !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
 
 
                 ! Записываем новые координаты
