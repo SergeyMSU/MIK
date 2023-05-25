@@ -208,6 +208,9 @@ module MY_CUDA
 		 dev_mutex_4 = 0
 		 time_all = 0.0
 		 time_step = 1.0 ! 0.00000000001
+		 
+		 dev_gl_Gran_POTOK = 0.0
+		 dev_gl_Gran_POTOK_MF = 0.0
 	
 	end subroutine Set_CUDA
 	
@@ -260,6 +263,12 @@ module MY_CUDA
 		 allocate(dev_gl_RAY_K, MOLD = gl_RAY_K)
 		 allocate(dev_gl_RAY_D, MOLD = gl_RAY_D)
 		 allocate(dev_gl_RAY_E, MOLD = gl_RAY_E)
+		 
+		 dev_gl_Gran_square2 = 0.0
+		 dev_gl_Gran_center2 = 0.0
+		 dev_gl_Gran_normal2 = 0.0
+		 dev_gl_Cell_center2 = 0.0
+		 dev_gl_Cell_Volume2 = 0.0
 		 
 		 
 	end subroutine Alloc_CUDA_move
@@ -404,7 +413,8 @@ module MY_CUDA
 	end function dev_norm2
 	
 	attributes(device) subroutine dev_Calc_sourse_MF(plasma, fluid, sourse, zone)  ! Считаются мультифлюидные источники
-    implicit none
+    use GEO_PARAM
+	implicit none
     real(8), intent(in) :: plasma(9)
     real(8), intent(in) :: fluid(5,4)
     real(8), intent(out) :: sourse(5,5)
@@ -413,11 +423,6 @@ module MY_CUDA
     integer(4) :: i, kk(4)
     real(8) :: U_M_H(4), U_H(4), sigma(4), nu(4), S1, S2
 	
-	associate(par_a_2=>dev_par_a_2)
-	associate(par_n_p_LISM=>dev_par_n_p_LISM)
-	associate(par_Kn=>dev_par_Kn)
-	associate(par_n_H_LISM_=>dev_par_n_H_LISM_)
-    
     sourse = 0.0
     kk = 0
     kk(zone) = 1
@@ -457,12 +462,6 @@ module MY_CUDA
         sourse(5, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S2 - nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2)/2.0 + &
               (U_H(i)/U_M_H(i)) * 2.0 * (fluid(5, i) / fluid(1, i)) ) )
 	end do
-    
-	
-	end associate
-	end associate
-	end associate
-	end associate
     
 	end subroutine dev_Calc_sourse_MF
 	
@@ -515,10 +514,15 @@ module MY_CUDA
 	istat = cudaEventCreate(stopEvent)
 	istat = cudaEventRecord(startEvent, 0)
 	
+	step = dev_Ngran
+	print*, step, "   ", size(gl_all_Gran(1, :))
+	step = dev_Ncell
+	print*, step, "   ", size(gl_all_Cell(1, :))
+	
 	! Главный цикл
-	do step = 1, 38000 * 3 * 5   ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 20000   ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 5000) == 0) then
+		if (mod(step, 1000) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
@@ -540,7 +544,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	
+	if(.False.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -559,40 +563,56 @@ module MY_CUDA
 	call Cuda_Calc_move_BS<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
+	!dev_gl_Vx = 0.0
+	!dev_gl_Vy = 0.0
+	!dev_gl_Vz = 0.0
 	
 	! Делаем три цикла поверхностного натяжения (по разным лучам, как на хосте) -------------------------------------------------------------------------
 	! *** аналог функции Move_all на хосте ***
+	if (.True.) then
+		nx = size(gl_RAY_A(1, 1, :))
+		ny = size(gl_RAY_A(1, :, 1))
+		grid = dim3( ceiling(real(nx)/tBlock%x), &
+			ceiling(real(ny)/tBlock%y), 1)
 	
-	nx = size(gl_RAY_A(1, 1, :))
-    ny = size(gl_RAY_A(1, :, 1))
-	grid = dim3( ceiling(real(nx)/tBlock%x), &
-		ceiling(real(ny)/tBlock%y), 1)
-	
-	call Cuda_Move_all_1 <<< grid, tBlock>>> (dev_now)
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 4: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 4: ', cudaGetErrorString(cudaGetLastError())
+		call Cuda_Move_all_1 <<< grid, tBlock>>> (dev_now)
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 4: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 4: ', cudaGetErrorString(cudaGetLastError())
 	
 	
-	nx = size(gl_RAY_B(1, 1, :))
-    ny = size(gl_RAY_B(1, :, 1))
-	grid = dim3( ceiling(real(nx)/tBlock%x), &
-		ceiling(real(ny)/tBlock%y), 1)
+		nx = size(gl_RAY_B(1, 1, :))
+		ny = size(gl_RAY_B(1, :, 1))
+		grid = dim3( ceiling(real(nx)/tBlock%x), &
+			ceiling(real(ny)/tBlock%y), 1)
 	
-	call Cuda_Move_all_2 <<< grid, tBlock>>> (dev_now)
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 5: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 5: ', cudaGetErrorString(cudaGetLastError())
+		call Cuda_Move_all_2 <<< grid, tBlock>>> (dev_now)
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 5: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 5: ', cudaGetErrorString(cudaGetLastError())
 	
-	nx = size(gl_RAY_K(1, 1, :))
-    ny = size(gl_RAY_K(1, :, 1))
-	grid = dim3( ceiling(real(nx)/tBlock%x), &
-		ceiling(real(ny)/tBlock%y), 1)
+		nx = size(gl_RAY_K(1, 1, :))
+		ny = size(gl_RAY_K(1, :, 1))
+		grid = dim3( ceiling(real(nx)/tBlock%x), &
+			ceiling(real(ny)/tBlock%y), 1)
 	
-	call Cuda_Move_all_3 <<< grid, tBlock>>> (dev_now)
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 6: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 6: ', cudaGetErrorString(cudaGetLastError())
+		call Cuda_Move_all_3 <<< grid, tBlock>>> (dev_now)
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 6: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 6: ', cudaGetErrorString(cudaGetLastError())
+	
+	
+		nx = size(gl_RAY_O(1, 1, :))
+		ny = size(gl_RAY_O(1, :, 1))
+		grid = dim3( ceiling(real(nx)/tBlock%x), &
+			ceiling(real(ny)/tBlock%y), 1)
+	 
+		call Cuda_Move_all_4 <<< grid, tBlock>>> (dev_now)
+		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+			write (*,*) 'Error Sinc start 6: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+			write(*,*) 'Error ASync start 6: ', cudaGetErrorString(cudaGetLastError())
+	
+	end if
 	
 	! Теперь собственно циклы движения точек ---------------------------------------------------------------------------------------------------------
 	
@@ -710,6 +730,7 @@ module MY_CUDA
 	!print*, gl_Gran_normal(:, 300)
 	!print*, "_______"
 	
+	end if
 	
 	! Теперь нужен цикл по граням для решения задачи о распаде произвольного разрыва на них
 	
@@ -759,21 +780,26 @@ module MY_CUDA
 	!		dev_gl_Cell_par_MF = gl_Cell_par_MF
 	!end if
 	
-	
-	do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
-		dev_time_step_inner = 1000000.0
-		Num = size(gl_all_Gran_inner(:))
-		call CUF_MGD_grans_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
-		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-			write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-			write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+	if (.True.) then
+		do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
+			dev_time_step_inner = 1000000.0
+			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+		
+			Num = size(gl_all_Gran_inner(:))
+			call CUF_MGD_grans_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
+			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
  
-		Num = size(gl_all_Cell_inner(:))
-		call CUF_MGD_cells_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по ячейкам
-		ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-			write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-			write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
-	end do
+			Num = size(gl_all_Cell_inner(:))
+			call CUF_MGD_cells_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по ячейкам
+			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
+				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+		end do
+	end if
 	
 	
 	dev_gl_Vx = 0.0
@@ -782,14 +808,25 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 7000) == 0) then
+	if (mod(step, 5000) == 0) then
 		print*, "PECHAT ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
 		call Print_surface_2D()
 		call Print_Setka_2D()
 		call Print_par_2D()
+		call Print_par_y_2D()
 		call Print_Contact_3D()
+		call Print_TS_3D()
+		call Print_Setka_y_2D()
+		call Print_surface_y_2D()
+	end if
+	
+	if (mod(step, 50000) == 0) then
+		print*, "PECHAT 2 ", step
+		call Send_data_to_Host_move(now2)
+		call Send_data_to_Host()
+		call Save_setka_bin(79)
 	end if
 	
 	
@@ -805,6 +842,11 @@ module MY_CUDA
 	call Print_surface_2D()
     call Print_Setka_2D()
     call Print_par_2D()
+	call Print_par_y_2D()
+	call Print_Setka_y_2D()
+	call Print_TS_3D()
+	call Print_Contact_3D
+	call Print_surface_y_2D()
 	
 	
 	end subroutine CUDA_START_MGD_move

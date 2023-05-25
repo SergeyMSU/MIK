@@ -1439,11 +1439,11 @@
     ! Перенормировка параметров, если это необходимо
     ncell = size(gl_all_Cell(1, :))
     
-    do gr = 1, ncell
-        if( gl_x(gl_all_Cell(1, gr)) > 200.0) then
-                gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
-        end if
-    end do
+    !do gr = 1, ncell
+    !    if( gl_x(gl_all_Cell(1, gr)) > 200.0) then
+    !            gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+    !    end if
+    !end do
     
     
     ! Задаём граничные условия (параметры в первых ячейках на внутренней сфере)
@@ -1461,9 +1461,6 @@
             ncell = gl_Cell_A(2, j, k)
             call Inner_conditions(ncell)
 			
-			ncell = gl_Cell_A(3, j, k)
-            call Inner_conditions(ncell)
-            
         end do
     end do
     
@@ -1480,8 +1477,6 @@
             ncell = gl_Cell_B(2, j, k)
             call Inner_conditions(ncell)
 			
-			ncell = gl_Cell_B(3, j, k)
-            call Inner_conditions(ncell)
         end do
 	end do
 	
@@ -3087,12 +3082,18 @@
                 u3 = (qqq(1) * qqq(2) - time * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume + time * SOURSE(2, 1)) / ro3
                 v3 = (qqq(1) * qqq(3) - time * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume + time * SOURSE(3, 1)) / ro3
                 w3 = (qqq(1) * qqq(4) - time * (POTOK(4) + (qqq(6)/cpi4) * sks) / Volume + time * SOURSE(4, 1)) / ro3
-                p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 ) &
-                    - time * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + time * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
-				
+                
 				bx3 = qqq(6) - time * (POTOK(6) + qqq(2) * sks) / Volume
 				by3 = qqq(7) - time * (POTOK(7) + qqq(3) * sks) / Volume
 				bz3 = qqq(8) - time * (POTOK(8) + qqq(4) * sks) / Volume
+				
+                p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (qqq(6)**2 + qqq(7)**2 + qqq(8)**2) / 25.13274122871834590768 ) &
+                    - time * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + time * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
+				
+				
+				!p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 ) &
+                !    - time * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + time * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
+				
 
                 if (p3 <= 0.0_8) then
                     !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
@@ -3560,21 +3561,22 @@
 	USE OMP_LIB
 	use Solvers
     implicit none
-    integer :: step, now, now2, step2
-    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod
+    integer :: step, now, now2, step2, min_sort, ijk, ijk2
+    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod, mincell
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
     real(8) :: dist, dsl, dsc, dsp, start_time, end_time
     real(8) :: POTOK(9)
     real(8) :: POTOK_MF(5)
     real(8) :: POTOK_MF_all(5, 4)
-    real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc, sks
+    real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc, sks, loc_time
     real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
     logical :: l_1, null_bn
 
+	min_sort = 0
 
     ! Сначала подготовим все массивы для правильного движения
     if (allocated(gl_Vx) == .False.) then   ! Если движение запускается впервый раз, то нужно выделить память под используемые массивы и задать значения
@@ -3617,15 +3619,22 @@
 	
     
     start_time = omp_get_wtime()
+	
+	mincell = 1
     
 	
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 2000   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 1) == 0) print*, "Step = ", step , "  step_time = ", time
-        now2 = now
+        if (mod(step, 100) == 0) print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
+			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) !, &
+			!"ro = ", gl_Cell_par(:, gl_Gran_neighbour(1, mincell)), " |||| ", gl_Cell_par_MF(:, :, gl_Gran_neighbour(1, mincell))
+        
+		!pause
+			
+		now2 = now
         now = mod(now, 2) + 1
         
         TT = time
@@ -3633,12 +3642,39 @@
         !TT = 0.0
         ! Вычисляем новые скорости управляющих узлов
 		
+		!do ijk = 1, 8
+		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
+		!	print*, "posle ", gl_x2(gl_all_Cell(ijk, 200614), 2), gl_y2(gl_all_Cell(ijk, 200614), 2), gl_z2(gl_all_Cell(ijk, 200614), 2)
+		!end do
+		
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
-        call Move_all(now, TT)   
+        call Move_all(now, TT) 
+		
+		CYCLE
         
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
+		
+		
+		
+		!do ijk = 1, 8
+		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
+		!	print*, "posle ", gl_x2(gl_all_Cell(ijk, 200614), 2), gl_y2(gl_all_Cell(ijk, 200614), 2), gl_z2(gl_all_Cell(ijk, 200614), 2)
+		!    print*, "velocity ", gl_Vx(gl_all_Cell(ijk, 200614)), gl_Vy(gl_all_Cell(ijk, 200614)), gl_Vz(gl_all_Cell(ijk, 200614))
+		!    ijk2 = gl_all_Cell(ijk, 200614)
+		!end do
+		
+		
+		!do k = 1, size(gl_RAY_E(1, 1, :))
+		!	do j = 1, size(gl_RAY_E(1, :, 1))
+		!	    do i = 1, size(gl_RAY_E(:, 1, 1))
+		!	        if(ijk2 == gl_RAY_E(i, j, k)) then
+		!				print*, "YES, eto E! ", i, j, k
+		!			end if
+		!        end do
+		!    end do
+		!end do
 		
 		!pause
 		!CYCLE
@@ -3665,16 +3701,16 @@
      !   print*, gl_Gran_normal2(:, 300, now2)
      !   print*, "_______"
         
-        ngran = size(gl_all_Gran_inner(:))
-        ncell = size(gl_all_Cell_inner(:))
+        !ngran = size(gl_all_Gran_inner(:))
+        !ncell = size(gl_all_Cell_inner(:))
         
         !$omp parallel
 
-        ! Теперь по основным ячейкам
+        ! Теперь по основным граням
         ngran = size(gl_all_Gran(1, :))
         ncell = size(gl_all_Cell(1, :))
         
-        !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn) &
+        !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time) &
         !$omp & reduction(min:time)
         do gr = 1, ngran
 			metod = 2
@@ -3758,9 +3794,9 @@
                     dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     fluid2 = fluid1
-                    qqq2(5) = 1.0_8
-                    if(qqq2(2) > par_Velosity_inf) then
-                        qqq2(2) = par_Velosity_inf ! Отсос жидкости
+                    !qqq2(5) = 1.0_8
+                    if(qqq2(2) > 0.2 * par_Velosity_inf) then
+                        qqq2(2) = 0.2 * par_Velosity_inf ! Отсос жидкости
                     end if
 
                 end if
@@ -3772,6 +3808,8 @@
 			metod = gl_Gran_scheme(gr)
 			
 			!if(gl_Gran_type(gr) == 1) metod = 2
+			
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
@@ -3785,31 +3823,82 @@
 			
             !call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
             !    wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
-            
-			time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+            loc_time = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			
+			if(loc_time < time) then
+			    time = min(time, loc_time )   ! REDUCTION
+				mincell = gr
+				min_sort = 0
+			end if
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 			
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
 
-            call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+			if( .False.) then
+			!if (gr == 206134) then
+				write(*,*) "__***__ 206134"
+				write(*,*) gl_Gran_info(gr), s1, s2
+				write(*,*) "__A__"
+				write(*,*)  gl_Gran_POTOK(1, gr), gl_Gran_POTOK(2, gr), gl_Gran_POTOK(3, gr), gl_Gran_POTOK(4, gr), &
+						gl_Gran_POTOK(5, gr), gl_Gran_POTOK(6, gr), gl_Gran_POTOK(7, gr), gl_Gran_POTOK(8, gr), gl_Gran_POTOK(9, gr), &
+						gl_Gran_POTOK(10, gr)
+				write(*,*) "__B__"
+				write(*,*) gl_Gran_square2(gr, now)
+				write(*,*) "__C__"
+				write(*,*) dist, wc
+				write(*,*) "__D__"
+				write(*,*) gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now)
+				write(*,*) "__E__"
+				write(*,*) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8), qqq1(9)
+				write(*,*) "__F__"
+				write(*,*) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8), qqq2(9)
+				
+				
+			end if
+			
+            call chlld_gd(0, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+			
+			loc_time = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+            if(loc_time < time) then
+			    time = min(time, loc_time )   ! REDUCTION
+				mincell = gr
+				min_sort = 1
+			end if
             gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
             call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            
+			loc_time = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+            if(loc_time < time) then
+			    time = min(time, loc_time )   ! REDUCTION
+				mincell = gr
+				min_sort = 2
+			end if
             gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square2(gr, now)
             
             call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            
+			loc_time = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+            if(loc_time < time) then
+			    time = min(time, loc_time )   ! REDUCTION
+				mincell = gr
+				min_sort = 3
+			end if
             gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
             call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            
+			loc_time = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+            if(loc_time < time) then
+			    time = min(time, loc_time )   ! REDUCTION
+				mincell = gr
+				min_sort = 4
+			end if
             gl_Gran_POTOK_MF(:, 4, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
 
@@ -3913,18 +4002,30 @@
                 ro3 = qqq(1)* Volume / Volume2 - TT * POTOK(1) / Volume2
                 Q3 = qqq(9)* Volume / Volume2 - TT * POTOK(9) / Volume2
                 if (ro3 <= 0.0_8) then
-                    print*, "Ro < 0  1490 ", ro3, gl_Cell_center(:, gr)
-                    pause
+                    print*, "Ro < 0  1490 to\from	", ro3, qqq(1)
+					print*, "Center = ", gl_Cell_center(1, gr), gl_Cell_center(2, gr), gl_Cell_center(3, gr)
+					print*, "Plotnost' opustilas' nizhe nulya v yachejke pod nomerom = ", gr
+                    !print*, "gl_Cell_info(gr)", gl_Cell_info(gr)
+					print*, "time = ", TT
+                    print*, "Ob'yomy =  ", Volume, Volume2
+					print*, "Potok = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4)
+					print*, "Potok = ", POTOK(5), POTOK(6), POTOK(7), POTOK(8), POTOK(9)
+					ro3 = 0.1
+                    !pause
                 end if
                 u3 = (qqq(1) * qqq(2)* Volume / Volume2 - TT * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume2 + TT * SOURSE(2, 1)) / ro3
                 v3 = (qqq(1) * qqq(3)* Volume / Volume2 - TT * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume2 + TT * SOURSE(3, 1)) / ro3
                 w3 = (qqq(1) * qqq(4)* Volume / Volume2 - TT * (POTOK(4) + (qqq(6)/cpi4) * sks) / Volume2 + TT * SOURSE(4, 1)) / ro3
-                p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 )* Volume / Volume2 &
-                    - TT * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume2 + TT * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
 				
 				bx3 = qqq(6) * Volume / Volume2 - TT * (POTOK(6) + qqq(2) * sks) / Volume2
 				by3 = qqq(7) * Volume / Volume2 - TT * (POTOK(7) + qqq(3) * sks) / Volume2
 				bz3 = qqq(8) * Volume / Volume2 - TT * (POTOK(8) + qqq(4) * sks) / Volume2
+				
+                p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (qqq(6)**2 + qqq(7)**2 + qqq(8)**2) / 25.13274122871834590768 )* Volume / Volume2 &
+                    - TT * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume2 + TT * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
+				
+				
+				
 				
 				!if(gr == 50) then
 				!	write(*,*) ro3, qqq(1), Volume, Volume2, TT, POTOK(1)
@@ -3951,15 +4052,16 @@
                 if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем внутреннюю сферу для сорта 1
                 ro3 = fluid1(1, i)* Volume / Volume2 - TT * POTOK_MF_all(1, i) / Volume2 + TT * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
-                    print*, "Ro < 0  in ", i,  ro3
-                    print*, "gl_Cell_center(:, gr)", gl_Cell_center(:, gr)
-                    print*, "gl_Cell_info(gr)", gl_Cell_info(gr)
-                    print*, fluid1(:, i)
-                    print*, l_1
-                    print*, SOURSE(:, i + 1)
-                    print*, TT
-                    print*, "POTOK ", POTOK_MF_all(:, i)
-                    pause
+                    print*, "Ro < 0  in sort ", i,  ro3, gl_Cell_center(:, gr)
+					ro3 = 0.05
+                    !print*, "gl_Cell_center(:, gr)", gl_Cell_center(:, gr)
+                    !print*, "gl_Cell_info(gr)", gl_Cell_info(gr)
+                    !print*, fluid1(:, i)
+                    !print*, l_1
+                    !print*, SOURSE(:, i + 1)
+                    !print*, TT
+                    !print*, "POTOK ", POTOK_MF_all(:, i)
+                    !pause
                 end if
                 u3 = (fluid1(1, i) * fluid1(2, i)* Volume / Volume2 - TT * POTOK_MF_all(2, i) / Volume2 + TT * SOURSE(2, i + 1)) / ro3
                 v3 = (fluid1(1, i) * fluid1(3, i)* Volume / Volume2 - TT * POTOK_MF_all(3, i) / Volume2 + TT * SOURSE(3, i + 1)) / ro3
@@ -3980,9 +4082,54 @@
                     !pause
 				end if
 				
-				!if(gr == 50) then
-				!	write(*,*) ro3, Q3, u3, v3, w3, p3
-				!end if
+				
+				
+				if(.False.) then 
+				!if(gr == 206135 .and. i == 1) then
+					write(*,*) "__1__"
+					write(*,*) ro3, u3, v3, w3, p3
+					write(*,*) "__2__"
+					write(*,*) fluid1(1, i), fluid1(2, i), fluid1(3, i), fluid1(4, i), fluid1(5, i)
+					write(*,*) "__3__"
+					write(*,*) POTOK_MF_all(1, i), POTOK_MF_all(2, i), POTOK_MF_all(3, i), POTOK_MF_all(4, i), POTOK_MF_all(5, i)
+                    write(*,*) "__4__"
+					write(*,*) Volume, Volume2
+					write(*,*) "__5__"
+					write(*,*)  SOURSE(1, i + 1), SOURSE(2, i + 1), SOURSE(3, i + 1), SOURSE(4, i + 1), SOURSE(5, i + 1)
+					write(*,*) "__6__"
+					write(*,*) TT
+					write(*,*) "_____"
+					
+					do ijk = 1, 6
+                j = gl_Cell_gran(ijk, gr)
+				write(*,*) "*********************"
+				write(*,*) "gran = ", j, "type = ", gl_Gran_type(j), "Info = ",gl_Gran_info(j)
+                if (j == 0) CYCLE
+                    
+				if (gl_Gran_neighbour(1, j) == gr) then 
+					    write(*,*) "__+__"
+					else
+					    write(*,*) "__-__"
+					end if
+					write(*,*) "__A__"
+					write(*,*)  gl_Gran_POTOK(1, j), gl_Gran_POTOK(2, j), gl_Gran_POTOK(3, j), gl_Gran_POTOK(4, j), &
+						gl_Gran_POTOK(5, j), gl_Gran_POTOK(6, j), gl_Gran_POTOK(7, j), gl_Gran_POTOK(8, j), gl_Gran_POTOK(9, j), &
+						gl_Gran_POTOK(10, j)
+					write(*,*) "__B__"
+					write(*,*) gl_Gran_POTOK_MF(1, 1, j), gl_Gran_POTOK_MF(2, 1, j), gl_Gran_POTOK_MF(3, 1, j), &
+						gl_Gran_POTOK_MF(4, 1, j), gl_Gran_POTOK_MF(5, 1, j)
+					write(*,*) "__C__"
+					write(*,*) gl_Gran_POTOK_MF(1, 2, j), gl_Gran_POTOK_MF(2, 2, j), gl_Gran_POTOK_MF(3, 2, j), &
+						gl_Gran_POTOK_MF(4, 2, j), gl_Gran_POTOK_MF(5, 2, j)
+					write(*,*) "__D__"
+					write(*,*) gl_Gran_POTOK_MF(1, 3, j), gl_Gran_POTOK_MF(2, 3, j), gl_Gran_POTOK_MF(3, 3, j), &
+						gl_Gran_POTOK_MF(4, 3, j), gl_Gran_POTOK_MF(5, 3, j)
+					write(*,*) "__F__"
+					write(*,*) gl_Gran_POTOK_MF(1, 4, j), gl_Gran_POTOK_MF(2, 4, j), gl_Gran_POTOK_MF(3, 4, j), &
+						gl_Gran_POTOK_MF(4, 4, j), gl_Gran_POTOK_MF(5, 4, j)
+				end do
+					
+				end if
 
                 gl_Cell_par_MF(:, i, gr) = (/ro3, u3, v3, w3, p3/)
 			end do
@@ -4022,12 +4169,14 @@
 		!	call Initial_conditions()
 		!end if
         
-        call Start_MGD_3_inner(3)
+        call Start_MGD_3_inner(5)
 		
-		if (mod(step, 10000) == 0 .or. step == 1000 .or. step == 3000) then
+		if (mod(step, 1000) == 0 .or. step == 1000 .or. step == 3000) then
 		    call Print_surface_2D()
             call Print_Setka_2D()
             call Print_par_2D()
+			call Print_Contact_3D()
+	        call Print_TS_3D()
 		end if
 		
 		
@@ -4280,19 +4429,115 @@
 
 	end subroutine Print_Setka_2D
 	
+	
+	subroutine Print_Setka_y_2D()  ! Печатает 2Д сетку с линиями в Техплот
+    use GEO_PARAM
+    use STORAGE
+    implicit none
+
+    integer :: N1, N2, kk, k, i, j, N
+
+
+    N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
+        size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(:, 1, 1)) + &
+        size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
+    N = N * 2
+
+    open(1, file = 'print_setka_y_2D.txt')
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Z'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", 4 * N , ", F=FEPOINT, ET=LINESEG "
+
+
+    kk = par_l_phi/4
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_A(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_A(i, j, kk) ))
+            end do
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_B(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_B(i, j, kk) ))
+            end do
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_C(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_C(i, j, kk) ))
+            end do
+        end do
+    end do
+
+    ! Нижняя часть сетки
+
+    kk = 3 * par_l_phi/4 + 1
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_A(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_A(i, j, kk) ))
+            end do
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_B(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_B(i, j, kk) ))
+            end do
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            do k = 1, 4
+                write(1,*) gl_x(gl_all_Cell(k, gl_Cell_C(i, j, kk) )), gl_z(gl_all_Cell(k, gl_Cell_C(i, j, kk) ))
+            end do
+        end do
+    end do
+
+
+    ! Connectivity list
+    do j = 0, N
+        write(1,*) 4 * j + 1, 4 * j + 2
+        write(1,*) 4 * j + 2, 4 * j + 3
+        write(1,*) 4 * j + 3, 4 * j + 4
+        write(1,*) 4 * j + 4, 4 * j + 1
+    end do
+
+    close(1)
+
+
+	end subroutine Print_Setka_y_2D
+	
 	subroutine Print_Contact_3D()
     use GEO_PARAM
     use STORAGE
     implicit none
-	integer(4) :: N1, N2, N3, j, k, cel, gr, kk
+	integer(4) :: N1, N2, N3, j, k, cel, gr, kk, M1, M2, M3
 	real(8) :: c(3)
 	
 	N3 = size(gl_Cell_A(1, 1, :))
 	N2 = size(gl_Cell_A(1, :, 1))
     N1 = size(gl_Cell_A(:, 1, 1))
 	
+	M3 = size(gl_Cell_C(1, 1, :))
+	M2 = size(gl_Cell_C(1, :, 1))
+    M1 = size(gl_Cell_C(:, 1, 1))
+	
 	open(1, file = 'Print_Contact_3D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) , ", E =  ", N3 * (N2 - 1), ", F=FEPOINT, ET=quadrilateral "
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1), ", F=FEPOINT, ET=quadrilateral "
 	
 	
 	do k = 1, N3
@@ -4323,7 +4568,36 @@
 	    end do	
 	end do
 	
-	do k = 1, N3 * (N2 - 1)
+	
+	do k = 1, M3
+		do j = 1, M2 - 1
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, j, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, j + 1, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, j + 1, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, j, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+	    end do	
+	end do
+	
+	do k = 1, N3 * (N2 - 1) + M3 * (M2 - 1)
 		write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
 	end do
 	
@@ -4331,6 +4605,59 @@
 	close(1)
 	
 	end subroutine Print_Contact_3D
+	
+	
+	subroutine Print_TS_3D()
+    use GEO_PARAM
+    use STORAGE
+    implicit none
+	integer(4) :: N1, N2, N3, j, k, cel, gr, kk
+	real(8) :: c(3)
+	
+	N3 = size(gl_Cell_A(1, 1, :))
+	N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+	
+	open(1, file = 'Print_TS_3D.txt')
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) , ", E =  ", N3 * (N2 - 1), ", F=FEPOINT, ET=quadrilateral "
+	
+	
+	do k = 1, N3
+		do j = 1, N2 - 1
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			cel = gl_Cell_A(par_n_TS - 1, j, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_A(par_n_TS - 1, j + 1, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_A(par_n_TS - 1, j + 1, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_A(par_n_TS - 1, j, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+	    end do	
+	end do
+	
+	do k = 1, N3 * (N2 - 1)
+		write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+	end do
+	
+	
+	close(1)
+	
+	end subroutine Print_TS_3D
 
     subroutine Print_surface_2D()
     use GEO_PARAM
@@ -4475,7 +4802,152 @@
     close(1)
 
 
-    end subroutine Print_surface_2D
+	end subroutine Print_surface_2D
+	
+	subroutine Print_surface_y_2D()
+    use GEO_PARAM
+    use STORAGE
+    implicit none
+    integer :: kk, j, yzel, N, M, L
+    ! Body of Print_surface
+    kk = 1
+    N = size(gl_RAY_A(1, :, kk)) + size(gl_RAY_B(1, :, kk)) + size(gl_RAY_K(1, :, kk))
+    M = size(gl_RAY_A(1, :, kk)) + size(gl_RAY_C(1, :, kk)) + size(gl_RAY_O(1, :, kk))
+    L = M
+
+    open(1, file = 'print_surface_y_2D.txt')
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Z'  ZONE T= 'HP', N= ", 2 * N + 2 * M + 2 * L, ", E =  ", 2 * (N - 1) + 2 * (M - 1) + &
+        + 2 * (L - 1), ", F=FEPOINT, ET=LINESEG "
+
+    kk = par_l_phi/4
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_B(1, :, kk))
+        yzel = gl_RAY_B(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = size(gl_RAY_K(1, :, kk)), 1, -1
+        yzel = gl_RAY_K(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    kk = par_l_phi/2 + 1
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_B(1, :, kk))
+        yzel = gl_RAY_B(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = size(gl_RAY_K(1, :, kk)), 1, -1
+        yzel = gl_RAY_K(par_n_TS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    ! Контакт
+    kk = 1
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_HP, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_C(1, :, kk))
+        yzel = gl_RAY_C(1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j =  1, size(gl_RAY_O(1, :, kk))
+        yzel = gl_RAY_O(1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    kk = 3 * par_l_phi/4 + 1
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_HP, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_C(1, :, kk))
+        yzel = gl_RAY_C(1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j =  1, size(gl_RAY_O(1, :, kk))
+        yzel = gl_RAY_O(1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    ! BS
+    kk = 1
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_BS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_C(1, :, kk))
+        yzel = gl_RAY_C(par_n_BS - par_n_HP + 1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j =  1, size(gl_RAY_O(1, :, kk))
+        yzel = gl_RAY_O(par_n_BS - par_n_HP + 1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    kk = par_l_phi/2 + 1
+    do j = 1, size(gl_RAY_A(1, :, kk))
+        yzel = gl_RAY_A(par_n_BS, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j = 1, size(gl_RAY_C(1, :, kk))
+        yzel = gl_RAY_C(par_n_BS - par_n_HP + 1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+    do j =  1, size(gl_RAY_O(1, :, kk))
+        yzel = gl_RAY_O(par_n_BS - par_n_HP + 1, j, kk)
+        write(1,*) gl_x(yzel), gl_z(yzel)
+    end do
+
+
+    ! Connectivity list
+    do j = 1, N - 1
+        write(1,*) j, j + 1
+    end do
+
+    do j = N + 1, 2 * N - 1
+        write(1,*) j, j + 1
+    end do
+
+
+    do j = 2 * N + 1, 2 * N + 1 + M - 2
+        write(1,*) j, j + 1
+    end do
+
+    do j = 2 * N + 1 + M, 2 * N + 1 + 2 * M - 2
+        write(1,*) j, j + 1
+    end do
+
+    do j = 2 * N + 1 + 2 * M, 2 * N + 1 + 2 * M + L - 2
+        write(1,*) j, j + 1
+    end do
+
+    do j = 2 * N + 1 + 2 * M + L, 2 * N + 1 + 2 * M + L + L - 2
+        write(1,*) j, j + 1
+    end do
+
+    close(1)
+
+
+    end subroutine Print_surface_y_2D
 
     subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
     use GEO_PARAM
@@ -4569,7 +5041,102 @@
     close(1)
 
 
-    end subroutine Print_par_2D
+	end subroutine Print_par_2D
+	
+	
+	subroutine Print_par_y_2D()  ! Печатает 2Д сетку с линиями в Техплот
+    use GEO_PARAM
+    use STORAGE
+    implicit none
+
+    integer :: N1, N2, kk, k, i, j, N, m
+    real(8) :: c(3), Mach
+
+
+    N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
+        size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(:, 1, 1)) + &
+        size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
+    N = N * 2
+
+    open(1, file = 'print_par_y_2D.txt')
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Z', 'Y', 'rho', 'u', 'v', 'w', 'p',"
+    write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q',"
+    write(1,*) "'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
+    write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
+    write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
+
+
+    kk = par_l_phi/4
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
+            m = gl_Cell_A(i, j, kk)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*) c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_B(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_C(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+
+    ! Нижняя часть сетки
+
+    kk = 3 * par_l_phi/4 + 1
+    N2 = size(gl_Cell_A(1, :, 1))
+    N1 = size(gl_Cell_A(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_A(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+    N2 = size(gl_Cell_B(1, :, 1))
+    N1 = size(gl_Cell_B(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_B(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+    N2 = size(gl_Cell_C(1, :, 1))
+    N1 = size(gl_Cell_C(:, 1, 1))
+    do j = 1, N2
+        do i = 1, N1
+            m = gl_Cell_C(i, j, kk)
+            c = gl_Cell_center(:, m)
+            Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+        end do
+    end do
+
+
+    close(1)
+
+
+    end subroutine Print_par_y_2D
 
     subroutine Print_Point_Plane()
     ! Точки в плоскости XOY - имеют две координаты
@@ -5103,6 +5670,16 @@
     !do a2 = 1, 8
     !	print*, gl_all_Cell(a2, a1)
     !end do
+	
+	! Проверяем параметры среды
+	N1 = size(gl_all_Cell(1, :))
+    do i = 1, N1
+		if (gl_Cell_par(1, i) <= 0.0) PAUSE "ERROR 55367fggfh"
+		if (gl_Cell_par_MF(1, 1, i) <= 0.0) PAUSE "ERROR sfergh453"
+		if (gl_Cell_par_MF(1, 2, i) <= 0.0) PAUSE "ERROR fghjki8765resdcvb"
+		if (gl_Cell_par_MF(1, 3, i) <= 0.0) PAUSE "ERROR 12345678ikjgfdssxcvfg"
+		if (gl_Cell_par_MF(1, 4, i) <= 0.0) PAUSE "ERROR dr45tgy7uj"
+	end do
 
 
     end subroutine Geometry_check
@@ -5134,7 +5711,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(61)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(85)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5152,6 +5729,9 @@
     call Print_par_2D()
 	call Print_surface_2D()
     call Print_Setka_2D()
+	call Print_Setka_y_2D()
+	call Print_TS_3D()
+	call Print_surface_y_2D()
     !call Print_cell_and_neighbour(1,2,1)
     !call Print_gran()
     !call Print_all_surface("C")
@@ -5165,7 +5745,7 @@
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
     call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-    call Find_TVD_sosed()
+    ! call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
@@ -5177,12 +5757,13 @@
     !call Print_par_2D()
     
 	
-    !call Start_MGD_move()
+    call Start_MGD_move()
 	
-	 !call CUDA_START_MGD_move()
+	!call CUDA_START_MGD_move()
 	
 	!call CUDA_START_GD_3()
 	
+	!pause
 	
 	!print*, gl_Cell_par(:, 5)
 	!print*, "_______"
@@ -5217,15 +5798,19 @@
 
     call Print_surface_2D()
     call Print_Setka_2D()
+	call Print_Setka_y_2D()
 	
     !call Print_all_surface("C")
     !call Print_all_surface("B")
     !call Print_all_surface("T")
 	
     call Print_par_2D()
-    !call Save_setka_bin(62)
+	call Print_par_y_2D()
+	call Print_surface_y_2D()
+    call Save_setka_bin(86)
     ! Variables
     call Print_Contact_3D()
+	call Print_TS_3D()
 	
     end program MIK
 

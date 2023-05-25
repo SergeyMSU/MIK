@@ -5,7 +5,7 @@
     use STORAGE
     use GEO_PARAM
     implicit none
-    integer :: j, k, node, num
+    integer :: j, k, node, num, i
 
     ! HP
     node = 1
@@ -54,6 +54,36 @@
             gl_Contact(node) = gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k))
 			gl_Gran_type(gl_Contact(node)) = 2
             node = node + 1
+			
+			! Вводим лакса поперёк разрыва 
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) ) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+			
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1
+			
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
         end do
     end do
 
@@ -72,13 +102,20 @@
 			end if
 			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS - 1, j, k))) = 1
 			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS - 1, j, k))) = 1
+			!
+			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_TS, j, k))) = 1
+			!if(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k)) /= 0) then
+			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k))) = 1
+			!end if
+			!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS, j, k))) = 1
+			!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS, j, k))) = 1
 			
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_TS, j, k))) = 1
-			if(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_TS, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_TS - 2, j, k))) = 1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_TS - 2, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_TS - 2, j, k)) ) = 1
 			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS, j, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_TS - 2, j, k))) = 1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_TS - 2, j, k))) = 1
 			
         end do
     end do
@@ -90,19 +127,20 @@
             node = node + 1
 			
 			! Вводим лакса поперёк разрыва 
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS - 1, j, k))) = 1
-			if(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) ) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS - 1, j, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			!if(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) /= 0) then
+			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS - 1, j, k)) ) = 1
+			!end if
+			!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS - 1, j, k))) = 1
+			!
+			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS, j, k))) = 1
+			!if(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k)) /= 0) then
+			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k))) = 1
+			!end if
+			!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS, j, k))) = 1
+			!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS, j, k))) = 1
 			
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(par_n_TS, j, k))) = 1
-			if(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(par_n_TS, j, k))) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(par_n_TS, j, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(par_n_TS, j, k))) = 1
         end do
     end do
 
@@ -144,7 +182,7 @@
 	end do
 	
 	do k = 1, size( gl_Cell_B(1, 1, :) )
-        do j = 1, size( gl_Cell_B(:, 1, 1) )
+        do j = 1, par_n_TS + 5 !size( gl_Cell_B(:, 1, 1) )
 			! Вводим лакса поперёк
 			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 1
 			if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
@@ -163,6 +201,15 @@
         end do
 	end do
 	
+	
+	do k = 1, size( gl_Cell_A(par_n_HP - 1, 1, :) )
+        do j = 1, size( gl_Cell_A(par_n_HP - 1, :, 1) )
+			do i = 1, par_n_TS - 2
+				gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_A(i, j, k))) = 3
+			end do
+		end do
+	end do
+			
 	
 
     end subroutine Find_Surface
@@ -200,7 +247,7 @@
         qqq2 = gl_Cell_par(1:8, s2)
         
         call chlld(2, normal(1), normal(2), normal(3), &  ! 2
-                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, 0)
+                0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
 		
         
         dsl = dsl * koef1
@@ -280,11 +327,22 @@
         normal = gl_Gran_normal2(:, gr, now)
         qqq1 = gl_Cell_par(1:8, s1)
         qqq2 = gl_Cell_par(1:8, s2)
+		
+		! Вычтем нормальную компоненту магнитного поля
+		if (gl_Gran_center2(1, gr, now) > -100.0) then
+	        qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	        qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	        gl_Cell_par(6:8, s1) = qqq1(6:8)
+	        gl_Cell_par(6:8, s2) = qqq2(6:8)
+		end if
+		
+		
         
         call chlld(3, normal(1), normal(2), normal(3), &  ! 2
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-        dsc = dsc * koef2
+        !dsc = dsc * koef2
+		dsc = (dsc + 1.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 		
         !if(i == 2) write(*,*) dsc
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
@@ -439,7 +497,7 @@
     integer, intent(in) :: now
     real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), KORD(3)
     integer :: yzel, N1, N2, N3, i, j, k, yzel2
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr
     
     now2 = mod(now, 2) + 1   
 	
@@ -780,7 +838,7 @@
     N1 = size(gl_RAY_O(:, 1, 1))
 
     ! Цикл движения точек на лучах O  
-	if (.False.) then   ! Можно отключить этот цикл
+	if (.True.) then   ! Можно отключить этот цикл
         do k = 1, N3
             do j = 1, N2
 			
@@ -1122,8 +1180,8 @@
             R_HP = norm2(KORD + proect * ER )  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси
-			if(R_HP < 27.0_8) then
-				R_HP = 27.0_8
+			if(R_HP < 15.0_8) then
+				R_HP = 15.0_8
 			end if
 			
             
@@ -1134,6 +1192,12 @@
             yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 			KORD(1) = 0.0_8; KORD(2) = gl_y2(yzel, now2); KORD(3) = gl_z2(yzel, now2)
             R_BS = norm2(KORD)  ! Новое расстояние до BS
+			
+			if (R_BS < R_HP + 10.0) then
+				R_BS = R_HP + 10.0
+				!print*, "R_BS = R_HP + 10.0"
+			end if
+			
             
             do i = 1, N1
                 yzel = gl_RAY_O(i, j, k)
@@ -1223,15 +1287,8 @@
             
             ! Вычисляем координаты текущего луча в пространстве
                 phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
-                
-            do i = 1, N1
-
-                if (i == 1) CYCLE
-
-                if (k /= 1 .and. j == 1) CYCLE
-
-                
-                ! Вычисляем координаты точки на луче
+				
+				 ! Вычисляем координаты точки на луче
 
                 if (j < N2) then
                     xx = gl_x2(gl_RAY_K(par_n_TS, j, k), now2)
@@ -1241,17 +1298,35 @@
                     xx = gl_x2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
                     y = gl_y2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
                     z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
-                end if
+				end if
+				
+				r = sqrt(y**2 + z**2)
+				
+				
+            do i = 1, N1
+
+                if (i == 1) CYCLE
+
+                if (k /= 1 .and. j == 1) CYCLE
+				
+				
+				y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
+				z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				
+				rr = sqrt(y**2 + z**2) * 0.3
 
                 yzel = gl_RAY_D(i, j, k)
-                r = sqrt(y**2 + z**2)
+                
                 
                 x = xx + (DBLE(i - 1)/(N1 - 1))**par_kk3 * (par_R_LEFT - xx)
+				rrr = r * (1.0 - (DBLE(i - 1)**2/(N1 - 1)**2)) + (rr * (DBLE(j - 1)/(N2 - 1))) * ( (DBLE(i - 1)**2) /(N1 - 1)**2)
 
+				
+				
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = x
-                gl_y2(yzel, now2) = r * cos(phi)
-                gl_z2(yzel, now2) = r * sin(phi)
+                gl_y2(yzel, now2) = rrr * cos(phi)
+                gl_z2(yzel, now2) = rrr * sin(phi)
                 
             end do
         end do
@@ -1283,6 +1358,24 @@
                 gl_x2(yzel, now2) = x + (x2 - x) * (i - 1)/(N1 - 1)
                 gl_y2(yzel, now2) = y + (y2 - y) * (i - 1)/(N1 - 1)
                 gl_z2(yzel, now2) = z + (z2 - z) * (i - 1)/(N1 - 1)
+				
+				!if(i == 14 .and. j == 12 .and. k == 35) then
+				!	print*, "___"
+				!	print*, x, x2
+				!	print*, y, y2
+				!	print*, z, z2
+				!	print*, gl_x2(yzel, now2), gl_x2(yzel, now)
+				!	print*, gl_y2(yzel, now2), gl_y2(yzel, now)
+				!	print*, gl_z2(yzel, now2), gl_z2(yzel, now)
+				!	print*, gl_y2(gl_RAY_E(1, j, k), now2), gl_y2(gl_RAY_E(1, j, k), now)
+				!	print*, gl_z2(gl_RAY_E(1, j, k), now2), gl_z2(gl_RAY_E(1, j, k), now)
+				!	print*, "___"
+				!	print*, gl_x2(gl_RAY_O(1, j, k), now2), gl_x2(gl_RAY_O(1, j, k), now)
+				!	print*, gl_y2(gl_RAY_O(1, j, k), now2), gl_y2(gl_RAY_O(1, j, k), now)
+				!	print*, gl_z2(gl_RAY_O(1, j, k), now2), gl_z2(gl_RAY_O(1, j, k), now)
+				!	print*, "___"
+				!end if
+				
                 
             end do
         end do
@@ -1433,17 +1526,17 @@
         ! Можно один раз проверить, правильно ли ориентирована нормаль!\
 
         
-        !call Get_center_move(gl_Gran_neighbour(1, iter), node1, now)
-        !node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
-        !node1 = node2 - node1
-        !
-        !if(DOT_PRODUCT(node1, c) < 0.0) then
-        !    print*, c
-        !    print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
-        !    print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
-        !    print*, iter
-        !    pause
-        !end if
+        call Get_center_move(gl_Gran_neighbour(1, iter), node1, now)
+        node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
+        node1 = node2 - node1
+        
+        if(DOT_PRODUCT(node1, c) < 0.0) then
+            print*, c
+            print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
+            print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
+            print*, iter
+            pause
+        end if
 
         ! Нужно записать площадь грани и нормаль в общий массив!
         gl_Gran_normal2(:, iter, now) = c
@@ -1536,6 +1629,8 @@
 
         !print *, c
         !pause
+		
+		
 
         ! Вычислили центр ячейки теперь считаем объём пирамиды на каждую грань
         do j = 1, 6
@@ -1568,6 +1663,9 @@
 
         gl_Cell_Volume2(iter, now) = Vol
         gl_Cell_dist(iter) = dist
+		
+		
+		
 
         !        print*, Vol, ll
         !        pause
