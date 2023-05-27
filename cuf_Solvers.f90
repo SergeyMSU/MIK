@@ -21,7 +21,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time
+	real(8) :: Time, dist
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -121,11 +121,15 @@
 		yzel2 = gl_RAY_A(par_n_HP, j, 1)
 	end if
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+	
+	dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+	
+	dist = max(dist, 1.0_8)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 	else
-		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 	end if
 			
 			
@@ -207,7 +211,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time
+	real(8) :: Time, dist
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -262,6 +266,7 @@
 			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
+			
 			if (gl_Point_num(yzel) > 0) then
 			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
 			else
@@ -313,10 +318,13 @@
 			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
+			dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+			dist = max(dist, 1.0_8)
+			
 			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
 			else
-				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
 			end if
 			
 			
@@ -439,7 +447,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time
+	real(8) :: Time, dist
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -498,11 +506,14 @@
 	end if
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 	! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	
+	dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+	dist = max(dist, 1.0_8)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 	else
-		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 	end if
 			
 			
@@ -1739,7 +1750,7 @@
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-    dsc = (dsc + 0.5 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+    dsc = (dsc + 0.1 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
 	!if (gl_Gran_center2(1, gr, now) < -100.0) then
 	!	if (dsc < 0.0) then

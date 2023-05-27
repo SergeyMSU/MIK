@@ -5878,9 +5878,9 @@
     !call Print_par_2D()
     
 	
-    call Start_MGD_move()
+    !call Start_MGD_move()
 	
-    !call CUDA_START_MGD_move()
+    call CUDA_START_MGD_move()
 	
 	!call CUDA_START_GD_3()
 	
@@ -5930,7 +5930,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(96)
+    call Save_setka_bin(96)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
