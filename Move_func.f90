@@ -342,7 +342,7 @@
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
         !dsc = dsc * koef2
-		dsc = (dsc + 1.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+		dsc = (dsc + 0.1 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 		
         !if(i == 2) write(*,*) dsc
         a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука
@@ -838,7 +838,7 @@
     N1 = size(gl_RAY_O(:, 1, 1))
 
     ! Цикл движения точек на лучах O  
-	if (.True.) then   ! Можно отключить этот цикл
+	if (.False.) then   ! Можно отключить этот цикл
         do k = 1, N3
             do j = 1, N2
 			
@@ -1180,8 +1180,8 @@
             R_HP = norm2(KORD + proect * ER )  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси
-			if(R_HP < 15.0_8) then
-				R_HP = 15.0_8
+			if(R_HP < 20.0_8) then
+				R_HP = 20.0_8
 			end if
 			
             
@@ -1282,6 +1282,9 @@
     N1 = size(gl_RAY_D(:, 1, 1))
 
     ! Цикл движения точек на лучах D ************************************************************
+	
+	
+	
     do k = 1, N3
         do j = 1, N2
             
@@ -1300,6 +1303,9 @@
                     z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
 				end if
 				
+				!y = gl_y2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+				!z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+				
 				r = sqrt(y**2 + z**2)
 				
 				
@@ -1310,23 +1316,25 @@
                 if (k /= 1 .and. j == 1) CYCLE
 				
 				
-				y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
-				z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
-				
-				rr = sqrt(y**2 + z**2) * 0.3
+				!y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
+				!z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				!
+				!rr = sqrt(y**2 + z**2) * 0.4
 
                 yzel = gl_RAY_D(i, j, k)
                 
                 
                 x = xx + (DBLE(i - 1)/(N1 - 1))**par_kk3 * (par_R_LEFT - xx)
-				rrr = r * (1.0 - (DBLE(i - 1)**2/(N1 - 1)**2)) + (rr * (DBLE(j - 1)/(N2 - 1))) * ( (DBLE(i - 1)**2) /(N1 - 1)**2)
+				
+				!rrr = r * (DBLE(j - 1)/(N2 - 1))
+				!rrr = r * (1.0 - (DBLE(i - 1)**2/(N1 - 1)**2)) + (rr * (DBLE(j - 1)/(N2 - 1))) * ( (DBLE(i - 1)**2) /(N1 - 1)**2)
 
 				
 				
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = x
-                gl_y2(yzel, now2) = rrr * cos(phi)
-                gl_z2(yzel, now2) = rrr * sin(phi)
+                gl_y2(yzel, now2) = r * cos(phi)
+                gl_z2(yzel, now2) = r * sin(phi)
                 
             end do
         end do

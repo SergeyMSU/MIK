@@ -193,7 +193,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на B лучах
+	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на 
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -273,7 +273,7 @@
 			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
-			
+			!return
 			! Контакт
 			
 			yzel = gl_RAY_B(par_n_HP, j, k)
@@ -336,7 +336,7 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	
-	attributes(global) subroutine Cuda_Move_all_3(now)   ! Поверхностное натяжение на B лучах
+	attributes(global) subroutine Cuda_Move_all_3(now)   ! Поверхностное натяжение на 
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -425,7 +425,7 @@
 	
 	
 	
-	attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение на B лучах
+	attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение 
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -961,8 +961,8 @@
             R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси
-			if(R_HP < 15.0_8) then
-				R_HP = 15.0_8
+			if(R_HP < 20.0_8) then
+				R_HP = 20.0_8
 			end if
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
@@ -1128,7 +1128,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r, x, y, z, xx
+    real(8), device :: the, phi, r, x, y, z, xx, rr, rrr
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1151,14 +1151,10 @@
 	
 	! Вычисляем координаты текущего луча в пространстве
                 phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
-                
-            do i = 1, N1
+				
+				! Вычисляем координаты точки на луче
 
-                if (i == 1) CYCLE
-
-                ! Вычисляем координаты точки на луче
-
-                if (j < N2) then
+				if (j < N2) then
                     xx = gl_x2(gl_RAY_K(par_n_TS, j, k), now2)
                     y = gl_y2(gl_RAY_K(par_n_TS, j, k), now2)
                     z = gl_z2(gl_RAY_K(par_n_TS, j, k), now2)
@@ -1166,12 +1162,33 @@
                     xx = gl_x2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
                     y = gl_y2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
                     z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
-                end if
+				end if
+				
+				!y = gl_y2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+				!z = gl_z2(gl_RAY_B(par_n_TS, par_m_BC, k), now2)
+				
+				r = sqrt(y**2 + z**2)
+                
+            do i = 1, N1
+
+                if (i == 1) CYCLE
+
+                ! Вычисляем координаты точки на луче
+
+    !            y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
+				!z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				!
+				!rr = sqrt(y**2 + z**2) * 0.4
 
                 yzel = gl_RAY_D(i, j, k)
-                r = sqrt(y**2 + z**2)
+                
                 
                 x = xx + (DBLE(i - 1)/(N1 - 1))**par_kk3 * (par_R_LEFT - xx)
+				
+				!rrr = min(r, rr) * (DBLE(j - 1)/(N2 - 1))
+				
+				! rrr = r * (1.0 - (DBLE(i - 1)**2/(N1 - 1)**2)) + (rr * (DBLE(j - 1)/(N2 - 1))) * ( (DBLE(i - 1)**2) /(N1 - 1)**2)
+
 
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = x
@@ -1722,7 +1739,13 @@
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-    dsc = (dsc + 1.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+    dsc = (dsc + 0.5 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+	
+	!if (gl_Gran_center2(1, gr, now) < -100.0) then
+	!	if (dsc < 0.0) then
+	!		dsc = -dsc * 0.1
+	!	end if
+	!end if
 	
 	!dsc = dsc + DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)
 	
@@ -2316,7 +2339,10 @@
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
 	
 	!if (time_step2 > time) then 
-		time =  atomicmin(time_step2, time)   ! Атомарная операция взятия минимального значения
+		! Не смотри шаг по времени в хвосте из-за плохих ячеек
+		if (gl_Cell_center2(1, s2, now) > -100.0) then
+			time =  atomicmin(time_step2, time)   ! Атомарная операция взятия минимального значения
+		end if
 	!end if
 	
 	
@@ -2423,15 +2449,17 @@
                 ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2
                 Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
                 if (ro3 <= 0.0_8) then
+                    write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
+					write(*, *) qqq(1), Q3
+					write(*, *) Volume , Volume2
 					ro3 = 0.01
-                    write(*, *) "Ro < 0  1490 ", ro3
 				end if
 				
 				
 				
                 u3 = (qqq(1) * qqq(2)* Volume / Volume2 - time * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume2 + time * SOURSE(2, 1)) / ro3
                 v3 = (qqq(1) * qqq(3)* Volume / Volume2 - time * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume2 + time * SOURSE(3, 1)) / ro3
-                w3 = (qqq(1) * qqq(4)* Volume / Volume2 - time * (POTOK(4) + (qqq(6)/cpi4) * sks) / Volume2 + time * SOURSE(4, 1)) / ro3
+                w3 = (qqq(1) * qqq(4)* Volume / Volume2 - time * (POTOK(4) + (qqq(8)/cpi4) * sks) / Volume2 + time * SOURSE(4, 1)) / ro3
                 
 				bx3 = qqq(6) * Volume / Volume2 - time * (POTOK(6) + qqq(2) * sks) / Volume2
 				by3 = qqq(7) * Volume / Volume2 - time * (POTOK(7) + qqq(3) * sks) / Volume2
@@ -2763,7 +2791,7 @@
                 end if
                 u3 = (qqq(1) * qqq(2) - dev_time_step_inner * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(2, 1)) / ro3
                 v3 = (qqq(1) * qqq(3) - dev_time_step_inner * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(3, 1)) / ro3
-                w3 = (qqq(1) * qqq(4) - dev_time_step_inner * (POTOK(4) + (qqq(6)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(4, 1)) / ro3
+                w3 = (qqq(1) * qqq(4) - dev_time_step_inner * (POTOK(4) + (qqq(8)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(4, 1)) / ro3
                 
 				bx3 = qqq(6) - dev_time_step_inner * (POTOK(6) + qqq(2) * sks) / Volume
 				by3 = qqq(7) - dev_time_step_inner * (POTOK(7) + qqq(3) * sks) / Volume

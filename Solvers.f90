@@ -97,6 +97,8 @@
     null_bn = null_bn1 ! функции PRESENT
 	end if
 	
+	null_bn = .False.
+	
 	if(.not. present(n_disc)) then
     n_disco = 1 
     else 
@@ -792,7 +794,9 @@
                      wbn=wv*bL(1)
              else
                      wbn=wv*(bL(1)+bR(1))/x2
-             endif
+			 endif
+			 
+			 ! wbn=x0   ! Korolkov
 
              qb(1)=-SN*(bR(1)-bL(1))-wbn
             if(null_bn == .True.) qb(1) = 0.0_8

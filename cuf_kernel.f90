@@ -520,9 +520,9 @@ module MY_CUDA
 	print*, step, "   ", size(gl_all_Cell(1, :))
 	
 	! Главный цикл
-	do step = 1, 20000   ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 30000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 1000) == 0) then
+		if (mod(step, 500) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
@@ -544,7 +544,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.False.) then  ! Есть ли вообще движение сетки
+	if(.True.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -703,8 +703,8 @@ module MY_CUDA
 	Num = size(gl_all_Cell(1,:))
 	call Cuda_calc_all_Gran_move_2 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по ячейкам
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+		write (*,*) 'Error Sinc start 15: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 15: ', cudaGetErrorString(cudaGetLastError())
 	
 	
 	! Для сравнения результатов с хостом
@@ -738,15 +738,15 @@ module MY_CUDA
 	Num = size(gl_all_Gran(1, :))
 	call CUF_MGD_grans_MF <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по граням
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+		write (*,*) 'Error Sinc start 16: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 16: ', cudaGetErrorString(cudaGetLastError())
 
 	
 	Num = size(gl_all_Cell(1, :))
 	call CUF_MGD_cells_MF <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по ячейкам
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+		write (*,*) 'Error Sinc start 17: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+		write(*,*) 'Error ASync start 17: ', cudaGetErrorString(cudaGetLastError())
 	
 	!gl_Cell_par = dev_gl_Cell_par
 	
@@ -784,20 +784,20 @@ module MY_CUDA
 		do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
 			dev_time_step_inner = 1000000.0
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+				write (*,*) 'Error Sinc start 18: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 18: ', cudaGetErrorString(cudaGetLastError())
 		
 			Num = size(gl_all_Gran_inner(:))
 			call CUF_MGD_grans_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+				write (*,*) 'Error Sinc start 19: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 19: ', cudaGetErrorString(cudaGetLastError())
  
 			Num = size(gl_all_Cell_inner(:))
 			call CUF_MGD_cells_MF_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по ячейкам
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
-				write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
-				write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
+				write (*,*) 'Error Sinc start 20: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
+				write(*,*) 'Error ASync start 20: ', cudaGetErrorString(cudaGetLastError())
 		end do
 	end if
 	
@@ -808,7 +808,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 5000) == 0) then
+	if (mod(step, 10000) == 0) then
 		print*, "PECHAT ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
@@ -820,9 +820,10 @@ module MY_CUDA
 		call Print_TS_3D()
 		call Print_Setka_y_2D()
 		call Print_surface_y_2D()
+		call Print_Cell(gl_Cell_number(1, 207606), gl_Cell_number(2, 207606), gl_Cell_number(3, 207606), gl_Cell_type(207606))
 	end if
 	
-	if (mod(step, 50000) == 0) then
+	if (mod(step, 100000) == 0) then
 		print*, "PECHAT 2 ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
