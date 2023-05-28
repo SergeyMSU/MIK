@@ -3627,12 +3627,12 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 3   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 1) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
 			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) 
-			print*, gl_Gran_normal2(:, mincell, now)
+			!print*, gl_Gran_normal2(:, mincell, now)
 			print*, "   "
 			!print*, "____1____"
 			!print*,  gl_Cell_par(:, gl_Gran_neighbour(1, mincell))
@@ -3941,7 +3941,7 @@
 			
 			
 			! Теперь сравниваем с глобальным временем
-			if (gl_Cell_center2(1, s2, now) > -100.0) then
+			if (gl_Cell_center2(1, s1, now) > -100.0) then
 			    if(loc_time < time) then
 			        !$omp critical
                     if(loc_time < time) then
@@ -5878,9 +5878,11 @@
     !call Print_par_2D()
     
 	
-    !call Start_MGD_move()
+    call Start_MGD_move()
+	pause
 	
-    call CUDA_START_MGD_move()
+    !call CUDA_START_MGD_move()
+	
 	
 	!call CUDA_START_GD_3()
 	
@@ -5930,7 +5932,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(96)
+    !call Save_setka_bin(97)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

@@ -599,6 +599,13 @@
 				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
 			end if
 			
+			if (k == 1) then
+				print*, "___"
+				print*, norm2(Ak), Ak(1), norm2(vel)
+				!pause
+			end if
+			
+			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)

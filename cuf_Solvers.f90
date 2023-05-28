@@ -2351,7 +2351,7 @@
 	
 	!if (time_step2 > time) then 
 		! Ќе смотри шаг по времени в хвосте из-за плохих €чеек
-		if (gl_Cell_center2(1, s2, now) > -100.0) then
+		if (gl_Cell_center2(1, s1, now) > -150.0) then
 			time =  atomicmin(time_step2, time)   ! јтомарна€ операци€ вз€ти€ минимального значени€
 		end if
 	!end if
