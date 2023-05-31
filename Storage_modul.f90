@@ -21,12 +21,12 @@
 	
 	
 	
-	real(8), parameter :: par_nat_TS = 0.002_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 0.000008_8 !0.00005_8               ! Коэффициент натяжения контакта  0.0001
-	real(8), parameter :: par_nat_BS = 0.0002_8                ! Коэффициент натяжения внешней ударной волны 0.0002
+	real(8), parameter :: par_nat_TS = 0.003_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
+	real(8), parameter :: par_nat_HP = 1.5_8 ! 2.0                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_BS = 0.00002_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = 0.4_8! 0.3      ! Коэффицинт запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = 0.3_8 ! 1.0
+    real(8), parameter :: koef2 = 0.5_8 ! 0.3
     real(8), parameter :: koef3 = 0.7_8   ! 0.3
 	
     
@@ -73,6 +73,8 @@
 	integer(4) :: par_n_IB =  14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
     
     integer :: par_n_points  ! Всего точек в сетке
+	
+	integer, parameter :: par_tet(3, 8) = reshape( (/ 1, 3, 5, 2, 3, 5, 1, 3, 6, 2, 3, 6, 1, 4, 5, 2, 4, 5, 1, 4, 6, 2, 4, 6/), (/3, 8/) )
     
     end module GEO_PARAM
     
@@ -85,6 +87,7 @@
     real(8), allocatable :: gl_x(:)   ! набор x-координат узлов сетки 
     real(8), allocatable :: gl_y(:)   ! набор y-координат узлов сетки 
     real(8), allocatable :: gl_z(:)   ! набор z-координат узлов сетки 
+	
     
     ! Параметр MOVE - означает, что эти массивы используются (и инициализируются) только в случае движения сетки
     ! Скорости движения узлов
@@ -116,9 +119,10 @@
     
     integer(4), allocatable :: gl_all_Cell(:,:)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
     
+	
     integer(4), allocatable :: gl_all_Cell_inner(:)   ! номера ячеек, которые находятся внутри (считаются отдельно)
     
-    integer(4), allocatable :: gl_Cell_neighbour(:,:)   ! Набор из 6 соседей для каждой ячейки 
+    integer(4), allocatable :: gl_Cell_neighbour(:,:)   ! (6, :) Набор из 6 соседей для каждой ячейки 
 	! (если номер соседа = 0, то его нет в этом направлении)
     ! -1   ! Граница (набегающий поток)
 	! -3   ! Граница верхний цилиндр
@@ -130,7 +134,7 @@
     real(8), allocatable :: gl_Cell_Volume(:)           ! Набор объёмов ячеек
     real(8), allocatable :: gl_Cell_dist(:)             ! Минимальное расстояние до грани в каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
-    real(8), allocatable :: gl_Cell_par(:, :)           ! Набор параметров (8 стартовых + Q)
+    real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
     character, allocatable :: gl_Cell_type(:)           ! Тип каждой ячейки А, Б, С
     integer(4), allocatable :: gl_Cell_number(:, :)     ! (3, :) номер каждой ячейки внутри своего типа
@@ -144,6 +148,9 @@
     integer(4), allocatable :: gl_all_Gran(:,:)       ! Все грани (4,:) имеют по 4 узла
     integer(4), allocatable :: gl_Gran_neighbour(:,:) ! Соседи каждой грани (2,:) имеют по 2 соседа, нормаль ведёт от первого ко второму
 	! -1  -2  -3  бывает
+	! -1 - входная сфера
+	! -2 - выходная заняя стенка
+	! -3  -  верхний цилиндр
 	
 	integer(4), allocatable :: gl_Gran_neighbour_TVD(:,:) ! TVD-Соседи каждой грани (2,:) имеют по 2 соседа
 	! 0 - значит соседа нет
@@ -171,6 +178,17 @@
     ! Контакт состоит из номеров граней
     integer(4), allocatable :: gl_TS(:)
     integer(4), allocatable :: gl_BS(:)
+	
+	
+	! Набор массивов для программы интерполяции (аналогичных основной сетке)
+	integer(4), allocatable :: gl_Cell_gran_inter(:,:)  ! (6, :)
+	real(8), allocatable :: gl_Gran_normal_inter(:,:)   ! (3, :)
+	real(8), allocatable :: gl_Gran_center_inter(:,:)  ! (3, :)
+	integer(4), allocatable :: gl_Gran_neighbour_inter(:,:)   ! (2, :)
+	real(8), allocatable :: gl_Cell_center_inter(:, :)        ! (3, :)
+	integer(4), allocatable :: gl_Cell_neighbour_inter(:,:)   ! (6, :)
+	real(8), allocatable :: gl_Cell_par_inter(:, :)			  ! (9, :)
+    real(8), allocatable :: gl_Cell_par_MF_inter(:,:,:)		  ! (5, 4,:) 
     
     end module STORAGE
     

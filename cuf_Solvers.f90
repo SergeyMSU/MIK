@@ -21,7 +21,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time, dist
+	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -40,9 +40,11 @@
 	if(k > N3 .or. j > N2) return
 	
 	
-	if (k /= 1 .and. j == 1) then
+	if (j == 1) then
                     return
-			end if
+	end if
+	
+	ddt = Time/0.000127
 			
 	! Ударная волна
 	yzel = gl_RAY_A(par_n_TS, j, k)
@@ -77,9 +79,9 @@
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	else
-		vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	end if
 		
 			
@@ -92,6 +94,7 @@
 			
 	yzel = gl_RAY_A(par_n_HP, j, k)
 	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+	r = norm2(Ak)
 			
 	if (j < N2) then
 		yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
@@ -99,6 +102,7 @@
 		yzel2 = gl_RAY_B(par_n_HP, 1, k)
 	end if
 	Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+	r1 = norm2(Bk)
 			
 	if (k > 1) then
 		yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
@@ -107,6 +111,7 @@
 	end if
 			
 	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+	r2 = norm2(Ck)
 			
 	if (j > 1) then
 		yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
@@ -114,6 +119,7 @@
 		yzel2 = gl_RAY_A(par_n_HP, j, k + ceiling(1.0 * N3/2))
 	end if
 	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+	r3 = norm2(Dk)
 			
 	if(k < N3) then
 		yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
@@ -121,15 +127,19 @@
 		yzel2 = gl_RAY_A(par_n_HP, j, 1)
 	end if
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+	r4 = norm2(Ek)
 	
-	dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+	rr = (r1 + r2 + r3 + r4)/4.0
+	!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
 	
-	dist = max(dist, 1.0_8)
+	!dist = max(dist, 1.0_8)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		vel = par_nat_HP * 0.035 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 	else
-		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
 	end if
 			
 			
@@ -170,11 +180,16 @@
 		yzel2 = gl_RAY_A(par_n_BS, j, 1)
 	end if
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+	
+	dist = (sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 ) + &
+				sqrt( (Ek(1) - Ak(1))**2 + (Ek(2) - Ak(2))**2 + (Ek(3) - Ak(3))**2 ))/2.0
+	
+	dist = max(dist, 1.0_8)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = gl_Point_num(yzel) * par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 	else
-		vel = par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 	end if
 			
 			
@@ -211,7 +226,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time, dist
+	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -228,6 +243,7 @@
 	
 	if(k > N3 .or. j > N2) return
 	
+	ddt = Time/0.000127
 	! Ударная волна
 			
 			yzel = gl_RAY_B(par_n_TS, j, k)
@@ -268,9 +284,9 @@
 			
 			
 			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			    vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 			else
-				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+				vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 			end if
 			
 			
@@ -284,6 +300,7 @@
 			yzel = gl_RAY_B(par_n_HP, j, k)
 			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 			! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+			r = sqrt(Ak(2)**2 + Ak(3)**2)
 			
 			if (j < N2) then
 			    yzel2 = gl_RAY_B(par_n_HP, j + 1, k)
@@ -293,6 +310,7 @@
 			end if
 			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
 			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			r1 = sqrt(Bk(2)**2 + Bk(3)**2)
 			
 			if (k > 1) then
 			    yzel2 = gl_RAY_B(par_n_HP, j, k - 1)
@@ -301,6 +319,7 @@
 			end if
 			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
 			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			r2 = sqrt(Ck(2)**2 + Ck(3)**2)
 			
 			if (j > 1) then
 			    yzel2 = gl_RAY_B(par_n_HP, j - 1, k)
@@ -309,6 +328,7 @@
 			end if
 			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
 			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			r3 = sqrt(Dk(2)**2 + Dk(3)**2)
 			
 			if(k < N3) then
 			    yzel2 = gl_RAY_B(par_n_HP, j, k + 1)
@@ -317,14 +337,21 @@
 			end if
 			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			r4 = sqrt(Ek(2)**2 + Ek(3)**2)
 			
-			dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
-			dist = max(dist, 1.0_8)
+			rr = (r1 + r2 + r3 + r4)/4.0
+			
+			!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+			!dist = max(dist, 1.0_8)
 			
 			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
+			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
+				vel = par_nat_HP * 0.03 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.001
+				vel(1) = 0.0
 			else
-				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
+				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
+				vel = par_nat_HP * 0.03 * ((Ak/r) * (rr - r)) * ddt
+				vel(1) = 0.0
 			end if
 			
 			
@@ -344,7 +371,7 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	
-	attributes(global) subroutine Cuda_Move_all_3(now)   ! Поверхностное натяжение на 
+	attributes(global) subroutine Cuda_Move_all_3(now)   ! Поверхностное натяжение на лучах K
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -358,7 +385,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time
+	real(8) :: Time,  r, rr, r1, r2, r3, r4, ddt
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -376,9 +403,11 @@
 	
 	if(k > N3 .or. j > N2) return
 	
-	if (k /= 1 .and. j == 1) then
+	if (j == 1) then
             return
 	end if
+	
+	ddt = Time/0.000127
 			
 	yzel = gl_RAY_K(par_n_TS, j, k)
 	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
@@ -415,9 +444,9 @@
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	else
-		vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	end if
 		
 			
@@ -447,7 +476,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time, dist
+	real(8) :: Time, dist,  r, rr, r1, r2, r3, r4, ddt
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -468,11 +497,14 @@
 	if (k /= 1 .and. j == 1) then
             return
 	end if
+	
+	ddt = Time/0.000127
 			
 	! Контакт
 	yzel = gl_RAY_O(1, j, k)
 	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 	! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+	r = sqrt(Ak(2)**2 + Ak(3)**2)
 			
 	if (j < N2) then
 		yzel2 = gl_RAY_O(1, j + 1, k)
@@ -481,6 +513,7 @@
 	end if
 	Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
 	! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r1 = sqrt(Bk(2)**2 + Bk(3)**2)
 			
 	if (k > 1) then
 		yzel2 = gl_RAY_O(1, j, k - 1)
@@ -489,6 +522,7 @@
 	end if
 	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
 	! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r2 = sqrt(Ck(2)**2 + Ck(3)**2)
 			
 	if (j > 1) then
 		yzel2 = gl_RAY_O(1, j - 1, k)
@@ -498,6 +532,7 @@
 	end if
 	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
 	! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r3 = sqrt(Dk(2)**2 + Dk(3)**2)
 			
 	if(k < N3) then
 		yzel2 = gl_RAY_O(1, j, k + 1)
@@ -506,14 +541,21 @@
 	end if
 	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 	! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r4 = sqrt(Ek(2)**2 + Ek(3)**2)
 	
-	dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
-	dist = max(dist, 1.0_8)
+	!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+	!dist = max(dist, 1.0_8)
+	
+	rr = (r1 + r2 + r3 + r4)/4.0
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+		vel(1) = 0.0
 	else
-		vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
+		vel(1) = 0.0
 	end if
 			
 			
@@ -1513,7 +1555,7 @@
 	
 	if (i > Num) return
 	
-	metod = 3
+	metod = 3 
 	www = 0.0
 	
 		
@@ -1711,7 +1753,7 @@
 	integer, intent(in) :: now
 	
 	integer i, Num, gr, s1, s2, j, yzel
-    real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3)
+    real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3), vec(3), center(3), center2(3)
     real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
@@ -1745,20 +1787,65 @@
 	
 	
 	
-	
+	vec = 0.5 * (qqq1(2:4) + qqq2(2:4))
+	vec = vec - DOT_PRODUCT(vec, normal) * normal
+	center = gl_Gran_center2(:, gr, now)
         
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-    dsc = (dsc + 0.1 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+    dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
-	!if (gl_Gran_center2(1, gr, now) < -100.0) then
-	!	if (dsc < 0.0) then
-	!		dsc = -dsc * 0.1
-	!	end if
-	!end if
-	
-	!dsc = dsc + DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)
+	do j = 1, 4
+            yzel = gl_all_Gran(j, gr)
+			center2(1) = gl_x2(yzel, now)
+			center2(2) = gl_y2(yzel, now)
+			center2(3) = gl_z2(yzel, now)
+			
+			if ( sqrt(center2(2)**2 + center2(3)**2) > 15.0) then
+			    if( DOT_PRODUCT(vec, center2 - center) < 0.0) CYCLE
+			end if
+			
+			! Блок безопасного доступа
+			select case (mod(yzel, 4))
+			case(0)
+				do while ( atomiccas(dev_mutex_1, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(1)
+				do while ( atomiccas(dev_mutex_2, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(2)
+				do while ( atomiccas(dev_mutex_3, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(3)
+				do while ( atomiccas(dev_mutex_4, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case default
+				do while ( atomiccas(dev_mutex_4, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			end select
+			
+            gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsc
+            gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsc
+            gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsc
+            gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+			
+			call threadfence()                               ! Безопасный доступ к памяти
+			select case (mod(yzel, 4))
+			case(0)
+				dev_mutex_1 = 0 
+			case(1)
+				dev_mutex_2 = 0 
+			case(2)
+				dev_mutex_3 = 0 
+			case(3)
+				dev_mutex_4 = 0 
+			case default
+				dev_mutex_4 = 0 
+			end select
+				
+        end do
+	return  ! Заканчиваем с этой гранью, переходим к следующей
 	
         
     a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука

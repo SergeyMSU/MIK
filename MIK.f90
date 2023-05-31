@@ -13,11 +13,13 @@
     include "Help_func.f90"
     include "Move_func.f90"
 	include "TVD.f90"
+	include "Interpolation.f90"
 	
 
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
 
     module My_func                     ! Модуль интерфейсов для внешних функций
+	
 
     interface
 	
@@ -5814,12 +5816,13 @@
     program MIK
     use STORAGE
     use GEO_PARAM
+	use Interpolate
 	!@cuf use MY_CUDA
     implicit none
 
-    integer(4) :: i, NGRAN
+    integer(4) :: i, NGRAN, j, nn
 	integer :: istat
-	real(8) :: local1
+	real(8) :: local1, F(9)
 	integer :: ierrSync, ierrAsync
 	
 	print*, "START PROGRAM"
@@ -5832,7 +5835,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(96)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(102)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5865,7 +5868,7 @@
 
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
-    call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
+    !call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
     ! call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
@@ -5877,27 +5880,26 @@
 
     !call Print_par_2D()
     
+	call Set_Interpolate_main()
 	
     call Start_MGD_move()
-	pause
+	!pause
+	
+	!call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, i)
+	
+	!PAUSE
 	
     !call CUDA_START_MGD_move()
 	
 	
 	!call CUDA_START_GD_3()
 	
+	
 	call Print_Cell(gl_Cell_number(1, 136644), gl_Cell_number(2, 136644), gl_Cell_number(3, 136644), gl_Cell_type(136644))
 	
 	!pause
 	
-	!print*, gl_Cell_par(:, 5)
-	!print*, "_______"
-	!print*, gl_Cell_par(:, 50)
-	!print*, "_______"
-	!print*, gl_Cell_par(:, 500)
-	!print*, "_______"
-	!print*, gl_Cell_par(:, 50000)
-	!print*, "_______"
+	
     
     !do i = 1, 1
     !    !if(mod(i, 1000) == 0) print*, i
@@ -5911,7 +5913,13 @@
     !    end if
     !end do
 	
+	!  !$inter call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, 4)
 	
+	!call Interpolate_point(4.0_8, 2.0_8, 0.003_8, F, istat, nn)
+	
+	
+	
+	!call Save_interpolate_bin(102)
 
     ! Перенормировка сортов обратно
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) * (par_chi/par_chi_real)
@@ -5920,6 +5928,8 @@
     !gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) * (3.0)
     !gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) / (3.0)**2
 
+	call Re_interpolate()
+	call Dell_Interpolate()
 
     call Print_surface_2D()
     call Print_Setka_2D()
@@ -5932,7 +5942,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(97)
+    call Save_setka_bin(103)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

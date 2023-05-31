@@ -520,7 +520,7 @@ module MY_CUDA
 	print*, step, "   ", size(gl_all_Cell(1, :))
 	
 	! Главный цикл
-	do step = 1, 100000 * 4  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 99000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 500) == 0) then
 			local1 = time_step2
@@ -808,7 +808,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 10000) == 0) then
+	if (mod(step, 25000) == 0 .or. step == 5000 .or. step == 10000 .or. step == 5000 .or. step == 15000) then
 		print*, "PECHAT ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
