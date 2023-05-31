@@ -165,12 +165,6 @@
     open(1, file = "interpolate_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
     
 	
-    ! ѕечатаем параметры сетки
-    
-    read(1) n
-    read(1) gl_Cell_par(:, :)
-    
-    
     ! ƒл€  будующих дополнений
     read(1) n
     if (n == 1) then
@@ -251,19 +245,22 @@
 	implicit none
 	
 	integer(4) :: i, zone, number, cell
-	real(8) :: F(9)
+	real(8) :: F(9), F_mf(5, 4)
 	
 	number = 1
 	
 	do i = 1, size(gl_Cell_par(1, :))
-		call Interpolate_point(gl_Cell_center(1, i), gl_Cell_center(2, i), gl_Cell_center(3, i), F, zone, cell, number)
+		if (gl_Cell_center(1, i) < -300.0 .or. norm2(gl_Cell_center(:, i)) > 200.0) CYCLE
+		
+		call Interpolate_point(gl_Cell_center(1, i), gl_Cell_center(2, i), gl_Cell_center(3, i), F, F_mf, zone, cell, number)
 		number = cell
 		gl_Cell_par(:, i) = F
+		gl_Cell_par_MF(:, :, i) = F_mf
 	end do
 	
 	end subroutine Re_interpolate
 	
-	subroutine Interpolate_point(x, y, z, F, zone, cell, number)
+	subroutine Interpolate_point(x, y, z, F, F_mf, zone, cell, number)
 	! zone - в какой зоне находимс€
 	! cell - в какой €чейке находимс€
 	! number - в какой €чейке искать точку (если известно примерно)
@@ -272,7 +269,7 @@
 	real(8), intent(in) :: x, y, z
 	integer(4), intent(in), optional :: number
 	integer(4), intent(out) :: zone, cell
-	real(8), intent(out) :: F(9)
+	real(8), intent(out) :: F(9), F_mf(5, 4)
 	
 	integer(4) :: num
 	
@@ -286,7 +283,7 @@
 	
 	call Get_Cell_Interpolate(x, y, z, num)
 	cell = num
-	call Find_tetraedr_Interpolate(x, y, z, num, F)
+	call Find_tetraedr_Interpolate(x, y, z, num, F, F_mf)
 	
 	end subroutine Interpolate_point
 	
@@ -313,20 +310,20 @@
 	
 	do i = 1, 6
 		s = 2
-		gr = gl_Cell_gran(i,n)
+		gr = gl_Cell_gran_inter(i,n)
 		if (gr <= 0) CYCLE
-		normal = gl_Gran_normal(:, gr)
-		center = gl_Gran_center(:, gr)
+		normal = gl_Gran_normal_inter(:, gr)
+		center = gl_Gran_center_inter(:, gr)
 		
-		if(gl_Gran_neighbour(1, gr) /= n) then
+		if(gl_Gran_neighbour_inter(1, gr) /= n) then
 			normal = -normal
 			s = 1
 		end if
 		
-		if (gl_Gran_neighbour(s, gr) <= 0) CYCLE
+		if (gl_Gran_neighbour_inter(s, gr) <= 0) CYCLE
 		
 		if( DOT_PRODUCT(normal, r - center) > 0) then
-			n = gl_Gran_neighbour(s, gr)
+			n = gl_Gran_neighbour_inter(s, gr)
 			GO TO 11 
 		end if
 	end do
@@ -337,7 +334,7 @@
 	end subroutine Get_Cell_Interpolate
 	
 	
-	subroutine Find_tetraedr_Interpolate(x, y, z, num, F)
+	subroutine Find_tetraedr_Interpolate(x, y, z, num, F, F_mf)
 	! num - номер €чейки, в которой находитс€ точка
 	USE GEO_PARAM
 	USE STORAGE
@@ -345,7 +342,7 @@
 	! Variables
 	real(8), intent(in) :: x, y, z
 	integer(4), intent(in) :: num
-	real(8), intent(out) :: F(9)
+	real(8), intent(out) :: F(9), F_mf(5, 4)
 	
 	integer(4) :: i, j, s1, s2, s3, i_best
 	real(8) :: r(3), A(3), B(3), C(3), D(3), M(4, 4), det, aa(3), bb(3), normal(3), dist, dist2
@@ -366,19 +363,19 @@
 	r(2) = y
 	r(3) = z
 	
-	A = gl_Cell_center(:, num)
+	A = gl_Cell_center_inter(:, num)
 	
 	
 	do i = 1, 8
-		s1 = gl_Cell_neighbour( par_tet(1, i), num)
-		s2 = gl_Cell_neighbour( par_tet(2, i), num)
-		s3 = gl_Cell_neighbour( par_tet(3, i), num)
+		s1 = gl_Cell_neighbour_inter( par_tet(1, i), num)
+		s2 = gl_Cell_neighbour_inter( par_tet(2, i), num)
+		s3 = gl_Cell_neighbour_inter( par_tet(3, i), num)
 		
 		if(s1 <= 0 .or. s2 <= 0 .or. s3 <= 0) CYCLE
 		
-		B = gl_Cell_center(:, s1)
-		C = gl_Cell_center(:, s2)
-		D = gl_Cell_center(:, s3)
+		B = gl_Cell_center_inter(:, s1)
+		C = gl_Cell_center_inter(:, s2)
+		D = gl_Cell_center_inter(:, s3)
 		
 		! 1
 		aa = B - C
@@ -432,15 +429,15 @@
 		do j = 1, 8
 			
 		dist = 0.0_8
-		s1 = gl_Cell_neighbour( par_tet(1, j), num)
-		s2 = gl_Cell_neighbour( par_tet(2, j), num)
-		s3 = gl_Cell_neighbour( par_tet(3, j), num)
+		s1 = gl_Cell_neighbour_inter( par_tet(1, j), num)
+		s2 = gl_Cell_neighbour_inter( par_tet(2, j), num)
+		s3 = gl_Cell_neighbour_inter( par_tet(3, j), num)
 		
 		if(s1 <= 0 .or. s2 <= 0 .or. s3 <= 0) CYCLE
 		
-		B = gl_Cell_center(:, s1)
-		C = gl_Cell_center(:, s2)
-		D = gl_Cell_center(:, s3)
+		B = gl_Cell_center_inter(:, s1)
+		C = gl_Cell_center_inter(:, s2)
+		D = gl_Cell_center_inter(:, s3)
 		
 		! 1
 		aa = B - C
@@ -511,13 +508,13 @@
 	!print*, "i = ", i
 	!pause
 	
-	s1 = gl_Cell_neighbour( par_tet(1, i), num)
-	s2 = gl_Cell_neighbour( par_tet(2, i), num)
-	s3 = gl_Cell_neighbour( par_tet(3, i), num)
+	s1 = gl_Cell_neighbour_inter( par_tet(1, i), num)
+	s2 = gl_Cell_neighbour_inter( par_tet(2, i), num)
+	s3 = gl_Cell_neighbour_inter( par_tet(3, i), num)
 	
-	B = gl_Cell_center(:, s1)
-	C = gl_Cell_center(:, s2)
-	D = gl_Cell_center(:, s3)
+	B = gl_Cell_center_inter(:, s1)
+	C = gl_Cell_center_inter(:, s2)
+	D = gl_Cell_center_inter(:, s3)
 	
 	!print*, A
 	!print*, B
@@ -560,7 +557,17 @@
 	!print*, "___"
 	!print*, gl_Cell_par(1, num), gl_Cell_par(1, s1), gl_Cell_par(1, s2), gl_Cell_par(1, s3)
 	
-	F = vec(1, 1) * gl_Cell_par(:, num) + vec(1, 2) * gl_Cell_par(:, s1) + vec(1, 3) * gl_Cell_par(:, s2) + vec(1, 4) * gl_Cell_par(:, s3)
+	F = vec(1, 1) * gl_Cell_par_inter(:, num) + vec(1, 2) * gl_Cell_par_inter(:, s1) + vec(1, 3) * gl_Cell_par_inter(:, s2) + vec(1, 4) * gl_Cell_par_inter(:, s3)
+	F_mf = vec(1, 1) * gl_Cell_par_MF_inter(:, :, num) + vec(1, 2) * gl_Cell_par_MF_inter(:, :, s1) + vec(1, 3) * gl_Cell_par_MF_inter(:, :, s2) + vec(1, 4) * gl_Cell_par_MF_inter(:, :, s3)
+	
+	if(isnan(F(1))) STOP "NUN 678ojhyuikjhikj"
+	if(isnan(F(2))) STOP "NUN vbnjko9876t"
+	if(isnan(F(5))) STOP "NUN 13esasdfg"
+	if(isnan(F_mf(1, 1))) STOP "NUN 9ol,mnbgtyu"
+	if(isnan(F_mf(1, 2))) STOP "NUN 876rfghjg"
+	if(isnan(F_mf(2, 1))) STOP "NUN bnhju78ijh"
+	if(isnan(F_mf(2, 2))) STOP "NUN zxdse45"
+	
 	!print*, "___"
 	!print*, F(1)
 	

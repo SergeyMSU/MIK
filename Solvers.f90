@@ -780,6 +780,9 @@
               print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
               print*,w,SL,SZL,SM,SZR,SR
+			  print*, qqq1
+			  print*, "___"
+			  print*, qqq2
               !pause
 			  STOP
            endif
@@ -1493,6 +1496,9 @@
               print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
               print*,w,SL,SZL,SM,SZR,SR
+			  print*, qqq1
+			  print*, "___"
+			  print*, qqq2
               !pause
 			  STOP
            endif

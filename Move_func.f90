@@ -641,9 +641,11 @@
 			rr = (r1 + r2 + r3 + r4)/4.0
 			
 			if (gl_Point_num(yzel) > 0) then
-			    vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+				vel = par_nat_HP * 0.035 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 			else
-				vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+				vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
 			end if
 			
 			
@@ -1089,13 +1091,13 @@
 				if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 else if (i <= par_n_HP) then  
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
                 else if (i <= par_n_BS) then 
                     r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
                 else
-                    r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**par_kk2
+                    r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
                 end if
 
                 ! Записываем новые координаты
@@ -1174,7 +1176,7 @@
 				if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
                 !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
@@ -1225,7 +1227,7 @@
                 if (i <= par_n_BS - par_n_HP + 1) then
                     r = rr + (i - 1) * (R_BS - rr)/(par_n_BS - par_n_HP)
                 else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - R_BS)
+                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
                 
                 gl_x2(yzel, now2) = x
@@ -1274,7 +1276,7 @@
 			
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
-            x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
+            x = xx - (DBLE(j)/N2)**par_kk31 * (xx - par_R_LEFT)
             
             ! BS     Нужно взять положение BS из её положения на крайнем луче A
             yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1293,7 +1295,7 @@
                 if (i <= par_n_BS - par_n_HP + 1) then
                     r = R_HP + (i - 1) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
                 else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - R_BS)
+                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
 
 
@@ -1348,7 +1350,7 @@
 				if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else 
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
 				end if
 					
                 !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1

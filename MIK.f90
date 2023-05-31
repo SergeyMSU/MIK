@@ -2896,6 +2896,7 @@
             s2 = gl_Gran_neighbour(2, gr)
             qqq1 = gl_Cell_par(:, s1)
             fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
+			dist = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, s1))
 
             ! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
@@ -2920,7 +2921,8 @@
                 !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
                 qqq2 = gl_Cell_par(:, s2)
                 fluid2 = gl_Cell_par_MF(:, :, s2)   ! Загрузили параметры жидкостей для мультифлюида
-                dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+                !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+				dist = min( dist, norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, s2)))
 
                 ! Попробуем снести плотность пропорционально квадрату
                 if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then
@@ -2943,14 +2945,14 @@
             else  ! В случае граничных ячеек - граничные условия
                 !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
                 if(s2 == -1) then  ! Набегающий поток
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
                     qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
                     fluid2(:, 1) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 2) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 3) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия (это задняя стенка)
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     fluid2 = fluid1
                     qqq2(5) = 1.0_8
@@ -3629,9 +3631,9 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 1   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 24000 * 7   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 1) == 0) then
+        if (mod(step, 1000) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
 			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) 
 			!print*, gl_Gran_normal2(:, mincell, now)
@@ -3680,7 +3682,7 @@
         call Move_all(now, TT) 
 		
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
-		
+		!CYCLE
 		
 		!do ijk = 1, 8
 		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
@@ -3728,14 +3730,14 @@
         !ngran = size(gl_all_Gran_inner(:))
         !ncell = size(gl_all_Cell_inner(:))
         
-         !$omp parallel
+	    !$omp parallel
 
         ! Теперь по основным граням
         ngran = size(gl_all_Gran(1, :))
         ncell = size(gl_all_Cell(1, :))
         
-	   !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
-	   ! !$omp & reduction(min:time, min_sort, mincell)
+	 !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
+	  !   !$omp & reduction(min:time, min_sort, mincell)
         do gr = 1, ngran
 			metod = 2
             if(gl_Gran_info(gr) == 2) CYCLE
@@ -3748,6 +3750,8 @@
 			null_bn = .False.
 			
 			metod = gl_Gran_scheme(gr)
+			
+			dist = norm2(gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now))
 
             ! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -3773,7 +3777,9 @@
                 !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
                 qqq2 = gl_Cell_par(:, s2)
                 fluid2 = gl_Cell_par_MF(:, :, s2)   ! Загрузили параметры жидкостей для мультифлюида
-                dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))                                              
+                !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))   
+				
+				dist = min( dist, norm2(gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)))
 
                 ! Попробуем снести плотность пропорционально квадрату
                 if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
@@ -3797,7 +3803,7 @@
             else  ! В случае граничных ячеек - граничные условия
                 !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
                 if(s2 == -1) then  ! Набегающий поток
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
 					
 					qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
                     fluid2(:, 1) = fluid1(:, 1)
@@ -3805,7 +3811,7 @@
                     fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
 				else if(s2 == -3) then
-					dist = gl_Cell_dist(s1)
+					!dist = gl_Cell_dist(s1)
 					
 					if (gl_Cell_center2(2, s1, now) > 0.0_8) then
                         qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
@@ -3819,7 +3825,7 @@
                     fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     fluid2 = fluid1
                     !qqq2(5) = 1.0_8
@@ -3832,7 +3838,6 @@
             
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
-			
 			
 			
 			!if(gl_Gran_type(gr) == 1) metod = 2
@@ -4081,7 +4086,15 @@
                 p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (norm2(qqq(6:8))**2) / 25.13274122871834590768 )* Volume / Volume2 &
                     - TT * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume2 + TT * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
 				
+				if(isnan(u3)) then
+					print*, "NUN   1490 u3", u3, qqq(2)
+					STOP
+				end if
 				
+				if(isnan(bx3)) then
+					print*, "NUN  1490 bx3	", bx3, qqq(5)
+					STOP
+				end if
 				
 				
 				!if(gr == 50) then
@@ -4109,7 +4122,7 @@
                 if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем внутреннюю сферу для сорта 1
                 ro3 = fluid1(1, i)* Volume / Volume2 - TT * POTOK_MF_all(1, i) / Volume2 + TT * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
-                    print*, "Ro < 0  in sort ", i,  ro3, gl_Cell_center(:, gr)
+                    print*, "Ro < 0  in sort ", i,  ro3, fluid1(1, i), "|||", gl_Cell_center(:, gr)
 					ro3 = 0.05
                     !print*, "gl_Cell_center(:, gr)", gl_Cell_center(:, gr)
                     !print*, "gl_Cell_info(gr)", gl_Cell_info(gr)
@@ -4139,6 +4152,18 @@
                     !pause
 				end if
 				
+				if(isnan(u3)) then
+					print*,  "NUN u3  sort	", i
+					print*, "___"
+					print*, fluid1(:, i)
+					print*, "___"
+					print*, POTOK_MF_all(:, i)
+					print*, "___"
+					print*, fluid1(:, i)
+					print*, "___"
+					print*, gl_Cell_center2(:, gr, now)
+					STOP
+				end if
 				
 				
 				if(.False.) then 
@@ -4230,7 +4255,8 @@
         
         call Start_MGD_3_inner(5)
 		
-		if (mod(step, 1000) == 0 .or. step == 1000 .or. step == 3000) then
+		if (mod(step, 50000) == 0 .or. step == 1000 .or. step == 3000) then
+			print*, "PECHAT"
 		    call Print_surface_2D()
             call Print_Setka_2D()
             call Print_par_2D()
@@ -5835,7 +5861,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(102)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(104)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5861,7 +5887,6 @@
     !call Print_all_surface("C")
     !print *, "Start_GD_2"
     !call Start_GD_2(10000)
-    print *, "Start_GD_3"
 
     !call Start_GD_2(100000)
     !call Initial_conditions()
@@ -5880,10 +5905,22 @@
 
     !call Print_par_2D()
     
-	call Set_Interpolate_main()
+	!call Set_Interpolate_main()
+	
+	
+	!call Read_interpolate_bin(102)
+	
+	!call Re_interpolate()
+	
+	!call Dell_Interpolate()
+	
+	!par_kk12 = 1.0_8
+	!par_kk31 = 1.3_8
+	!par_R_LEFT = -460.0
 	
     call Start_MGD_move()
 	!pause
+	
 	
 	!call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, i)
 	
@@ -5918,8 +5955,9 @@
 	!call Interpolate_point(4.0_8, 2.0_8, 0.003_8, F, istat, nn)
 	
 	
-	
+	!call Set_Interpolate_main()
 	!call Save_interpolate_bin(102)
+	
 
     ! Перенормировка сортов обратно
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) * (par_chi/par_chi_real)
@@ -5928,8 +5966,9 @@
     !gl_Cell_par_MF(2:4, 2, :) = gl_Cell_par_MF(2:4, 2, :) * (3.0)
     !gl_Cell_par_MF(1, 2, :) =  gl_Cell_par_MF(1, 2, :) / (3.0)**2
 
-	call Re_interpolate()
-	call Dell_Interpolate()
+	!call Re_interpolate()
+	
+	!call Dell_Interpolate()
 
     call Print_surface_2D()
     call Print_Setka_2D()
@@ -5942,11 +5981,12 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(103)
+    call Save_setka_bin(105)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
 	call Print_Setka_3D_part()
+	
 	
     end program MIK
 
