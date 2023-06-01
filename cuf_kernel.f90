@@ -3,6 +3,7 @@
 	
 module MY_CUDA
 	 use cudafor
+	 use Solvers
 	 
 	 ! Константы
 	 real(8), constant :: dev_ggg
@@ -29,6 +30,14 @@ module MY_CUDA
 	integer(4), constant ::	dev_par_m_BC
 	integer(4), constant :: dev_par_n_IA
 	integer(4), constant :: dev_par_n_IB
+	real(8), constant ::  dev_par_kk1     ! Степень сгущения сетки к нулю в области до TS: 1 - линейное, 2 - квадратичное и т.д.
+	real(8), constant ::  dev_par_kk12     ! Степень сгущения сетки к нулю в области до TS но после внутренней сферы: 1 - линейное, 2 - квадратичное и т.д.
+    real(8), constant ::  dev_par_kk2     ! Степень сгущения в головной области на бесконечности
+    real(8), constant ::  dev_par_kk3     ! Степень сгущения в хвосте
+	real(8), constant ::  dev_par_kk31
+	real(8), constant ::  dev_par_R_END
+	real(8), constant ::  dev_par_R_LEFT
+	
 	
 	integer(4), device :: dev_mutex_1
 	integer(4), device :: dev_mutex_2
@@ -116,18 +125,18 @@ module MY_CUDA
     real(8), intent(out) :: Vx, Vy, Vz
 	end subroutine dekard_skorost
 	
-	attributes(device) subroutine chlld_Q(n_state, al, be, ge, &
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc)
-      implicit real*8 (a-h,o-z)
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-	  logical, intent(in), optional :: null_bn1
-	  integer, intent(in), optional :: n_disc
-      dimension qqq(9),qqq1(9),qqq2(9)
-	 end subroutine chlld_Q
+	!attributes(device) subroutine chlld_Q(n_state, al, be, ge, &
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq, null_bn1, n_disc)
+ !     implicit real*8 (a-h,o-z)
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+	!  logical, intent(in), optional :: null_bn1
+	!  integer, intent(in), optional :: n_disc
+ !     dimension qqq(9),qqq1(9),qqq2(9)
+	! end subroutine chlld_Q
 	 
 	 attributes(device) subroutine chlld_gd(n_state, al, be, ge, &  
                                  w, qqq1, qqq2, &
@@ -142,20 +151,20 @@ module MY_CUDA
       dimension qqq(5),qqq1(5),qqq2(5)
 	end subroutine chlld_gd
 	
-	attributes(device) subroutine chlld(n_state, al, be, ge, &
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq, n_disc)
-	
-      implicit real*8 (a-h,o-z)
-      
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-      dimension qqq(8),qqq1(8),qqq2(8)
-	  integer, intent(in), optional :: n_disc
-	  
-	  end subroutine chlld
+	!attributes(device) subroutine chlld(n_state, al, be, ge, &
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq, n_disc)
+	!
+ !     implicit real*8 (a-h,o-z)
+ !     
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+ !     dimension qqq(8),qqq1(8),qqq2(8)
+	!  integer, intent(in), optional :: n_disc
+	!  
+	!  end subroutine chlld
 	
     end interface
 	
@@ -377,6 +386,13 @@ module MY_CUDA
 		 dev_par_m_BC = par_m_BC
 		 dev_par_n_IA = par_n_IA
 		 dev_par_n_IB = par_n_IB
+		 dev_par_kk1 = par_kk1    
+	     dev_par_kk12 = par_kk12    
+         dev_par_kk2 = par_kk2     
+         dev_par_kk3 = par_kk3    
+	     dev_par_kk31 = par_kk31
+		 dev_par_R_END = par_R_END
+		 dev_par_R_LEFT = par_R_LEFT
 		 
 	end subroutine Send_data_to_Cuda
 	

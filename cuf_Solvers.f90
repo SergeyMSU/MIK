@@ -584,7 +584,8 @@
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, &
-		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
+		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END
 	use GEO_PARAM
 	use cudafor
 	
@@ -750,7 +751,8 @@
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
-		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
+		par_kk1 => dev_par_kk1
 	use GEO_PARAM
 	use cudafor
 	
@@ -875,7 +877,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_kk2 => dev_par_kk2, &
+		par_R_END => dev_par_R_END
 	use GEO_PARAM
 	use cudafor
 	
@@ -961,7 +964,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC, &
+		par_kk2 => dev_par_kk2, par_kk3 => dev_par_kk3, par_R_END => dev_par_R_END, par_R_LEFT => dev_par_R_LEFT
 	use GEO_PARAM
 	use cudafor
 	
@@ -1068,7 +1072,8 @@
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
-		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner
+		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
+		par_kk1 => dev_par_kk1
 	use GEO_PARAM
 	use cudafor
 	
@@ -1170,7 +1175,8 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC, &
+		par_kk3 => dev_par_kk3, par_R_LEFT => dev_par_R_LEFT
 	use GEO_PARAM
 	use cudafor
 	
@@ -2459,7 +2465,7 @@
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF
+		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now

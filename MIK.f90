@@ -42,29 +42,6 @@
     implicit none
     real(8), intent(in) :: t1(3), t2(3), t3(3), t4(3)
 	end function
-	
-	! !@cuf attributes(host, device) & 
-	!    subroutine chlld_Q(n_state, al, be, ge, &
- !                                w, qqq1, qqq2, &
- !                                dsl, dsp, dsc, &
- !                                qqq, null_bn1)
- !     ! Q - маяк, показывающий в какой области мы находимся
- !     ! n_state = 0-3 - какой метод используем
- !     ! al,be,ge - нормаль
- !     ! w - скорость грани
- !     ! qqq1,qqq2 - переменные с двух сторон
- !     ! dsl,dsp,dsc - поверхности разрывов
- !     ! qqq - выходные потоки
-	!	! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
- !     implicit real*8 (a-h,o-z)
- !     
- !     real(8), intent(out) :: dsl, dsp, dsc
- !     real(8), intent(in) :: al, be, ge, w
- !     integer(4), intent(in) :: n_state
-	!  logical, intent(in), optional :: null_bn1
-	!  
- !     dimension qqq(9),qqq1(9),qqq2(9)
-	!  end subroutine
 
     end interface
 
@@ -3561,6 +3538,7 @@
     ! Это управляющая функция, в отличие от предыдущих версий, здесь показано как правильно вызывать процедуры для движения сетки
     use GEO_PARAM
     use STORAGE
+	USE ieee_arithmetic 
     use My_func
 	USE OMP_LIB
 	use Solvers
@@ -4086,12 +4064,12 @@
                 p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (norm2(qqq(6:8))**2) / 25.13274122871834590768 )* Volume / Volume2 &
                     - TT * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume2 + TT * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
 				
-				if(isnan(u3)) then
+				if(ieee_is_nan(u3)) then
 					print*, "NUN   1490 u3", u3, qqq(2)
 					STOP
 				end if
 				
-				if(isnan(bx3)) then
+				if(ieee_is_nan(bx3)) then
 					print*, "NUN  1490 bx3	", bx3, qqq(5)
 					STOP
 				end if
@@ -4152,7 +4130,7 @@
                     !pause
 				end if
 				
-				if(isnan(u3)) then
+				if(ieee_is_nan(u3)) then
 					print*,  "NUN u3  sort	", i
 					print*, "___"
 					print*, fluid1(:, i)

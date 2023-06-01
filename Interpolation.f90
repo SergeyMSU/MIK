@@ -338,6 +338,7 @@
 	! num - номер ячейки, в которой находится точка
 	USE GEO_PARAM
 	USE STORAGE
+	USE ieee_arithmetic
 	implicit none
 	! Variables
 	real(8), intent(in) :: x, y, z
@@ -560,13 +561,13 @@
 	F = vec(1, 1) * gl_Cell_par_inter(:, num) + vec(1, 2) * gl_Cell_par_inter(:, s1) + vec(1, 3) * gl_Cell_par_inter(:, s2) + vec(1, 4) * gl_Cell_par_inter(:, s3)
 	F_mf = vec(1, 1) * gl_Cell_par_MF_inter(:, :, num) + vec(1, 2) * gl_Cell_par_MF_inter(:, :, s1) + vec(1, 3) * gl_Cell_par_MF_inter(:, :, s2) + vec(1, 4) * gl_Cell_par_MF_inter(:, :, s3)
 	
-	if(isnan(F(1))) STOP "NUN 678ojhyuikjhikj"
-	if(isnan(F(2))) STOP "NUN vbnjko9876t"
-	if(isnan(F(5))) STOP "NUN 13esasdfg"
-	if(isnan(F_mf(1, 1))) STOP "NUN 9ol,mnbgtyu"
-	if(isnan(F_mf(1, 2))) STOP "NUN 876rfghjg"
-	if(isnan(F_mf(2, 1))) STOP "NUN bnhju78ijh"
-	if(isnan(F_mf(2, 2))) STOP "NUN zxdse45"
+	if(ieee_is_nan(F(1))) STOP "NUN 678ojhyuikjhikj"
+	if(ieee_is_nan(F(2))) STOP "NUN vbnjko9876t"
+	if(ieee_is_nan(F(5))) STOP "NUN 13esasdfg"
+	if(ieee_is_nan(F_mf(1, 1))) STOP "NUN 9ol,mnbgtyu"
+	if(ieee_is_nan(F_mf(1, 2))) STOP "NUN 876rfghjg"
+	if(ieee_is_nan(F_mf(2, 1))) STOP "NUN bnhju78ijh"
+	if(ieee_is_nan(F_mf(2, 2))) STOP "NUN zxdse45"
 	
 	!print*, "___"
 	!print*, F(1)

@@ -10,6 +10,7 @@
 	
 	interface
 	
+	!@cuf attributes(host, device) &
 	subroutine chlld(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
@@ -22,8 +23,9 @@
 	  integer, intent(in), optional :: n_disc
       dimension qqq(8), qqq1(8),qqq2(8)
 	  
-	end subroutine chlld
-								 
+								 end subroutine chlld
+			
+	!@cuf attributes(host, device) &
 	subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
