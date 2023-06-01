@@ -218,13 +218,14 @@
     use STORAGE
     use GEO_PARAM
 	use Solvers
+	use My_func
     implicit none
     
     integer, intent(in) :: now   ! Какиой номер параметров используется в вычислении движения
     
     integer :: i, Num, gr, s1, s2, j, yzel, ndisc
     real(8) :: normal(3), qqq1(8), qqq2(8), dsl, dsp, dsc, POTOK(8), a1, a2, v1, v2, &
-        ray(3), norm, b1, b2, c1, c2, vec(3), center(3), center2(3)
+        ray(3), norm, b1, b2, c1, c2, vec(3), center(3), center2(3), the1, the2
     
     !koef1 = 0.3! 0.2
     !koef2 = 1.0 ! 1.0
@@ -252,6 +253,28 @@
 		
         
         dsl = dsl * koef1
+		
+		center = gl_Gran_center2(:, gr, now)
+		
+		the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
+		
+		do j = 1, 4
+            yzel = gl_all_Gran(j, gr)
+			
+			center2(1) = gl_x2(yzel, now)
+			center2(2) = gl_y2(yzel, now)
+			center2(3) = gl_z2(yzel, now)
+			the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
+			
+			if (the2 < the1 .and. the2 > 0.18) CYCLE
+			
+			
+            gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsc
+            gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsc
+            gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsc
+            gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+        end do
+        CYCLE  ! Заканчиваем с этой гранью, переходим к следующей
 		
         !if(i == 50) write(*,*) dsl
 		
@@ -539,7 +562,7 @@
     do k = 1, N3
         do j = 1, N2
 			
-			if (j == 1) then  ! k /= 1 .and. 
+			if (j == 1) then ! .and. k /= 1) then  ! k /= 1 .and. 
                     CYCLE
 			end if
 			

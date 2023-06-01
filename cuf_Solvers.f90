@@ -585,7 +585,7 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END
+		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END, par_kk12 => dev_par_kk12
 	use GEO_PARAM
 	use cudafor
 	
@@ -752,7 +752,7 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1
+		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12
 	use GEO_PARAM
 	use cudafor
 	
@@ -965,7 +965,8 @@
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC, &
-		par_kk2 => dev_par_kk2, par_kk3 => dev_par_kk3, par_R_END => dev_par_R_END, par_R_LEFT => dev_par_R_LEFT
+		par_kk2 => dev_par_kk2, par_kk3 => dev_par_kk3, par_R_END => dev_par_R_END, par_R_LEFT => dev_par_R_LEFT, &
+		par_kk31 => dev_par_kk31
 	use GEO_PARAM
 	use cudafor
 	
@@ -1073,7 +1074,7 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1
+		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12
 	use GEO_PARAM
 	use cudafor
 	
@@ -1544,6 +1545,7 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS
 	use GEO_PARAM
 	use cudafor
+	use My_func
 	
 	implicit none
 	integer, intent(in) :: now
@@ -1551,7 +1553,7 @@
 	integer i, Num, gr, s1, s2, j, yzel
     real(8) :: normal(3), qqq1(8), qqq2(8), POTOK(8), ray(3)
     real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
-	real(8) :: www, dsl, dsp, dsc
+	real(8) :: www, dsl, dsp, dsc, the1, the2, center(3), center2(3)
 	integer(4) :: metod
 	
 	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
@@ -1578,6 +1580,29 @@
 	
 		
     dsl = dsl * koef1
+	
+	center = gl_Gran_center2(:, gr, now)
+		
+	the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
+		
+	do j = 1, 4
+        yzel = gl_all_Gran(j, gr)
+			
+		center2(1) = gl_x2(yzel, now)
+		center2(2) = gl_y2(yzel, now)
+		center2(3) = gl_z2(yzel, now)
+		the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
+			
+		if (the2 < the1 .and. the2 > 0.18) CYCLE
+			
+			
+        gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsl
+        gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
+        gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
+        gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+	end do
+        
+    return  ! Заканчиваем с этой гранью, переходим к следующей
 	
 	
 	
@@ -2255,7 +2280,7 @@
     integer(4) :: st, s1, s2, i, j, k, zone, metod, now2
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
-    real(8) :: dist, dsl, dsc, dsp
+    real(8) :: dist, dsl, dsc, dsp, distant(3)
     real(8) :: POTOK(9), ttest(3)
     real(8) :: POTOK_MF(5)
     real(8) :: POTOK_MF_all(5, 4)
@@ -2290,6 +2315,8 @@
 	fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 	null_bn = .False.
 	
+	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+	dist = norm2(distant)
 	
 	! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -2314,7 +2341,10 @@
                 !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
                 qqq2 = gl_Cell_par(:, s2)
                 fluid2 = gl_Cell_par_MF(:, :, s2)   ! Загрузили параметры жидкостей для мультифлюида
-                dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))                                              
+                !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))   
+				
+				distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				dist = min( dist, norm2(distant))
 
                 ! Попробуем снести плотность пропорционально квадрату
                 if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
@@ -2337,7 +2367,7 @@
             else  ! В случае граничных ячеек - граничные условия
                 !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
                 if(s2 == -1) then  ! Набегающий поток
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
 					
 					qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
                     fluid2(:, 1) = fluid1(:, 1)
@@ -2345,7 +2375,7 @@
                     fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
 				else if(s2 == -3) then
-					dist = gl_Cell_dist(s1)
+					!dist = gl_Cell_dist(s1)
 					
 					if (gl_Cell_center2(2, s1, now) > 0.0_8) then
                         qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
@@ -2359,7 +2389,7 @@
                     fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
                 else  ! Здесь нужны мягкие условия
-                    dist = gl_Cell_dist(s1)
+                    !dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     fluid2 = fluid1
                     !qqq2(5) = 1.0_8
@@ -2697,7 +2727,7 @@
     integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
-    real(8) :: dist, dsl, dsc, dsp
+    real(8) :: dist, dsl, dsc, dsp, distant(3)
     real(8) :: POTOK(9), ttest(3)
     real(8) :: POTOK_MF(5)
     real(8) :: POTOK_MF_all(5, 4)
@@ -2721,6 +2751,9 @@
         s2 = gl_Gran_neighbour(2, gr)
         qqq1 = gl_Cell_par(:, s1)
         fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
+		
+		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+		dist = norm2(distant)
 
         ! Попробуем снести плотность пропорционально квадрату
         if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
@@ -2745,7 +2778,10 @@
             !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
             qqq2 = gl_Cell_par(:, s2)
             fluid2 = gl_Cell_par_MF(:, :, s2)   ! Загрузили параметры жидкостей для мультифлюида
-            dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+            !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+			
+			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+			dist = min( dist, norm2(distant))
 
             ! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then

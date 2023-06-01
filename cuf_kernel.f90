@@ -421,6 +421,7 @@ module MY_CUDA
 	
 	
 	attributes(device) real(8) function dev_norm2(x)
+	! РАБОТАЕТ ТОЛЬКО ДЛЯ ТРЁХМЕРНЫХ ВЕКТОРОВ
     implicit none
 	real(8), device :: x(*)
 
@@ -536,7 +537,7 @@ module MY_CUDA
 	print*, step, "   ", size(gl_all_Cell(1, :))
 	
 	! Главный цикл
-	do step = 1, 10000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 20000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 500) == 0) then
 			local1 = time_step2
@@ -629,6 +630,8 @@ module MY_CUDA
 			write(*,*) 'Error ASync start 6: ', cudaGetErrorString(cudaGetLastError())
 	
 	end if
+	
+	! Здесь нужно подвинуть узел на TS на оси симметрии
 	
 	! Теперь собственно циклы движения точек ---------------------------------------------------------------------------------------------------------
 	
