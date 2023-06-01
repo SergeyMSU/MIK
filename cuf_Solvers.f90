@@ -709,7 +709,7 @@
 			if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
 			else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
             !if (i <= par_n_TS) then  ! До расстояния = R_TS
             !    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
             else if (i <= par_n_HP) then  
@@ -717,7 +717,7 @@
             else if (i <= par_n_BS) then 
                 r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
             else
-                r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**par_kk2
+                r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
             end if
 
             ! Записываем новые координаты
@@ -840,7 +840,7 @@
 				if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
                 !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
@@ -1023,7 +1023,7 @@
 			end if
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
-            x = xx - (DBLE(j)/N2)**par_kk3 * (xx - par_R_LEFT)
+            x = xx - (DBLE(j)/N2)**par_kk31 * (xx - par_R_LEFT)
             
             ! BS     Нужно взять положение BS из её положения на крайнем луче A
             yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1140,7 +1140,7 @@
 		if (i <= par_n_IB) then  ! NEW
             r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
         else 
-            r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk1
+            r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
 		end if
 				
         !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
