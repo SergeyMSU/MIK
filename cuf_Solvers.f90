@@ -212,7 +212,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на 
+	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на лучах B
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -346,11 +346,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
-				vel = par_nat_HP * 0.03 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.001
+				vel = par_nat_HP * 0.02 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.001
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
-				vel = par_nat_HP * 0.03 * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.02 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 			
@@ -574,6 +574,58 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
+	attributes(global) subroutine Cuda_Move_all_5(now)   ! Поверхностное натяжение 
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
+	use GEO_PARAM
+	use cudafor
+	
+	implicit none
+	integer, intent(in) :: now
+	
+	real(8) :: Time, r, r2
+    real(8) :: Ak(3), Bk(3)
+    integer :: i, j, k
+	
+	integer(4) :: yzel, yzel2
+	
+	
+	  
+	Time = time_step
+	
+	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	if (i > 1) return
+	
+	r2 = 0.0
+	k = size(gl_RAY_A(1, 1, :))
+	yzel = gl_RAY_A(par_n_TS, 1, 1)
+	Bk(1) = gl_x2(yzel, now)
+	Bk(2) = gl_y2(yzel, now)
+	Bk(3) = gl_z2(yzel, now)
+	
+	r = norm2(Bk)
+	
+	do j = 1, k
+		yzel2 = gl_RAY_A(par_n_TS, 2, k)
+		Ak(1) = gl_x2(yzel2, now) + gl_Vx(yzel2) * Time
+		Ak(2) = gl_y2(yzel2, now) + gl_Vy(yzel2) * Time
+		Ak(3) = gl_z2(yzel2, now) + gl_Vz(yzel2) * Time
+		r2 = r2 + norm2(Ak)
+	end do
+	
+	r2 = r2/k
+	
+	gl_Vx(yzel) = (r2 - r)/Time
+	gl_Vy(yzel) = 0.0
+	gl_Vz(yzel) = 0.0
+	
+	end subroutine Cuda_Move_all_5
 	
 	attributes(global) subroutine Cuda_Move_all_A(now)   
 	! Движение точек на А - лучах
@@ -1581,6 +1633,7 @@
 		
     dsl = dsl * koef1
 	
+	if (.True.) then   ! Новый вариант (плохо работает в носике)
 	center = gl_Gran_center2(:, gr, now)
 		
 	the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
@@ -1593,17 +1646,51 @@
 		center2(3) = gl_z2(yzel, now)
 		the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
 			
-		if (the2 < the1 .and. the2 > 0.18) CYCLE
+		if (the2 < the1) CYCLE
 			
+		! Блок безопасного доступа
+			select case (mod(yzel, 4))
+			case(0)
+				do while ( atomiccas(dev_mutex_1, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(1)
+				do while ( atomiccas(dev_mutex_2, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(2)
+				do while ( atomiccas(dev_mutex_3, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case(3)
+				do while ( atomiccas(dev_mutex_4, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			case default
+				do while ( atomiccas(dev_mutex_4, 0, 1) == 1)  ! Безопасный доступ к памяти dev_mutex_1
+				end do                                        ! Безопасный доступ к памяти
+			end select
 			
         gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsl
         gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
         gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
         gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+		
+		call threadfence()                               ! Безопасный доступ к памяти
+			select case (mod(yzel, 4))
+			case(0)
+				dev_mutex_1 = 0 
+			case(1)
+				dev_mutex_2 = 0 
+			case(2)
+				dev_mutex_3 = 0 
+			case(3)
+				dev_mutex_4 = 0 
+			case default
+				dev_mutex_4 = 0 
+			end select
+		
+		
 	end do
         
     return  ! Заканчиваем с этой гранью, переходим к следующей
-	
+	end if
 	
 	
     a1 = sqrt(ggg * qqq1(5)/qqq1(1))  ! Скорости звука

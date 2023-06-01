@@ -4661,7 +4661,7 @@
     M1 = size(gl_Cell_C(:, 1, 1))
 	
 	open(1, file = 'Print_Contact_3D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1), ", F=FEPOINT, ET=quadrilateral "
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) + 4 * N3 , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1) + N3, ", F=FEPOINT, ET=quadrilateral "
 	
 	
 	do k = 1, N3
@@ -4721,7 +4721,32 @@
 	    end do	
 	end do
 	
-	do k = 1, N3 * (N2 - 1) + M3 * (M2 - 1)
+	do k = 1, N3
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			cel = gl_Cell_A(par_n_HP - 1, N2, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, 1, k)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_C(par_n_HP - par_n_TS, 1, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+			
+			cel = gl_Cell_A(par_n_HP - 1, N2, kk)
+			gr = gl_Cell_gran(1, cel)
+			c = gl_Gran_center(:, gr)
+		    write(1,*) c(1), c(2), c(3), 1.0_8
+	end do
+	
+	do k = 1, N3 * (N2 - 1) + M3 * (M2 - 1) + N3
 		write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
 	end do
 	
@@ -5900,7 +5925,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(106)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(107)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5920,6 +5945,7 @@
     call Print_Setka_2D()
 	call Print_Setka_y_2D()
 	call Print_TS_3D()
+	call Print_Contact_3D()
 	call Print_surface_y_2D()
     !call Print_cell_and_neighbour(1,2,1)
     !call Print_gran()
@@ -6020,7 +6046,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(107)
+    call Save_setka_bin(108)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
