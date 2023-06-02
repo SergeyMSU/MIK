@@ -136,10 +136,10 @@
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * 0.035 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 	end if
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -304,8 +304,8 @@
 			if (j < N2) then
 			    yzel2 = gl_RAY_B(par_n_HP, j + 1, k)
 			else
-				!yzel2 = gl_RAY_O(1, 1, k)
-				return
+				yzel2 = gl_RAY_O(1, 1, k)
+				!return
 			end if
 			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
 			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
@@ -345,11 +345,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.0005 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
+				vel = 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.0005 * ((Ak/r) * (rr - r)) * ddt
+				vel = 0.0003 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 	
@@ -727,6 +727,16 @@
 		ER2 = proect * ER
 		ER2  = KORD + ER2
         R_HP = norm2(ER2)  ! Новое расстояние до HP
+		
+		!if(j == 1 .and. k == 1) then
+		!		write(*,*) yzel, now
+		!		write(*,*) R_HP
+		!		write(*,*) vel(1), vel(2), vel(3)
+		!		write(*,*) Time, proect
+		!		write(*,*) ER(1), ER(2), ER(3)
+		!		write(*, *) KORD(1), KORD(2), KORD(3)
+		!		write(*,*) "______________________"
+		!end if
             
         ! BS
         yzel = gl_RAY_A(par_n_BS, j, k)
@@ -990,7 +1000,7 @@
                 if (i <= par_n_BS - par_n_HP + 1) then
                     r = rr + (i - 1) * (R_BS - rr)/(par_n_BS - par_n_HP)
                 else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - R_BS)
+                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
                 
                 gl_x2(yzel, now2) = x
@@ -1098,7 +1108,7 @@
                 if (i <= par_n_BS - par_n_HP + 1) then
                     r = R_HP + (i - 1) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
                 else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**par_kk2 * (par_R_END - R_BS)
+                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
 
 
@@ -1919,6 +1929,8 @@
         
     dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
+	!if(gr == 77) write(*, *) dsc, qqq1(1), qqq2(1), qqq1(5), qqq2(5)
+	
 	do j = 1, 4
             yzel = gl_all_Gran(j, gr)
 			center2(1) = gl_x2(yzel, now)
@@ -2503,6 +2515,20 @@
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
+			!if (gr == 236608) then
+			!	write(*, *) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8), qqq1(9)
+			!	write(*, *) "___"
+			!	write(*, *) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8), qqq2(9)
+			!	write(*, *) "___"
+			!	write(*, *) metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now)
+			!	write(*, *) "___"
+			!	write(*, *) wc
+			!	write(*, *) "___"
+			!	write(*, *) null_bn
+			!	write(*, *) "___"
+			!	continue
+			!end if
+			
             if (.False.) then !(gl_Gran_type(gr) == 1) then
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
@@ -2587,7 +2613,7 @@
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1
+		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
@@ -2616,7 +2642,8 @@
 	
 	if(gl_Cell_info(gr) == 0) return
             l_1 = .TRUE.
-            if (norm2(gl_Cell_center2(:, gr, now)) <= par_R0 + (par_R_character - par_R0) * (3.0_8/par_n_TS)**par_kk1) l_1 = .FALSE.    ! Не считаем внутри сферы
+            if (norm2(gl_Cell_center2(:, gr, now)) <= par_R0 + (par_R_character - par_R0) * (3.0_8/par_n_TS)**par_kk1) l_1 = .FALSE. 
+			!if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE.    ! Не считаем внутри сферы
             POTOK = 0.0
 			sks = 0.0
             SOURSE = 0.0
@@ -2720,7 +2747,7 @@
 
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE       ! Пропускаем внутреннюю сферу для сорта 1
-                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем внутреннюю сферу для сорта 1
+                if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем источники на внутреннюю сферу для всех сортов
                 ro3 = fluid1(1, i)* Volume / Volume2 - time * POTOK_MF_all(1, i) / Volume2 + time * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
 					ro3 = 0.01
@@ -3045,6 +3072,13 @@
                 end if
 
                 gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
+				
+				!if(gr == 5) then
+				!write(*,*) ro3, u3, v3, w3
+				!write(*,*) POTOK(1), Volume, qqq(1), dev_time_step_inner
+				!write(*,*) "____________"
+				!	
+				!end if
 
             end if
 

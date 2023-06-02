@@ -26,7 +26,7 @@
 	real(8), parameter :: par_nat_BS = 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = 0.4_8! 0.3      ! Коэффицинт запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = 0.5_8 ! 0.5
+    real(8), parameter :: koef2 = 1.0_8 ! 0.5
     real(8), parameter :: koef3 = 0.7_8   ! 0.3
 	
     

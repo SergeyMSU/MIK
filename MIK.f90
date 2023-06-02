@@ -2917,36 +2917,7 @@
                 end if
 
             else  ! В случае граничных ячеек - граничные условия
-                !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
-                if(s2 == -1) then  ! Набегающий поток
-                    !dist = gl_Cell_dist(s1)
-                    qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, 0.0_8, 0.0_8, 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                    fluid2(:, 2) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                    fluid2(:, 3) = (/0.000001_8, 0.0_8, 0.0_8, 0.0_8, 0.000001_8/)
-                    fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
-                else  ! Здесь нужны мягкие условия (это задняя стенка)
-                    !dist = gl_Cell_dist(s1)
-                    qqq2 = qqq1
-                    fluid2 = fluid1
-                    qqq2(5) = 1.0_8
-                    if(qqq2(2) > par_Velosity_inf) then
-                        qqq2(2) = par_Velosity_inf ! Отсос жидкости
-                    end if
-
-                    !if(fluid2(2,1) > par_Velosity_inf) then
-                    !    fluid2(2,1) = par_Velosity_inf ! Отсос жидкости
-                    !end if
-                    !if(fluid2(2,2) > par_Velosity_inf) then
-                    !    fluid2(2,2) = par_Velosity_inf ! Отсос жидкости
-                    !end if
-                    !if(fluid2(2,3) > par_Velosity_inf) then
-                    !    fluid2(2,3) = par_Velosity_inf ! Отсос жидкости
-                    !end if
-                    !if(fluid2(2,4) > par_Velosity_inf) then
-                    !    fluid2(2,4) = par_Velosity_inf ! Отсос жидкости
-                    !end if
-                end if
+                print*, " effefefeIJHGFTYUIJHGUJHGYUIEEE "
             end if
 
 
@@ -3046,6 +3017,7 @@
             ! Определяем зону в которой находимся
 
             zone = 1
+			
 
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
@@ -3080,6 +3052,14 @@
                 end if
 
                 gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
+				
+				!if(gr == 5) then
+				!write(*,*) ro3, u3, v3, w3
+				!write(*,*) POTOK(1), Volume, qqq(1), time
+				!write(*,*) "____________"
+				!	
+				!end if
+				
 
             end if
 
@@ -3606,9 +3586,9 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 1   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 2000   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 1000) == 0) then
+        if (mod(step, 100) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
 			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) 
 			!print*, gl_Gran_normal2(:, mincell, now)
@@ -3651,13 +3631,17 @@
 		!	print*, "posle ", gl_x2(gl_all_Cell(ijk, 200614), 2), gl_y2(gl_all_Cell(ijk, 200614), 2), gl_z2(gl_all_Cell(ijk, 200614), 2)
 		!end do
 		
+		!print*, "do = ", gl_Vx(40), gl_Vy(40), gl_Vz(40), gl_Point_num(40)
+		
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
+		
+		!print*, gl_Vx(40), gl_Vy(40), gl_Vz(40), gl_Point_num(40)
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT) 
 		
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
-		!CYCLE
+		
 		
 		!do ijk = 1, 8
 		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
@@ -3820,6 +3804,21 @@
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
+			
+			!if (gr == 236608) then
+			!	write(*, *) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8), qqq1(9)
+			!	write(*, *) "___"
+			!	write(*, *) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8), qqq2(9)
+			!	write(*, *) "___"
+			!	write(*, *) metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now)
+			!	write(*, *) "___"
+			!	write(*, *) wc
+			!	write(*, *) "___"
+			!	write(*, *) null_bn
+			!	write(*, *) "___"
+			!	continue
+			!end if
+			
 			
              if (.True.) then !(gl_Gran_type(gr) == 1) then
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
@@ -5925,7 +5924,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(109)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(113)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6049,12 +6048,13 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(110)
+    !call Save_setka_bin(114)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
 	call Print_Setka_3D_part()
 	
+	pause
 	
     end program MIK
 

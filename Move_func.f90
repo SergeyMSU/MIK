@@ -375,9 +375,12 @@
         !dsc = dsc * koef2
 		dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 		
+		!if(gr == 77) write(*, *) dsc, qqq1(1), qqq2(1), qqq1(5), qqq2(5)
 		
 		do j = 1, 4
             yzel = gl_all_Gran(j, gr)
+			
+			
 			center2(1) = gl_x2(yzel, now)
 			center2(2) = gl_y2(yzel, now)
 			center2(3) = gl_z2(yzel, now)
@@ -667,11 +670,18 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-				vel = par_nat_HP * 0.035 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.035
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-				vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 			end if
+			
+			!if(k == 2 .and. j == 2) then
+			!	print*, gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)
+			!	print*, vel
+			!	print*, "_____"
+			!	pause
+			!end if
 			
 			
 			
@@ -1080,6 +1090,17 @@
             proect = DOT_PRODUCT(vel * Time, ER)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
             R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
+			
+		!	if(j == 1 .and. k == 1) then
+		!		write(*,*) yzel, now
+		!		write(*,*) R_HP
+		!		write(*,*) vel(1), vel(2), vel(3)
+		!		write(*,*) Time, proect
+		!		write(*,*) ER(1), ER(2), ER(3)
+		!		write(*, *) KORD(1), KORD(2), KORD(3)
+		!		write(*,*) "______________________"
+		!end if
+			
             
             ! BS
             yzel = gl_RAY_A(par_n_BS, j, k)
