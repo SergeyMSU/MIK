@@ -674,11 +674,6 @@
 			end if
 			
 			
-			if(j == 20 .and. k == 1) then
-				write(*, *) "A_ ", gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
-		        write(*, *) "B_ ", vel(1), vel(2), vel(3), gl_Point_num(yzel) 
-	        end if
-			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
@@ -856,6 +851,7 @@
 				vel = 0.001 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
+			
 			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -1074,10 +1070,6 @@
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
 			end if
-			
-			if(j == 20 .and. k == 1) then
-		        write(*, *) vel(1), vel(2), vel(3), gl_Point_num(yzel) 
-	        end if
             
             ! Обнулим для следующего успользования
             gl_Point_num(yzel) = 0

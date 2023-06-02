@@ -574,4 +574,71 @@
 	
 	end subroutine Find_tetraedr_Interpolate
 	
+	
+	subroutine Streem_line(x, y, z, num)
+	! Variables
+	
+	! Body of Streem_line
+	
+	integer, intent(in) :: num
+	real(8), intent(in) :: x, y, z
+	
+	real(8) :: r(3), V(3)
+    character(len=5) :: name
+	real(8) :: F(9), F_mf(5, 4)
+	integer(4) :: zone, cell, number, N, i
+	
+	r(1) = x
+	r(2) = y
+	r(3) = z
+	number = 1
+	cell = 1
+	V = 0.0
+	N = 0
+    
+    write(unit=name,fmt='(i5.5)') num
+    
+    open(1, file = "streem_line_" // name // ".txt")
+	
+	
+11	continue	
+	N = N + 1
+	r = r + V
+	number = cell
+	call Interpolate_point(r(1), r(2), r(3), F, F_mf, zone, cell, number)
+	V = F(2:4)
+	
+	if (r(1) > -400.0 .and. sqrt(r(2)**2 + r(3)**2) < 250.0 .and. r(1) < 150.0 ) then
+		GO TO 11
+	end if
+	
+	write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", N, ", E =  ", N - 1 , ", F=FEPOINT, ET=LINESEG "
+	
+	r(1) = x
+	r(2) = y
+	r(3) = z
+	number = 1
+	cell = 1
+	V = 0.0
+	
+	12	continue	
+	r = r + V
+	number = cell
+	call Interpolate_point(r(1), r(2), r(3), F, F_mf, zone, cell, number)
+	V = F(2:4)
+	write(1,*) r(1), r(2), r(3)
+	
+	if (r(1) > -400.0 .and. sqrt(r(2)**2 + r(3)**2) < 250.0 .and. r(1) < 150.0 ) then
+		GO TO 12
+	end if
+	
+	
+	do i = 1, N - 1
+		write(1,*) i, i + 1
+	end do
+	
+	close(1)
+	
+	end subroutine Streem_line
+	
 	end module Interpolate

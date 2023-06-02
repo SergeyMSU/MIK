@@ -5925,7 +5925,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(107)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(109)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -5993,11 +5993,14 @@
 	
     call CUDA_START_MGD_move()
 	
+	!call Set_Interpolate_main()
+	!call Streem_line(50.0_8, 0.001_8, 0.001_8, 1)
+	!call Streem_line(50.0_8, 20.001_8, 20.001_8, 2)
 	
 	!call CUDA_START_GD_3()
 	
 	
-	call Print_Cell(gl_Cell_number(1, 136644), gl_Cell_number(2, 136644), gl_Cell_number(3, 136644), gl_Cell_type(136644))
+	!call Print_Cell(gl_Cell_number(1, 136644), gl_Cell_number(2, 136644), gl_Cell_number(3, 136644), gl_Cell_type(136644))
 	
 	!pause
 	
@@ -6046,7 +6049,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(108)
+    call Save_setka_bin(110)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

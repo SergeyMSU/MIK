@@ -135,16 +135,11 @@
 	!dist = max(dist, 1.0_8)
 			
 	if (gl_Point_num(yzel) > 0) then
-		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		vel = par_nat_HP * 0.035 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 	else
-		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
-	end if
-			
-	if(j == 20 .and. k == 1) then
-		write(*, *) "A_ ", gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
-		write(*, *) "B_ ", vel(1), vel(2), vel(3), gl_Point_num(yzel) 
 	end if
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -349,14 +344,16 @@
 			!dist = max(dist, 1.0_8)
 			
 			if (gl_Point_num(yzel) > 0) then
-			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
-				vel = par_nat_HP * 0.02 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.001
+			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+				vel = 0.0005 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				vel(1) = 0.0
 			else
-				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/(dist)
-				vel = par_nat_HP * 0.02 * ((Ak/r) * (rr - r)) * ddt
+				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
+				vel = 0.0005 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
+	
+	
 			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -553,12 +550,12 @@
 	rr = (r1 + r2 + r3 + r4)/4.0
 			
 	if (gl_Point_num(yzel) > 0) then
-		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-		vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 		vel(1) = 0.0
 	else
-		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-		vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
+		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		vel = 0.0003 * ((Ak/r) * (rr - r)) * ddt
 		vel(1) = 0.0
 	end if
 			
@@ -717,9 +714,6 @@
             vel = vel/gl_Point_num(yzel)                       ! Нашли скорость движения этого узла
 	end if
 	
-	if(j == 20 .and. k == 1) then
-		write(*, *) vel(1), vel(2), vel(3), gl_Point_num(yzel) 
-	end if
 	
             
         ! Обнулим для следующего успользования
