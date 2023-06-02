@@ -5,18 +5,10 @@
     !  PROGRAM: MIK model - Malama & Izmodenov & Korolkov model
     !
     !****************************************************************************
-    ! Описание модулей
-	
-
-    include "Storage_modul.f90"
-    include "Solvers.f90"
-    include "Help_func.f90"
-    include "Move_func.f90"
-	include "TVD.f90"
-	include "Interpolation.f90"
-	
-
+    
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
+	
+	include "Storage_modul.f90"
 
     module My_func                     ! Модуль интерфейсов для внешних функций
 	
@@ -69,6 +61,14 @@
 
 	end module My_func
 	
+	! Описание модулей
+	
+
+    include "Solvers.f90"
+    include "Help_func.f90"
+    include "Move_func.f90"
+	include "TVD.f90"
+	include "Interpolation.f90"
 	
 	!@cuf include "cuf_kernel.cuf"
 
@@ -3606,7 +3606,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 24000 * 7   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 1000) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
@@ -6046,7 +6046,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(108)
+    !call Save_setka_bin(108)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

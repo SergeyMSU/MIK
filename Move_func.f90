@@ -254,27 +254,29 @@
         
         dsl = dsl * koef1
 		
-		center = gl_Gran_center2(:, gr, now)
+		if(.False.) then
+		    center = gl_Gran_center2(:, gr, now)
 		
-		the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
+		    the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
 		
-		do j = 1, 4
-            yzel = gl_all_Gran(j, gr)
+		    do j = 1, 4
+                yzel = gl_all_Gran(j, gr)
 			
-			center2(1) = gl_x2(yzel, now)
-			center2(2) = gl_y2(yzel, now)
-			center2(3) = gl_z2(yzel, now)
-			the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
+			    center2(1) = gl_x2(yzel, now)
+			    center2(2) = gl_y2(yzel, now)
+			    center2(3) = gl_z2(yzel, now)
+			    the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
 			
-			if (the2 < the1 .and. the2 > 0.18) CYCLE
+			    if (the2 < the1 .and. the2 > 0.18) CYCLE
 			
 			
-            gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsc
-            gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsc
-            gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsc
-            gl_Point_num(yzel) = gl_Point_num(yzel) + 1
-        end do
-        CYCLE  ! «аканчиваем с этой гранью, переходим к следующей
+                gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsl
+                gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
+                gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
+                gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+            end do
+            CYCLE  ! «аканчиваем с этой гранью, переходим к следующей
+		end if
 		
         !if(i == 50) write(*,*) dsl
 		
@@ -672,6 +674,11 @@
 			end if
 			
 			
+			if(j == 20 .and. k == 1) then
+				write(*, *) "A_ ", gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
+		        write(*, *) "B_ ", vel(1), vel(2), vel(3), gl_Point_num(yzel) 
+	        end if
+			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 			gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
@@ -1066,7 +1073,11 @@
                 ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 				vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
                 vel = vel/gl_Point_num(yzel)                       ! Ќашли скорость движени€ этого узла
-            end if
+			end if
+			
+			if(j == 20 .and. k == 1) then
+		        write(*, *) vel(1), vel(2), vel(3), gl_Point_num(yzel) 
+	        end if
             
             ! ќбнулим дл€ следующего успользовани€
             gl_Point_num(yzel) = 0

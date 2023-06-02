@@ -142,6 +142,10 @@
 		vel = par_nat_HP * 0.035 * ((Ak/r) * (rr - r)) * ddt
 	end if
 			
+	if(j == 20 .and. k == 1) then
+		write(*, *) "A_ ", gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel) 
+		write(*, *) "B_ ", vel(1), vel(2), vel(3), gl_Point_num(yzel) 
+	end if
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
@@ -613,9 +617,9 @@
 	
 	do j = 1, k
 		yzel2 = gl_RAY_A(par_n_TS, 2, k)
-		Ak(1) = gl_x2(yzel2, now) + gl_Vx(yzel2) * Time
-		Ak(2) = gl_y2(yzel2, now) + gl_Vy(yzel2) * Time
-		Ak(3) = gl_z2(yzel2, now) + gl_Vz(yzel2) * Time
+		Ak(1) = gl_x2(yzel2, now)
+		Ak(2) = gl_y2(yzel2, now)
+		Ak(3) = gl_z2(yzel2, now)
 		r2 = r2 + norm2(Ak)
 	end do
 	
@@ -624,6 +628,8 @@
 	gl_Vx(yzel) = (r2 - r)/Time
 	gl_Vy(yzel) = 0.0
 	gl_Vz(yzel) = 0.0
+	
+	gl_Point_num(yzel) = 1
 	
 	end subroutine Cuda_Move_all_5
 	
@@ -709,7 +715,12 @@
             ! vel = (/gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)/)
 			vel(1) = gl_Vx(yzel); vel(2) = gl_Vy(yzel); vel(3) = gl_Vz(yzel)
             vel = vel/gl_Point_num(yzel)                       ! Ќашли скорость движени€ этого узла
-        end if
+	end if
+	
+	if(j == 20 .and. k == 1) then
+		write(*, *) vel(1), vel(2), vel(3), gl_Point_num(yzel) 
+	end if
+	
             
         ! ќбнулим дл€ следующего успользовани€
         gl_Point_num(yzel) = 0
@@ -1633,7 +1644,7 @@
 		
     dsl = dsl * koef1
 	
-	if (.True.) then   ! Ќовый вариант (плохо работает в носике)
+	if (.False.) then   ! Ќовый вариант (плохо работает в носике)
 	center = gl_Gran_center2(:, gr, now)
 		
 	the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
