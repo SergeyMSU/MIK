@@ -247,12 +247,22 @@
         qqq1 = gl_Cell_par(1:8, s1)
         qqq2 = gl_Cell_par(1:8, s2)
         
-        call chlld(2, normal(1), normal(2), normal(3), &  ! 2
+        call chlld(3, normal(1), normal(2), normal(3), &  ! 2
                 0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
 		
 		
         
         dsl = dsl * koef1
+		
+		do j = 1, 4
+                yzel = gl_all_Gran(j, gr)
+                gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsl
+                gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsl
+                gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsl
+                gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+		end do
+		CYCLE  ! «аканчиваем с этой гранью, переходим к следующей
+			
 		
 		if(.False.) then
 		    center = gl_Gran_center2(:, gr, now)
@@ -854,11 +864,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.001 * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.001 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 			
@@ -996,11 +1006,11 @@
 			
 			    if (gl_Point_num(yzel) > 0) then
 			        !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-					vel = 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+					vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 				    vel(1) = 0.0
 				else
 				    !vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-					vel = 0.0003 * ((Ak/r) * (rr - r)) * ddt
+					vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
 				    vel(1) = 0.0
 				end if
 				

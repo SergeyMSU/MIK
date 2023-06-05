@@ -3577,7 +3577,7 @@
     
 	
     
-    start_time = omp_get_wtime()
+    !$OpenMP start_time = omp_get_wtime()
 	
 	mincell = 1
     
@@ -3699,13 +3699,15 @@
         !ngran = size(gl_all_Gran_inner(:))
         !ncell = size(gl_all_Cell_inner(:))
         
-	    !$omp parallel
+	    
 
         ! Теперь по основным граням
         ngran = size(gl_all_Gran(1, :))
         ncell = size(gl_all_Cell(1, :))
+		
+		!$omp parallel
         
-	 !$omp do private(POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
+	 !$omp do private(metod, POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
 	  !   !$omp & reduction(min:time, min_sort, mincell)
         do gr = 1, ngran
 			metod = 2
@@ -3811,7 +3813,7 @@
 			
 			!if(gl_Gran_type(gr) == 1) metod = 2
 			
-			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !3
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
@@ -4001,7 +4003,7 @@
         !!$omp end single
 
         ! Теперь цикл по ячейкам
-         !$omp do private(POTOK, Volume, Volume2, qqq, i, j, ro3, u3, v3, w3, p3, Q3, bx3, by3, bz3, POTOK_MF_all, zone, l_1, fluid1, SOURSE, sks)
+         !$omp do private(POTOK, Volume, Volume2, qqq, i, j, ro3, u3, v3, w3, p3, Q3, bx3, by3, bz3, POTOK_MF_all, zone, l_1, fluid1, SOURSE, sks, ijk)
         do gr = 1, ncell
             if(gl_Cell_info(gr) == 0) CYCLE
             l_1 = .TRUE.
@@ -4065,8 +4067,6 @@
             !fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
-			
-			SOURSE = 0.0
 
             ! Перенормируем первую жидкость обратно
             !fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
@@ -4153,7 +4153,7 @@
 			end if
 
             ! Теперь посчитаем законы сохранения для остальных жидкостей
-			CYCLE
+			
 
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE       ! Пропускаем внутреннюю сферу для сорта 1
@@ -4291,7 +4291,7 @@
 		!	call Initial_conditions()
 		!end if
         
-        !call Start_MGD_3_inner(5)
+        call Start_MGD_3_inner(5)
 		
 		if (mod(step, 50000) == 0 .or. step == 1000 .or. step == 3000) then
 			print*, "PECHAT"
@@ -4317,7 +4317,7 @@
         gl_Cell_center = gl_Cell_center2(:, :, 2)
         gl_Gran_square = gl_Gran_square2(:, 2)
 
-        end_time = omp_get_wtime()
+        !$OpenMP end_time = omp_get_wtime()
 		print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 		
 

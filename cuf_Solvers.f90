@@ -345,11 +345,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
+				vel = par_nat_HP * 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.001 * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.001 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 	
@@ -551,11 +551,11 @@
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
 		vel(1) = 0.0
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = 0.0003 * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
 		vel(1) = 0.0
 	end if
 			
@@ -1648,20 +1648,20 @@
 		
     dsl = dsl * koef1
 	
-	if (.False.) then   ! Новый вариант (плохо работает в носике)
-	center = gl_Gran_center2(:, gr, now)
+	if (.True.) then   ! Новый вариант (плохо работает в носике)
+	!center = gl_Gran_center2(:, gr, now)
 		
-	the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
+	!the1 = polar_angle(center(1), sqrt(center(2)**2 + center(3)**2))
 		
 	do j = 1, 4
         yzel = gl_all_Gran(j, gr)
 			
-		center2(1) = gl_x2(yzel, now)
-		center2(2) = gl_y2(yzel, now)
-		center2(3) = gl_z2(yzel, now)
-		the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
-			
-		if (the2 < the1) CYCLE
+		!center2(1) = gl_x2(yzel, now)
+		!center2(2) = gl_y2(yzel, now)
+		!center2(3) = gl_z2(yzel, now)
+		!the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
+		!	
+		!if (the2 < the1) CYCLE
 			
 		! Блок безопасного доступа
 			select case (mod(yzel, 4))
@@ -2511,7 +2511,7 @@
 			
 			metod = gl_Gran_scheme(gr)
 			
-			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !3
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
@@ -2700,7 +2700,7 @@
             end if
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
-			SOURSE = 0.0
+		
 
 
             if (l_1 == .TRUE.) then
@@ -2749,7 +2749,7 @@
             end if
 
             ! Теперь посчитаем законы сохранения для остальных жидкостей
-			return
+			
 			
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE       ! Пропускаем внутреннюю сферу для сорта 1

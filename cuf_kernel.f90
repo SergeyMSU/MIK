@@ -808,7 +808,7 @@ module MY_CUDA
 	!		dev_gl_Cell_par_MF = gl_Cell_par_MF
 	!end if
 	
-	if (.False.) then
+	if (.True.) then
 		do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
 			dev_time_step_inner = 1000000.0
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
