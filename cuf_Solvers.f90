@@ -345,11 +345,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
+				vel = 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = 0.0003 * ((Ak/r) * (rr - r)) * ddt
+				vel = 0.001 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 	
@@ -575,7 +575,7 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-	attributes(global) subroutine Cuda_Move_all_5(now)   ! Поверхностное натяжение 
+	attributes(global) subroutine Cuda_Move_all_5(now)   ! Отдельное поверхностное натяжение для точки на оси симметрии
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -2545,25 +2545,29 @@
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
 
 			if( .False.) then
-				!if (gr == 614302) then
+			!if (gr == 77) then
 				write(*,*) "__***__ 614302"
 				write(*,*) gl_Gran_info(gr), s1, s2
 				write(*,*) "__A__"
-				write(*,*)  gl_Gran_POTOK(1, gr), gl_Gran_POTOK(2, gr), gl_Gran_POTOK(3, gr), gl_Gran_POTOK(4, gr), &
-						gl_Gran_POTOK(5, gr), gl_Gran_POTOK(6, gr), gl_Gran_POTOK(7, gr), gl_Gran_POTOK(8, gr), gl_Gran_POTOK(9, gr), &
-						gl_Gran_POTOK(10, gr)
+				write(*,*)  POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8), POTOK(9)
 				write(*,*) "__B__"
-				write(*,*) gl_Gran_square2(gr, now)
+				write(*,*) gl_Gran_square2(gr, now), gl_Gran_square2(gr, now2)
 				write(*,*) "__C__"
-				write(*,*) dist, wc
+				write(*,*) dist, wc, dsl, dsp, dsc, TT
 				write(*,*) "__D__"
 				write(*,*) gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now)
+				write(*,*) "__D2__"
+				write(*,*) gl_Gran_normal2(1, gr, now2), gl_Gran_normal2(2, gr, now2), gl_Gran_normal2(3, gr, now2)
 				write(*,*) "__E__"
 				write(*,*) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8), qqq1(9)
 				write(*,*) "__F__"
 				write(*,*) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8), qqq2(9)
-				
-				
+				write(*,*) "__G__"
+				write(*,*) gl_Cell_Volume2(s1, now), gl_Cell_Volume2(s1, now2)
+				write(*,*) "__H__"
+				write(*,*) gl_Cell_Volume2(s2, now), gl_Cell_Volume2(s2, now2)
+				write(*,*) "************"
+				write(*,*) "************"
 			end if
 	
 			
@@ -2696,6 +2700,7 @@
             end if
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
+			SOURSE = 0.0
 
 
             if (l_1 == .TRUE.) then
@@ -2744,7 +2749,8 @@
             end if
 
             ! Теперь посчитаем законы сохранения для остальных жидкостей
-
+			return
+			
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE       ! Пропускаем внутреннюю сферу для сорта 1
                 if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Пропускаем источники на внутреннюю сферу для всех сортов

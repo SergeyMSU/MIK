@@ -3586,7 +3586,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 2000   !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1000  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
@@ -3636,6 +3636,16 @@
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
 		
 		!print*, gl_Vx(40), gl_Vy(40), gl_Vz(40), gl_Point_num(40)
+		
+	 !   do ijk = 1, size(gl_TS(:))
+		!	write(*,*) ijk
+		!	if(gl_Point_num(gl_all_Gran(1, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(1, gl_TS(ijk)))
+		!	if(gl_Point_num(gl_all_Gran(2, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(2, gl_TS(ijk)))
+		!	if(gl_Point_num(gl_all_Gran(3, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(3, gl_TS(ijk)))
+		!	if(gl_Point_num(gl_all_Gran(4, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(4, gl_TS(ijk)))
+		!	write(*,*) "__"
+		!end do
+		!pause
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT) 
@@ -3700,7 +3710,7 @@
         do gr = 1, ngran
 			metod = 2
             if(gl_Gran_info(gr) == 2) CYCLE
-            POTOK = 0.0
+            POTOK = 0.0_8
 			loc_time = 10000000000.0
             s1 = gl_Gran_neighbour(1, gr)
             s2 = gl_Gran_neighbour(2, gr)
@@ -3826,6 +3836,47 @@
 			else
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
+			end if
+			
+			if(ieee_is_nan(POTOK(2)) .or. ieee_is_nan(POTOK(6))) then
+					print*,  "NUN u3  potok	"
+					print*, "___"
+					print*, POTOK
+					print*, "___"
+					print*, qqq1
+					print*, "___"
+					print*, qqq2
+					print*, "___"
+					print*, wc
+					print*, "___"
+					print*, gl_Gran_normal2(:, gr, now)
+					STOP
+				end if
+			
+			if (.False.) then
+			!if (gr == 77) then
+				write(*,*) "__***__ 614302"
+				write(*,*) gl_Gran_info(gr), s1, s2
+				write(*,*) "__A__"
+				write(*,*)  POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8), POTOK(9)
+				write(*,*) "__B__"
+				write(*,*) gl_Gran_square2(gr, now), gl_Gran_square2(gr, now2)
+				write(*,*) "__C__"
+				write(*,*) dist, wc, dsl, dsp, dsc, TT
+				write(*,*) "__D__"
+				write(*,*) gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now)
+				write(*,*) "__D2__"
+				write(*,*) gl_Gran_normal2(1, gr, now2), gl_Gran_normal2(2, gr, now2), gl_Gran_normal2(3, gr, now2)
+				write(*,*) "__E__"
+				write(*,*) qqq1(1), qqq1(2), qqq1(3), qqq1(4), qqq1(5), qqq1(6), qqq1(7), qqq1(8), qqq1(9)
+				write(*,*) "__F__"
+				write(*,*) qqq2(1), qqq2(2), qqq2(3), qqq2(4), qqq2(5), qqq2(6), qqq2(7), qqq2(8), qqq2(9)
+				write(*,*) "__G__"
+				write(*,*) gl_Cell_Volume2(s1, now), gl_Cell_Volume2(s1, now2)
+				write(*,*) "__H__"
+				write(*,*) gl_Cell_Volume2(s2, now), gl_Cell_Volume2(s2, now2)
+				write(*,*) "************"
+				write(*,*) "************"
 			end if
 			
             !call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
@@ -4014,6 +4065,8 @@
             !fluid1(1, 2) = fluid1(1, 2) / (3.0_8)**2
 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
+			
+			SOURSE = 0.0
 
             ! Перенормируем первую жидкость обратно
             !fluid1(2:4, 1) = fluid1(2:4, 1) / (par_chi/par_chi_real)
@@ -4062,11 +4115,21 @@
 				
 				if(ieee_is_nan(u3)) then
 					print*, "NUN   1490 u3", u3, qqq(2)
+					print*, "Center = ", gl_Cell_center(1, gr), gl_Cell_center(2, gr), gl_Cell_center(3, gr)
+					print*, "Potok = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4)
+					print*, "Potok = ", POTOK(5), POTOK(6), POTOK(7), POTOK(8), POTOK(9)
+					print*, "Ob'yomy =  ", Volume, Volume2
+					print*, "qqq = ", qqq
 					STOP
 				end if
 				
 				if(ieee_is_nan(bx3)) then
-					print*, "NUN  1490 bx3	", bx3, qqq(5)
+					print*, "NUN  1490 bx3	", bx3, TT, sks
+					print*, "Center = ", gl_Cell_center(1, gr), gl_Cell_center(2, gr), gl_Cell_center(3, gr)
+					print*, "Potok = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4)
+					print*, "Potok = ", POTOK(5), POTOK(6), POTOK(7), POTOK(8), POTOK(9)
+					print*, "Ob'yomy =  ", Volume, Volume2
+					print*, "qqq = ", qqq
 					STOP
 				end if
 				
@@ -4087,9 +4150,10 @@
 
                 gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
 
-            end if
+			end if
 
             ! Теперь посчитаем законы сохранения для остальных жидкостей
+			CYCLE
 
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE       ! Пропускаем внутреннюю сферу для сорта 1
@@ -4227,7 +4291,7 @@
 		!	call Initial_conditions()
 		!end if
         
-        call Start_MGD_3_inner(5)
+        !call Start_MGD_3_inner(5)
 		
 		if (mod(step, 50000) == 0 .or. step == 1000 .or. step == 3000) then
 			print*, "PECHAT"

@@ -536,10 +536,13 @@ module MY_CUDA
 	step = dev_Ncell
 	print*, step, "   ", size(gl_all_Cell(1, :))
 	
+	
+	dev_gl_Point_num = 0.0
+	
 	! Главный цикл
-	do step = 1, 2000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 1000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 500) == 0) then
+		if (mod(step, 100) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
@@ -805,7 +808,7 @@ module MY_CUDA
 	!		dev_gl_Cell_par_MF = gl_Cell_par_MF
 	!end if
 	
-	if (.True.) then
+	if (.False.) then
 		do ijk = 1, 5  ! Несколько раз просчитываем внутреннюю область
 			dev_time_step_inner = 1000000.0
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
