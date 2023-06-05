@@ -22,7 +22,7 @@
 	
 	
 	real(8), parameter :: par_nat_TS = 0.002_8 ! 0.003_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 1.0_8 ! 1.5                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = 0.8_8 ! 1.0                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = 0.4_8! 0.3      ! Коэффицинт запаздывания скорости ударной волны
@@ -120,7 +120,8 @@
     ! Ячейки разделены на группы
     
     integer(4), allocatable :: gl_all_Cell(:,:)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
-    
+    integer(4), allocatable :: gl_zone_Cell(:)   ! Какой зоне принадлежит ячейка
+	! 1 - 4
 	
     integer(4), allocatable :: gl_all_Cell_inner(:)   ! номера ячеек, которые находятся внутри (считаются отдельно)
     
@@ -238,6 +239,7 @@
     allocate(gl_Cell_info(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     allocate(gl_Cell_type(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     allocate(gl_Cell_number(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+	allocate(gl_zone_Cell(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     
     allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
     allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
@@ -314,6 +316,7 @@
     gl_Cell_info = 2
 	gl_Gran_type = 0
 	gl_Gran_scheme = 2
+	gl_zone_Cell = 2
     
     
     gl_Cell_A = -1

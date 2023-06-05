@@ -209,6 +209,63 @@
 			end do
 		end do
 	end do
+	
+	
+	! Определим для каждой ячейки её зону
+	 do k = 1, size( gl_Cell_A(1, 1, :) )
+        do j = 1, size( gl_Cell_A(1, :, 1) )
+			do i = 1, par_n_TS - 1
+				num = gl_Cell_A(i, j, k)
+				gl_zone_Cell(num) = 1
+			end do
+		end do
+	 end do
+	 
+	 do k = 1, size( gl_Cell_A(1, 1, :) )
+        do j = 1, size( gl_Cell_A(1, :, 1) )
+			do i = par_n_HP, par_n_BS - 1
+				num = gl_Cell_A(i, j, k)
+				gl_zone_Cell(num) = 3
+			end do
+		end do
+	 end do
+	 
+	 do k = 1, size( gl_Cell_A(1, 1, :) )
+        do j = 1, size( gl_Cell_A(1, :, 1) )
+			do i = par_n_BS, size( gl_Cell_A(:, 1, 1) )
+				num = gl_Cell_A(i, j, k)
+				gl_zone_Cell(num) = 4
+			end do
+		end do
+	 end do
+	 
+	 do k = 1, size( gl_Cell_B(1, 1, :) )
+        do j = 1, size( gl_Cell_B(1, :, 1) )
+			do i = 1, par_n_TS - 1
+				num = gl_Cell_B(i, j, k)
+				gl_zone_Cell(num) = 1
+			end do
+		end do
+	 end do
+	 
+	
+	do k = 1, size( gl_Cell_C(1, 1, :) )
+        do j = 1, size( gl_Cell_C(1, :, 1) )
+			do i = par_n_HP - par_n_TS + 1, par_n_BS - par_n_TS
+				num = gl_Cell_C(i, j, k)
+				gl_zone_Cell(num) = 3
+			end do
+		end do
+	end do
+	
+	do k = 1, size( gl_Cell_C(1, 1, :) )
+        do j = 1, size( gl_Cell_C(1, :, 1) )
+			do i = par_n_BS - par_n_TS + 1, size( gl_Cell_C(:, 1, 1) )
+				num = gl_Cell_C(i, j, k)
+				gl_zone_Cell(num) = 4
+			end do
+		end do
+	 end do
 			
 	
 

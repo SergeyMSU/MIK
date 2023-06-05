@@ -89,6 +89,7 @@ module MY_CUDA
      integer(4), device, allocatable :: dev_gl_BS(:)
 	 real(8), device, allocatable :: dev_gl_Vel_gran(:)        ! Скорость граней (для движения граней - которые выделяются) 
 	 ! нужно было для избежания атомарных операции и безпроблемного доступа к памяти
+	 integer(4), device, allocatable :: dev_gl_zone_Cell(:)   ! Какой зоне принадлежит ячейка
 	 
 	 integer(4), device, allocatable :: dev_gl_all_Gran(:,:)       ! Все грани (4,:) имеют по 4 узла
 	 
@@ -258,6 +259,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_center2(3, Ngran, 2))
 		 allocate(dev_gl_Gran_square2(Ngran, 2))
 		 allocate(dev_gl_Vel_gran(Ngran))
+		 allocate(dev_gl_zone_Cell(Ncell))
 		 
 		 allocate(dev_gl_Contact(size(gl_Contact(:))))
 		 allocate(dev_gl_TS(size(gl_TS(:))))
@@ -319,6 +321,7 @@ module MY_CUDA
 		dev_gl_RAY_D = gl_RAY_D
 		dev_gl_RAY_E = gl_RAY_E
 		dev_gl_Vel_gran = 0.0
+		dev_gl_zone_Cell = gl_zone_Cell
 		 
 	end subroutine Set_CUDA_move
 	
@@ -540,7 +543,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1, 80000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 90000 * 4  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2

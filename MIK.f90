@@ -5242,7 +5242,7 @@
     open(1, file = 'print_par_2D.txt')
     write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
     write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q',"
-    write(1,*) "'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
+    write(1,*) "'Zone','T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
     write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
     write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
 
@@ -5255,7 +5255,7 @@
             c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
             m = gl_Cell_A(i, j, kk)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -5265,7 +5265,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -5275,7 +5275,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -5289,7 +5289,7 @@
             m = gl_Cell_A(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -5299,7 +5299,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -5309,7 +5309,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -5337,7 +5337,7 @@
     open(1, file = 'print_par_y_2D.txt')
     write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Z', 'Y', 'rho', 'u', 'v', 'w', 'p',"
     write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q',"
-    write(1,*) "'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
+    write(1,*) "'Zone', 'T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
     write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
     write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
 
@@ -5350,7 +5350,7 @@
             c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
             m = gl_Cell_A(i, j, kk)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*) c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*) c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -5360,7 +5360,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -5370,7 +5370,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -5384,7 +5384,7 @@
             m = gl_Cell_A(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -5394,7 +5394,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -5404,7 +5404,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c(1), c(3), c(2), gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -5988,7 +5988,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(116)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(117)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6112,7 +6112,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(117)
+    call Save_setka_bin(118)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

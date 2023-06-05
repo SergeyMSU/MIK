@@ -2572,22 +2572,22 @@
 	
 			
 			
-            call chlld_gd(0, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
-            call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square2(gr, now)
             
-            call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
-            call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+            call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 4, gr) = POTOK_MF * gl_Gran_square2(gr, now)
@@ -2617,7 +2617,8 @@
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number
+		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
+		gl_zone_Cell => dev_gl_zone_Cell
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
@@ -2686,7 +2687,8 @@
 
             ! Определяем зону в которой находимся
             if(qqq(9)/qqq(1) < 50.0) then
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.3) then
+                !if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
+				if(gl_zone_Cell(gr) == 1) then
                     zone = 1
                 else
                     zone = 2
@@ -2938,23 +2940,23 @@
 		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
 
 
-        call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+        call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square(gr)
 
-        call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+        call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.8 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square(gr)
 
 
-        call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+        call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square(gr)
 
-        call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+        call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 4, gr) = POTOK_MF * gl_Gran_square(gr)
