@@ -540,9 +540,9 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1, 1000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 80000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 100) == 0) then
+		if (mod(step, 1000) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if

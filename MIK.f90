@@ -3588,7 +3588,7 @@
     time = 0.00002_8               ! Начальная инициализация шага по времени 
     do step = 1, 1000  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 100) == 0) then
+        if (mod(step, 1) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
 			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) 
 			!print*, gl_Gran_normal2(:, mincell, now)
@@ -3917,7 +3917,7 @@
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
             
 			
-			loc_time2 = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			loc_time2 = 1.0! 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 			    loc_time = loc_time2
@@ -5988,7 +5988,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(113)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(116)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6112,7 +6112,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(114)
+    call Save_setka_bin(117)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

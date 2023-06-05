@@ -2511,7 +2511,7 @@
 			
 			metod = gl_Gran_scheme(gr)
 			
-			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !3
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
