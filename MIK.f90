@@ -63,12 +63,12 @@
 	
 	! Описание модулей
 	
-
+    include "Interpolation.f90"
     include "Solvers.f90"
     include "Help_func.f90"
     include "Move_func.f90"
 	include "TVD.f90"
-	include "Interpolation.f90"
+	
 	
 	!@cuf include "cuf_kernel.cuf"
 
@@ -5629,9 +5629,9 @@
             if (n3 > size(gl_Cell_B(1, 1, :))) PAUSE "n3 too mach! ERROR 827"
             write(1,*) gl_x(gl_all_Cell(i, gl_Cell_B(n1, n2, n3))), gl_y(gl_all_Cell(i, gl_Cell_B(n1, n2, n3))), gl_z(gl_all_Cell(i, gl_Cell_B(n1, n2, n3)))
         else
-            if (n1 > size(gl_Cell_C(:, 1, 1))) PAUSE "n1 too mach! ERROR 827"
-            if (n2 > size(gl_Cell_C(1, :, 1))) PAUSE "n2 too mach! ERROR 827"
-            if (n3 > size(gl_Cell_C(1, 1, :))) PAUSE "n3 too mach! ERROR 827"
+            if (n1 > size(gl_Cell_C(:, 1, 1))) PAUSE "n1 too mach! ERROR 829"
+            if (n2 > size(gl_Cell_C(1, :, 1))) PAUSE "n2 too mach! ERROR 829"
+            if (n3 > size(gl_Cell_C(1, 1, :))) PAUSE "n3 too mach! ERROR 829"
             write(1,*) gl_x(gl_all_Cell(i, gl_Cell_C(n1, n2, n3))), gl_y(gl_all_Cell(i, gl_Cell_C(n1, n2, n3))), gl_z(gl_all_Cell(i, gl_Cell_C(n1, n2, n3)))
         end if
     end do
@@ -5988,7 +5988,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(117)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(121)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6049,12 +6049,18 @@
     !call Start_MGD_move()
 	!pause
 	
+	call Set_Interpolate_main()
+	!call Surface_setup()
+    i = 1
+	call Get_Cell_Interpolate( -226.83946549657_8, 97.1182680029345_8, -3.5212386335546_8, i) 
+	call Dell_Interpolate()
+	
 	
 	!call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, i)
 	
 	!PAUSE
 	
-    call CUDA_START_MGD_move()
+    !call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()
 	!call Streem_line(50.0_8, 0.001_8, 0.001_8, 1)
@@ -6062,8 +6068,9 @@
 	
 	!call CUDA_START_GD_3()
 	
+	i = 211242
+	call Print_Cell(gl_Cell_number(1, i), gl_Cell_number(2, i), gl_Cell_number(3, i), gl_Cell_type(i))
 	
-	!call Print_Cell(gl_Cell_number(1, 136644), gl_Cell_number(2, 136644), gl_Cell_number(3, 136644), gl_Cell_type(136644))
 	
 	!pause
 	
@@ -6112,7 +6119,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(118)
+    !call Save_setka_bin(121)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

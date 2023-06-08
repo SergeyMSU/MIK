@@ -3,6 +3,11 @@
 ! Далее определить по каким соседям нужно построить интерполяционную фигуру (тетраэдр)
 ! Далее нужно интерполировать значения нужных переменных внутри тетраэдра и вывести ответ
 	
+! ПРОБЛЕМА
+! В интерполяции такого рода есть "дыры". А именно точка может лежать возле пересечения 4-х ячеек и в силу
+! погрешности и неточности определения грани по четырём точкам алгоритм будет прыгать покругу 
+! (по этим четырём ячейкам) и не найдёт, где именно она лежит
+	
 	
 	module Interpolate                     ! Модуль геометрических - сеточных параметров - констант программы
     
@@ -34,6 +39,7 @@
 	allocate(gl_Cell_neighbour_inter, MOLD = gl_Cell_neighbour)
 	allocate(gl_Cell_par_inter, MOLD = gl_Cell_par)
 	allocate(gl_Cell_par_MF_inter, MOLD = gl_Cell_par_MF)
+	allocate(gl_Cell_dist_inter, MOLD = gl_Cell_dist)
 	
 	gl_Cell_gran_inter = gl_Cell_gran
 	gl_Gran_normal_inter = gl_Gran_normal
@@ -43,6 +49,7 @@
 	gl_Cell_neighbour_inter = gl_Cell_neighbour
 	gl_Cell_par_inter = gl_Cell_par
 	gl_Cell_par_MF_inter = gl_Cell_par_MF
+	gl_Cell_dist_inter = gl_Cell_dist
 	
 	end subroutine Set_Interpolate_main
 	
@@ -104,7 +111,10 @@
 	write(1) size(gl_Cell_par_MF_inter(1, 1, :))
 	write(1) gl_Cell_par_MF_inter
 	
-    write(1) 0
+    write(1) 1
+	write(1) size(gl_Cell_dist_inter(:))
+	write(1) gl_Cell_dist_inter
+	
 	write(1) 0
     write(1) 0
     write(1) 0
@@ -205,6 +215,12 @@
     
 	
     read(1) n
+	if (n == 1) then
+		read(1) n
+		allocate(gl_Cell_dist_inter(n))
+		read(1) gl_Cell_dist_inter
+	end if
+	
 	read(1) n
     read(1) n
     read(1) n
@@ -273,6 +289,10 @@
 	
 	integer(4) :: num
 	
+	if (allocated(gl_Cell_gran_inter) == .False.) then
+        STOP "Function Set_Interpolate NE vizvana  789ihj76uhgfrerfdcgt"    
+	end if
+	
 	if(.not. present(number)) then
     num = 1 
     else 
@@ -282,6 +302,11 @@
 	zone = 1
 	
 	call Get_Cell_Interpolate(x, y, z, num)
+	if(num == -1) then
+		cell = -1
+		return
+	end if
+	
 	cell = num
 	call Find_tetraedr_Interpolate(x, y, z, num, F, F_mf)
 	
@@ -298,15 +323,17 @@
 	real(8), intent(in) :: x, y, z
 	integer(4), intent(in out) :: num
 	
-	integer(4) :: n, i, gr, s
-	real(8) :: normal(3), center(3), r(3)
+	integer(4) :: n, i, gr, s, step
+	real(8) :: normal(3), center(3), r(3), dd
 	
 	r(1) = x
 	r(2) = y
 	r(3) = z
 	n = num
+	step = 0
 	
 11	CONTINUE
+	step = step + 1
 	
 	do i = 1, 6
 		s = 2
@@ -322,8 +349,21 @@
 		
 		if (gl_Gran_neighbour_inter(s, gr) <= 0) CYCLE
 		
-		if( DOT_PRODUCT(normal, r - center) > 0) then
+		dd = DOT_PRODUCT(normal, r - center)
+		if( dd > 0.01 * gl_Cell_dist_inter(n)) then
 			n = gl_Gran_neighbour_inter(s, gr)
+			if (step > 10000) then
+				!print*, "gr, n, i = ", gr, n, i
+				!print*, "neybor ", gl_Gran_neighbour_inter(1, gr), gl_Gran_neighbour_inter(2, gr)
+				!print*, r, dd
+				!print*, center
+				!print*, normal
+				!pause
+				num = n
+				EXIT
+				!return
+			end if
+			
 			GO TO 11 
 		end if
 	end do

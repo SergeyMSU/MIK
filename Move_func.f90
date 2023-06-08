@@ -1742,7 +1742,8 @@
         node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
         node1 = node2 - node1
         
-        if(DOT_PRODUCT(node1, c) < 0.0) then
+		if (.False.) then
+        !if(DOT_PRODUCT(node1, c) < 0.0) then
             print*, c
             print*, p(1, 1), norm2( (/0.0_8, p(2, 1), p(3, 1) /) )
             print*, "ERROR 13123 move ", DOT_PRODUCT(node1, c)
@@ -1885,4 +1886,233 @@
     end do
 
 
-    end subroutine calc_all_Gran_move
+	end subroutine calc_all_Gran_move
+	
+	
+	subroutine Surface_setup()
+	! Эта функция передвигает гелиопаузу по линиям тока жидкости
+	! Также заполняет подвинутые ячейки интерполированными значениями полей
+	! Variables
+	use GEO_PARAM
+	use STORAGE
+	use Interpolate
+	use My_func
+	implicit none
+	
+	real(8) :: position(10 * par_l_phi, 500)
+	integer(4) :: posit_int(10 * par_l_phi, 500)
+	real(8) :: Left, Right, x, y, z, r, phi, phi2, dsc
+	integer(4) :: i, j, k, num, gr, ip, im
+	integer(4) :: zone, cell, number, now, now2, yzel
+	real(8) :: F(9), F_mf(5, 4), normal(3)
+	
+	! Сначала подготовим все массивы для правильного движения
+    if (allocated(gl_Vx) == .False.) then   ! Если движение запускается впервый раз, то нужно выделить память под используемые массивы и задать значения
+        allocate(gl_Vx(size(gl_x)))
+        allocate(gl_Vy(size(gl_x)))
+        allocate(gl_Vz(size(gl_x)))
+        allocate(gl_Point_num(size(gl_x)))
+        allocate(gl_x2(size(gl_x), 2))
+        allocate(gl_y2(size(gl_x), 2))
+        allocate(gl_z2(size(gl_x), 2))
+        allocate(gl_Cell_Volume2(size(gl_Cell_Volume), 2))
+        allocate(gl_Gran_normal2(  size(gl_Gran_normal(:, 1)), size(gl_Gran_normal(1, :)), 2  ))
+        allocate(gl_Gran_center2(  size(gl_Gran_center(:, 1)), size(gl_Gran_center(1, :)), 2  ))
+        allocate(gl_Cell_center2(size(gl_Cell_center(:, 1)), size(gl_Cell_center(1, :)), 2))
+        allocate(gl_Gran_square2(size(gl_Gran_square), 2))
+        
+        ! Начальная инициализация
+        gl_Vx = 0.0
+        gl_Vy = 0.0
+        gl_Vz = 0.0
+        gl_Point_num = 0
+        gl_x2(:, 1) = gl_x
+        gl_x2(:, 2) = gl_x
+        gl_y2(:, 1) = gl_y
+        gl_y2(:, 2) = gl_y
+        gl_z2(:, 1) = gl_z
+        gl_z2(:, 2) = gl_z
+        gl_Cell_Volume2(:, 1) = gl_Cell_Volume
+        gl_Cell_Volume2(:, 2) = gl_Cell_Volume
+        gl_Gran_normal2(:, :, 1) = gl_Gran_normal
+        gl_Gran_normal2(:, :, 2) = gl_Gran_normal
+        gl_Gran_center2(:, :, 1) = gl_Gran_center
+        gl_Gran_center2(:, :, 2) = gl_Gran_center
+        gl_Cell_center2(:, :, 1) = gl_Cell_center
+        gl_Cell_center2(:, :, 2) = gl_Cell_center
+        gl_Gran_square2(:, 1) = gl_Gran_square
+        gl_Gran_square2(:, 2) = gl_Gran_square
+	end if
+	
+	number = 1
+	cell = 1
+	
+	Left = -450.0_8
+	Right = 50.0_8
+	position = 0.0_8
+	posit_int = 0
+	
+	do i = 1, 60
+		print*, "i = ", i
+		do k = 1, 10 * par_l_phi
+			number = 1
+			x = 25.0
+			r = i * 0.2_8
+			phi = 2.0 * par_pi_8 * k/(10 * par_l_phi) - par_pi_8/(10 * par_l_phi)
+			y = r * cos(phi)
+			z = r * sin(phi)
+			
+			do while (x > -450.0)
+				!print*, "x = ", x
+				call Interpolate_point(x, y, z, F, F_mf, zone, cell, number)
+				if (cell == -1) EXIT
+				number = cell
+				x = x + 0.01 * F(2)
+				y = y + 0.01 * F(3)
+				z = z + 0.01 * F(4)
+				
+				phi2 = polar_angle(y, z)
+				
+				!print*, phi2, sqrt(y**2 + z**2)
+				!pause
+				
+				position( INT(phi2/(2.0 * par_pi_8/(10 * par_l_phi))) + 1, INT(x + 450.01)) = position( INT(phi2/(2.0 * par_pi_8/(10 * par_l_phi))) + 1, INT(x + 450.01)) + sqrt(y**2 + z**2)
+				posit_int(INT(phi2/(2.0 * par_pi_8/(10 * par_l_phi))) + 1, INT(x + 450.01))= posit_int(INT(phi2/(2.0 * par_pi_8/(10 * par_l_phi))) + 1, INT(x + 450.01)) + 1
+			end do
+			
+		end do	
+	end do
+	
+	
+	do j = 1, 500
+		do i = 1, 10 * par_l_phi
+			if(posit_int(i, j) > 0) then
+				position(i, j) = position(i, j)/posit_int(i, j)
+			end if
+			
+		end do
+	end do
+	
+	
+	do k = 1, 20
+		do j = 1, 500
+			do i = 1, 10 * par_l_phi
+				ip = i + 1
+				im = i - 1
+				if(i == 1) im = 10 * par_l_phi
+				if(i == 10 * par_l_phi) ip = 1
+			
+				if(position(i, j) <= 0.001) then
+					if(position(ip, j) > 0.001 .and. position(im, j) > 0.001) then
+						position(i, j) = 0.5 * (position(ip, j) + position(im, j))
+					else if (position(ip, j) < 0.001 .and. position(im, j) > 0.001) then
+						position(i, j) = position(im, j)
+					else if (position(im, j) < 0.001 .and. position(ip, j) > 0.001) then
+						position(i, j) = position(ip, j)
+					end if
+				end if
+			
+			end do
+		end do
+	end do
+	
+	do j = 1, 500
+			do i = 1, 10 * par_l_phi
+				ip = i + 1
+				im = i - 1
+				if(i == 1) im = 10 * par_l_phi
+				if(i == 10 * par_l_phi) ip = 1
+			
+				position(i, j) = (position(ip, j) + position(i, j) + position(im, j))/3.0
+			
+			end do
+		end do
+	
+	
+	
+	open(2, file = 'save_SERF.txt')
+	
+	do j = 1, 500
+		do i = 1, 10 * par_l_phi
+			x = Left + j
+			r = position(i, j)
+			phi = i * (2.0 * par_pi_8/(10 * par_l_phi))
+			y = r * cos(phi)
+			z = r * sin(phi)
+			write(2,*) x, y, z
+		end do
+	end do
+	
+	close(2)
+	
+	
+	
+	! Теперь передвигаем поверхность
+	
+	! Контакт
+    Num = size(gl_Contact)
+	now = 2
+	
+	do k = 1, 600
+		if( mod(k, 10) == 0) print*, "k = ", k, "  from 600"
+		now2 = now
+		now = mod(now, 2) + 1
+	
+	
+		gl_Vx = 0.0
+		gl_Vy = 0.0
+		gl_Vz = 0.0
+		gl_Point_num = 0
+    
+		do i = 1, Num
+			!print*, "i = ", i
+			gr = gl_Contact(i)
+		
+			x = gl_Gran_center2(1, gr, now)
+			y = gl_Gran_center2(2, gr, now)
+			z = gl_Gran_center2(3, gr, now)
+			phi2 = polar_angle(y, z)
+		
+			if (x > -50) CYCLE
+		
+			!print*, INT(phi2/(2.0 * par_pi_8/par_l_phi)) + 1, INT(x + 450.01)
+			if (sqrt(y**2 + z**2) < position( INT(phi2/(2.0 * par_pi_8/(10 * par_l_phi))) + 1, INT(x + 450.01))) then
+				dsc = 0.1
+			else
+				dsc = -0.1
+			end if
+		
+		
+		
+			normal = gl_Gran_normal2(:, gr, now)
+		
+			do j = 1, 4
+				yzel = gl_all_Gran(j, gr)
+			
+				gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsc
+				gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsc
+				gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsc
+				gl_Point_num(yzel) = gl_Point_num(yzel) + 1
+			end do
+		
+		end do
+		!print*, "Move_all "
+		call Move_all(now, 1.0_8) 
+		call calc_all_Gran_move(now2)
+	
+	
+	end do
+	
+	gl_x = gl_x2(:, now2)
+    gl_y = gl_y2(:, now2)
+    gl_z = gl_z2(:, now2)
+    gl_Cell_Volume = gl_Cell_Volume2(:, now2)
+    gl_Gran_normal = gl_Gran_normal2(:, :, now2)
+    gl_Gran_center = gl_Gran_center2(:, :, now2)
+    gl_Cell_center = gl_Cell_center2(:, :, now2)
+    gl_Gran_square = gl_Gran_square2(:, now2)
+	
+	
+	! Body of Surface_setup
+	
+	end subroutine Surface_setup
