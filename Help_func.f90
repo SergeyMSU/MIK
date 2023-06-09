@@ -35,7 +35,9 @@
     write(1) 1
 	write(1) par_R_END, par_R_LEFT, par_kk1, par_kk12, par_kk2, par_kk3, par_kk31
 	
-    write(1) 0
+    write(1) 1
+	write(1) par_al1
+	
     write(1) 0
     write(1) 0
     write(1) 0
@@ -116,6 +118,11 @@
 	
 	
     read(1) n
+	if (n == 1) then
+        read(1) par_al1
+	end if
+	
+	
     read(1) n
     read(1) n
     read(1) n

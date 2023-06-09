@@ -611,6 +611,7 @@
     subroutine Move_all(now, Time)  ! Передвигаем точки в соответствии со скоростью движение узлов на поверхностях разрыва
     use STORAGE
     use GEO_PARAM
+	use My_func
     implicit none
     
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
@@ -1063,11 +1064,11 @@
 			
 			    if (gl_Point_num(yzel) > 0) then
 			        !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-					vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+					vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt ! 0.0003
 				    vel(1) = 0.0
 				else
-				    !vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-					vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
+				    !vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time  
+					vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 				    vel(1) = 0.0
 				end if
 				
@@ -1112,7 +1113,7 @@
             
             ! Вычисляем координаты текущего луча в пространстве
             the = (j - 1) * par_pi_8/2.0/(N2 - 1)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
             yzel = gl_RAY_A(par_n_TS, j, k)
@@ -1236,7 +1237,7 @@
             
             ! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
             yzel = gl_RAY_B(par_n_TS, j, k)
@@ -1318,7 +1319,7 @@
         do j = 1, N2
             
             ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 
                 ! Вычисляем координаты точки на луче
                 x = gl_x2(gl_RAY_B(par_n_HP, j, k), now2)
@@ -1360,7 +1361,7 @@
 
     ! Цикл движения точек на лучах O   ************************************************************
     do k = 1, N3
-        phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+        phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
         
         do j = 1, N2
             
@@ -1431,7 +1432,7 @@
             
              ! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             if (k /= 1 .and. j == 1) CYCLE
             
@@ -1493,7 +1494,7 @@
         do j = 1, N2
             
             ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
 				
 				 ! Вычисляем координаты точки на луче
 

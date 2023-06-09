@@ -4,6 +4,7 @@
 module MY_CUDA
 	 use cudafor
 	 use Solvers
+	 use My_func
 	 
 	 ! Константы
 	 real(8), constant :: dev_ggg
@@ -37,6 +38,7 @@ module MY_CUDA
 	real(8), constant ::  dev_par_kk31
 	real(8), constant ::  dev_par_R_END
 	real(8), constant ::  dev_par_R_LEFT
+	real(8), constant ::  dev_par_al1
 	
 	
 	integer(4), device :: dev_mutex_1
@@ -396,6 +398,7 @@ module MY_CUDA
 	     dev_par_kk31 = par_kk31
 		 dev_par_R_END = par_R_END
 		 dev_par_R_LEFT = par_R_LEFT
+		 dev_par_al1 = par_al1
 		 
 	end subroutine Send_data_to_Cuda
 	
@@ -419,6 +422,7 @@ module MY_CUDA
         gl_Gran_center = dev_gl_Gran_center2(:, :, now)
         gl_Cell_center = dev_gl_Cell_center2(:, :, now)
         gl_Gran_square = dev_gl_Gran_square2(:, now)
+		par_al1 = dev_par_al1
 		
 	end subroutine Send_data_to_Host_move
 	
@@ -543,12 +547,17 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1, 100000 * 5  ! ---------------------------------------------------------------------------------------------------
+	do step = 1, 800000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
+		
+		
+	!par_al1 = dev_par_al1
+	if(par_al1 > 0.3) par_al1 = par_al1 - 0.0000002
+	dev_par_al1 = par_al1
 		
 	
 	time_step = time_step2
@@ -841,6 +850,8 @@ module MY_CUDA
 	
 	if (mod(step, 20000) == 0 .or. step == 2000 .or. step == 10000 .or. step == 5000 .or. step == 15000) then
 		print*, "PECHAT ", step
+		par_al1 = dev_par_al1
+		print*, "par_al1 = ", par_al1
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
 		call Print_surface_2D()
@@ -869,6 +880,8 @@ module MY_CUDA
 	istat = cudaEventElapsedTime(time_work, startEvent, stopEvent)
 	print *, "CUDA Time work: ", (time_work)/(60*1000.0), "   in minutes"
 	
+	par_al1 = dev_par_al1
+	print*, "par_al1 = ", par_al1
 	call Send_data_to_Host_move(now2)
 	call Send_data_to_Host()
 	call Print_surface_2D()

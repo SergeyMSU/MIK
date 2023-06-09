@@ -58,6 +58,23 @@
 
     return
 	end function polar_angle
+	
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function angle_cilindr(x, par_al1)
+	! Функция для неравномерного распределения сетки по углу
+	! x от 0 до 1 и возвращает функция от 0 до 1
+    implicit none
+    real(8), intent(in) :: x, par_al1
+
+	if (x < 0.5) then
+		angle_cilindr = x * (par_al1 - 6 * (-1 + par_al1) * x + 8 * (-1 + par_al1) * x**2)
+	else
+		angle_cilindr = 3 + par_al1 * (-1 + x) * (-1 + 2 * x) * (-3 + 4 *x) - 2 * x * (6 + x *(-9 + 4 * x))
+	end if
+	
+    return
+	end function angle_cilindr
 
 	end module My_func
 	
@@ -167,6 +184,7 @@
 
     use STORAGE
     use GEO_PARAM
+	use My_func
     implicit none
 
     integer(4) :: i, j, k, N1, N2, N3, i1, kk, node, kk2, ni, num1
@@ -208,7 +226,7 @@
 
                 ! Вычисляем координаты текущего луча в пространстве
                 the = (j - 1) * par_pi_8/2.0/(N2 - 1)
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) ! (k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
                 ! до TS
@@ -255,7 +273,7 @@
 
                 ! Вычисляем координаты текущего луча в пространстве
                 the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
                 ! до TS
@@ -299,7 +317,7 @@
                 end if
 
                 ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
                 x = gl_x(gl_RAY_B(par_n_HP, j, k))
@@ -343,7 +361,7 @@
             do i = 1, N1
 
                 ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
 
@@ -390,7 +408,7 @@
 
                 ! Вычисляем координаты текущего луча в пространстве
                 the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
                 r =  par_R0 + (par_R_character - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
@@ -435,7 +453,7 @@
                 end if
 
                 ! Вычисляем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
 
                 if (j < N2) then
@@ -1400,6 +1418,9 @@
             
     ! Задаём мультифлюид (только первый сорт)
     gl_Cell_par_MF(:, 1, ncell) = (/0.0000001_8, c(1), c(2), c(3), 0.0000001_8 * P_E/ro /)
+	
+	gl_Cell_par_MF(1, 2, ncell) = 0.0000001_8
+	gl_Cell_par_MF(5, 2, ncell) = 0.00001_8
     
     end subroutine Inner_conditions
 
@@ -3586,7 +3607,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 1000  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 1) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
@@ -3651,7 +3672,7 @@
         call Move_all(now, TT) 
 		
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
-		
+		CYCLE
 		
 		!do ijk = 1, 8
 		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
@@ -5988,7 +6009,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(121)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(134)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6021,7 +6042,7 @@
 
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
-    !call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
+    call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
     ! call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
@@ -6046,21 +6067,25 @@
 	!par_kk31 = 1.3_8
 	!par_R_LEFT = -460.0
 	
+	par_R_inner = 7.0_8
+	par_n_IA = 14
+	par_n_IB = 16
+	
     !call Start_MGD_move()
 	!pause
 	
-	call Set_Interpolate_main()
-	!call Surface_setup()
-    i = 1
-	call Get_Cell_Interpolate( -226.83946549657_8, 97.1182680029345_8, -3.5212386335546_8, i) 
-	call Dell_Interpolate()
+	!call Set_Interpolate_main()
+	!!call Surface_setup()
+ !   i = 1
+	!call Get_Cell_Interpolate( -226.83946549657_8, 97.1182680029345_8, -3.5212386335546_8, i) 
+	!call Dell_Interpolate()
 	
 	
 	!call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, i)
 	
 	!PAUSE
 	
-    !call CUDA_START_MGD_move()
+    call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()
 	!call Streem_line(50.0_8, 0.001_8, 0.001_8, 1)
@@ -6068,8 +6093,8 @@
 	
 	!call CUDA_START_GD_3()
 	
-	i = 211242
-	call Print_Cell(gl_Cell_number(1, i), gl_Cell_number(2, i), gl_Cell_number(3, i), gl_Cell_type(i))
+	!i = 211242
+	!call Print_Cell(gl_Cell_number(1, i), gl_Cell_number(2, i), gl_Cell_number(3, i), gl_Cell_type(i))
 	
 	
 	!pause
@@ -6119,7 +6144,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(121)
+    call Save_setka_bin(135)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

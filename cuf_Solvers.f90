@@ -551,11 +551,11 @@
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = par_nat_HP * 0.0003 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 		vel(1) = 0.0
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = par_nat_HP * 0.0003 * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		vel(1) = 0.0
 	end if
 			
@@ -676,7 +676,7 @@
             
         ! ¬ычисл€ем координаты текущего луча в пространстве
         the = (j - 1) * par_pi_8/2.0/(N2 - 1)
-        phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+        phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
         ! TS
         yzel = gl_RAY_A(par_n_TS, j, k)
@@ -851,7 +851,7 @@
 	
 	! ¬ычисл€ем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
-            phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+            phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
             yzel = gl_RAY_B(par_n_TS, j, k)
@@ -977,7 +977,7 @@
 	
 	
 	! ¬ычисл€ем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 
                 ! ¬ычисл€ем координаты точки на луче
                 x = gl_x2(gl_RAY_B(par_n_HP, j, k), now2)
@@ -1063,7 +1063,7 @@
 	
 	if(k > N3 .or. j > N2) return
 	
-	phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+	phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             yzel = gl_RAY_O(1, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
@@ -1174,7 +1174,7 @@
 	
 	! ¬ычисл€ем координаты текущего луча в пространстве
     the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
-    phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+    phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             
     yzel = gl_RAY_K(par_n_TS, j, k)
@@ -1277,7 +1277,7 @@
 	if (k /= 1 .and. j == 1) return
 	
 	! ¬ычисл€ем координаты текущего луча в пространстве
-                phi = (k - 1) * 2.0_8 * par_pi_8/(N3)
+                phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
 				
 				! ¬ычисл€ем координаты точки на луче
 
@@ -1929,6 +1929,16 @@
         
     dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
+	!if (gl_Gran_center2(1, gr, now) < -250.0 .and. normal(2) > 0 .and. &
+	!	dabs(gl_Gran_center2(3, gr, now)) < 10.0) then
+	!	dsc = dsc + 10.0
+	!end if
+	!
+	!if (gl_Gran_center2(1, gr, now) < -170.0 .and. gl_Gran_center2(1, gr, now) > -172.0 .and. normal(2) > 0 .and. &
+	!	dabs(gl_Gran_center2(3, gr, now)) < 10.0) then
+	!	dsc = dsc + 30.0
+	!end if
+	
 	!if(gr == 77) write(*, *) dsc, qqq1(1), qqq2(1), qqq1(5), qqq2(5)
 	
 	do j = 1, 4
@@ -2574,22 +2584,22 @@
 			
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square2(gr, now)
             
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
+            time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 4, gr) = POTOK_MF * gl_Gran_square2(gr, now)
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
@@ -2935,30 +2945,30 @@
 
         call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
-        time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
         gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
 		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
 
 
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
-        time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square(gr)
 
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
-        time = min(time, 0.8 * dist/max(dabs(dsl), dabs(dsp)) )
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square(gr)
 
 
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
-        time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square(gr)
 
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
-        time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 4, gr) = POTOK_MF * gl_Gran_square(gr)
 
 	
@@ -3094,6 +3104,8 @@
 
             do i = 1, 4
                 if (i == 1 .and. l_1 == .FALSE.) CYCLE
+				
+				if (i == 2 .and. l_1 == .FALSE.) CYCLE
                 
                 if (l_1 == .FALSE.) SOURSE(:, i + 1) = 0.0       ! Ќе перезар€жаем жидкости внутри мини сферы
                 ro3 = fluid1(1, i) - dev_time_step_inner * POTOK_MF_all(1, i) / Volume + dev_time_step_inner * SOURSE(1, i + 1)

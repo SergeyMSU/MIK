@@ -359,6 +359,7 @@
 				!print*, center
 				!print*, normal
 				!pause
+				print*, "10000 shagov 78987yhjuyhjiu"
 				num = n
 				EXIT
 				!return
