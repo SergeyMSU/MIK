@@ -75,6 +75,53 @@
 	
     return
 	end function angle_cilindr
+	
+	!@cuf attributes(host, device) & 
+    integer(4) pure function signum(x)
+        implicit none
+        real(8), intent(in) :: x
+		
+	    if (x > 0) then
+			signum = 1
+		    return
+		else if (x < 0) then
+			signum = -1
+		    return
+		else 
+			signum = 0
+		    return
+	    end if
+    end function signum
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function minmod(x, y)
+        implicit none
+        real(8), intent(in) :: x, y
+		
+	    if (signum(x) + signum(y) == 0) then
+			minmod = 0.0_8
+		    return
+		else
+			minmod = ((signum(x) + signum(y)) / 2.0) * min(dabs(x), dabs(y)) ! minmod
+		    return   
+	    end if
+    end function minmod
+	
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function  linear(x1, t1, x2, t2, x3, t3, y)
+        ! Главное значение с параметрами 2
+        ! Строим линии между 1 и 2,  2 и 3, потом находим минмодом значение в y
+        implicit none
+        real(8), intent(in) :: x1, x2, x3, y, t1, t2, t3
+        real(8) :: d
+
+		d = minmod((t1 - t2) / (x1 - x2), (t2 - t3) / (x2 - x3))
+		linear =  (d * (y - x2) + t2)
+		return
+		
+    end function linear
+
 
 	end module My_func
 	
@@ -3604,6 +3651,7 @@
     
 	!call Start_MGD_3_inner(10000)
 	
+	
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
@@ -6009,7 +6057,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(134)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(146)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6043,7 +6091,7 @@
     print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
     call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-    ! call Find_TVD_sosed()
+    call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
@@ -6066,10 +6114,6 @@
 	!par_kk12 = 1.0_8
 	!par_kk31 = 1.3_8
 	!par_R_LEFT = -460.0
-	
-	par_R_inner = 7.0_8
-	par_n_IA = 14
-	par_n_IB = 16
 	
     !call Start_MGD_move()
 	!pause
@@ -6144,13 +6188,17 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(135)
+    call Save_setka_bin(147)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
 	call Print_Setka_3D_part()
 	
-	pause
+	!pause
 	
-    end program MIK
+	end program MIK
+	
+	
+	! Сохраненные сетки
+	! 145 - до введения ТВД, но вариант ещё не установлен в хвосте
 

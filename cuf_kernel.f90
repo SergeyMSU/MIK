@@ -67,6 +67,7 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_all_Cell_inner(:)
 	 character,  device, allocatable :: dev_gl_Cell_type(:)
 	 integer(4),  device, allocatable :: dev_gl_Cell_number(:, :)
+	 integer(4), device, allocatable :: dev_gl_Gran_neighbour_TVD(:,:)
 	 real(8), device, allocatable :: dev_gl_x(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_y(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_z(:)   ! набор z-координат узлов сетки    !MOVE
@@ -213,6 +214,8 @@ module MY_CUDA
 		 allocate(dev_gl_all_Cell_inner( size(gl_all_Cell_inner(:) )))
 		 allocate(dev_gl_Cell_type( size(gl_Cell_type(:))  ))
 		 allocate(dev_gl_Cell_number(3,  size(gl_Cell_number(1, :))  ))
+		 
+		 allocate(dev_gl_Gran_neighbour_TVD, mold = gl_Gran_neighbour_TVD)
 		 
 		 dev_mutex_1 = 0
 		 dev_mutex_2 = 0
@@ -365,6 +368,7 @@ module MY_CUDA
 		 dev_gl_all_Cell_inner = gl_all_Cell_inner
 		 dev_gl_Cell_type = gl_Cell_type
 		 dev_gl_Cell_number = gl_Cell_number
+		 dev_gl_Gran_neighbour_TVD = gl_Gran_neighbour_TVD
 		 
 		 dev_gl_x = gl_x
 		 dev_gl_y = gl_y
@@ -423,6 +427,7 @@ module MY_CUDA
         gl_Cell_center = dev_gl_Cell_center2(:, :, now)
         gl_Gran_square = dev_gl_Gran_square2(:, now)
 		par_al1 = dev_par_al1
+		gl_Gran_neighbour_TVD = dev_gl_Gran_neighbour_TVD
 		
 	end subroutine Send_data_to_Host_move
 	
@@ -547,7 +552,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1, 800000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  50000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2
@@ -555,9 +560,9 @@ module MY_CUDA
 		end if
 		
 		
-	!par_al1 = dev_par_al1
-	if(par_al1 > 0.3) par_al1 = par_al1 - 0.0000002
-	dev_par_al1 = par_al1
+		
+	!if(par_al1 > 0.3) par_al1 = par_al1 - 0.0000002
+	!dev_par_al1 = par_al1
 		
 	
 	time_step = time_step2
@@ -576,7 +581,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.True.) then  ! Есть ли вообще движение сетки
+	if(.False.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -870,6 +875,14 @@ module MY_CUDA
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
 		call Save_setka_bin(79)
+	end if
+	
+	if (mod(step, 5000) == 0) then
+		print*, "Renew TVD ", step
+		call Send_data_to_Host_move(now2)
+		call Send_data_to_Host()
+		call Find_TVD_sosed()
+		dev_gl_Gran_neighbour_TVD = gl_Gran_neighbour_TVD
 	end if
 	
 	

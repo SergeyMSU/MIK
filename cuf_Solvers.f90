@@ -311,14 +311,14 @@
 			! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			r1 = sqrt(Bk(2)**2 + Bk(3)**2)
 			
-			if (k > 1) then
-			    yzel2 = gl_RAY_B(par_n_HP, j, k - 1)
-			else
-			    yzel2 = gl_RAY_B(par_n_HP, j, N3)
-			end if
-			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-			! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r2 = sqrt(Ck(2)**2 + Ck(3)**2)
+			!if (k > 1) then
+			!    yzel2 = gl_RAY_B(par_n_HP, j, k - 1)
+			!else
+			!    yzel2 = gl_RAY_B(par_n_HP, j, N3)
+			!end if
+			!Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			!! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			!r2 = sqrt(Ck(2)**2 + Ck(3)**2)
 			
 			if (j > 1) then
 			    yzel2 = gl_RAY_B(par_n_HP, j - 1, k)
@@ -329,16 +329,17 @@
 			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			r3 = sqrt(Dk(2)**2 + Dk(3)**2)
 			
-			if(k < N3) then
-			    yzel2 = gl_RAY_B(par_n_HP, j, k + 1)
-			else
-				yzel2 = gl_RAY_B(par_n_HP, j, 1)
-			end if
-			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-			! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r4 = sqrt(Ek(2)**2 + Ek(3)**2)
+			!if(k < N3) then
+			!    yzel2 = gl_RAY_B(par_n_HP, j, k + 1)
+			!else
+			!	yzel2 = gl_RAY_B(par_n_HP, j, 1)
+			!end if
+			!Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			!! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+			!r4 = sqrt(Ek(2)**2 + Ek(3)**2)
 			
-			rr = (r1 + r2 + r3 + r4)/4.0
+			!rr = (r1 + r2 + r3 + r4)/4.0
+			rr = (r1 + r3)/2.0
 			
 			!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
 			!dist = max(dist, 1.0_8)
@@ -463,7 +464,7 @@
 	
 	
 	
-	attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение 
+	attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение на лучах O 
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
@@ -516,14 +517,14 @@
 	! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 	r1 = sqrt(Bk(2)**2 + Bk(3)**2)
 			
-	if (k > 1) then
-		yzel2 = gl_RAY_O(1, j, k - 1)
-	else
-		yzel2 = gl_RAY_O(1, j, N3)
-	end if
-	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-	! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r2 = sqrt(Ck(2)**2 + Ck(3)**2)
+	!if (k > 1) then
+	!	yzel2 = gl_RAY_O(1, j, k - 1)
+	!else
+	!	yzel2 = gl_RAY_O(1, j, N3)
+	!end if
+	!Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+	!! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	!r2 = sqrt(Ck(2)**2 + Ck(3)**2)
 			
 	if (j > 1) then
 		yzel2 = gl_RAY_O(1, j - 1, k)
@@ -535,19 +536,21 @@
 	! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 	r3 = sqrt(Dk(2)**2 + Dk(3)**2)
 			
-	if(k < N3) then
-		yzel2 = gl_RAY_O(1, j, k + 1)
-	else
-		yzel2 = gl_RAY_O(1, j, 1)
-	end if
-	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-	! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r4 = sqrt(Ek(2)**2 + Ek(3)**2)
+	!if(k < N3) then
+	!	yzel2 = gl_RAY_O(1, j, k + 1)
+	!else
+	!	yzel2 = gl_RAY_O(1, j, 1)
+	!end if
+	!Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+	!! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	!r4 = sqrt(Ek(2)**2 + Ek(3)**2)
 	
 	!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
 	!dist = max(dist, 1.0_8)
 	
-	rr = (r1 + r2 + r3 + r4)/4.0
+	!rr = (r1 + r2 + r3 + r4)/4.0
+	
+	rr = (r1 + r3)/2.0
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -785,7 +788,11 @@
                 r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
             else
                 r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
-            end if
+			end if
+			
+			if (i == par_n_TS - 1) then
+					r = R_TS - 0.5               
+			end if
 
             ! Записываем новые координаты
             gl_x2(yzel, now2) = r * cos(the)
@@ -914,6 +921,9 @@
                     r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 				end if
 				
+				if (i == par_n_TS - 1) then
+					r = R_TS - 0.5               
+				end if
 
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = r * cos(the)
@@ -1209,6 +1219,10 @@
             r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
         else 
             r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
+		end if
+		
+		if (i == par_n_TS - 1) then
+					r = R_TS - 0.5               ! UBRAT
 		end if
 				
         !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
@@ -1878,7 +1892,8 @@
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, norm2 => dev_norm2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, gl_Cell_center2 => dev_gl_Cell_center2
 	use GEO_PARAM
 	use cudafor
 	
@@ -1890,6 +1905,9 @@
     real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
+	real(8) :: df1, df2, dff1, dff2, rast(3)
+	real(8) :: qqq11(8), qqq22(8), qq, qqq1_TVD(8), qqq2_TVD(8)
+	integer(4) :: ss1, ss2
 	
 	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	Num = size(gl_Contact)
@@ -1908,13 +1926,48 @@
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
 	
+	if (par_TVD == .True.) then
+			ss1 = gl_Gran_neighbour_TVD(1, gr)
+			ss2 = gl_Gran_neighbour_TVD(2, gr)
+			if (ss1 /= 0 .and. ss2 /= 0) then
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+				df1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				df2 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff2 = norm2(rast)
+				qqq11 = gl_Cell_par(:, ss1)
+				qqq22 = gl_Cell_par(:, ss2)
+				
+				do i = 1, 8
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+				
+				! Вычтем нормальную компоненту магнитного поля
+				if (gl_Gran_center2(1, gr, now) > -100.0) then
+					qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+					qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+					gl_Cell_par(6:8, s1) = qqq1(6:8)
+					gl_Cell_par(6:8, s2) = qqq2(6:8)
+				end if
+				
+				qqq1 = qqq1_TVD
+				qqq2 = qqq2_TVD
+			end if
+	end if
+	
 	
 	! Вычтем нормальную компоненту магнитного поля
 	if (gl_Gran_center2(1, gr, now) > -100.0) then
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-		gl_Cell_par(6:8, s1) = qqq1(6:8)
-		gl_Cell_par(6:8, s2) = qqq2(6:8)
+		if (par_TVD == .False.) then
+			gl_Cell_par(6:8, s1) = qqq1(6:8)
+			gl_Cell_par(6:8, s2) = qqq2(6:8)
+		end if
 	end if
 	
 	
@@ -1929,15 +1982,20 @@
         
     dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
-	!if (gl_Gran_center2(1, gr, now) < -250.0 .and. normal(2) > 0 .and. &
-	!	dabs(gl_Gran_center2(3, gr, now)) < 10.0) then
-	!	dsc = dsc + 10.0
+	!if (gl_Gran_center2(1, gr, now) < -200.0 .and. normal(2) > 0 .and. &
+	!		dabs(gl_Gran_center2(3, gr, now)) < 5.0) then
+	!		!print*, gl_Gran_center2(:, gr, now) 
+	!		dsc = dsc + 20.0
 	!end if
 	!
-	!if (gl_Gran_center2(1, gr, now) < -170.0 .and. gl_Gran_center2(1, gr, now) > -172.0 .and. normal(2) > 0 .and. &
-	!	dabs(gl_Gran_center2(3, gr, now)) < 10.0) then
-	!	dsc = dsc + 30.0
+	!
+	!if (gl_Gran_center2(1, gr, now) < -170.0 .and. normal(2) > 0 .and. &
+	!		dabs(gl_Gran_center2(3, gr, now)) < 5.0) then
+	!		!print*, gl_Gran_center2(:, gr, now) 
+	!		dsc = dsc + 10.0
 	!end if
+	
+	
 	
 	!if(gr == 77) write(*, *) dsc, qqq1(1), qqq2(1), qqq1(5), qqq2(5)
 	
@@ -2166,7 +2224,8 @@
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, norm2 => dev_norm2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, gl_Cell_center2 => dev_gl_Cell_center2
 	use GEO_PARAM
 	use cudafor
 	
@@ -2178,6 +2237,9 @@
     real(8) :: a1, a2, v1, v2, norm, b1, b2, c1, c2
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
+	real(8) :: df1, df2, dff1, dff2, rast(3)
+	real(8) :: qqq11(8), qqq22(8), qq, qqq1_TVD(8), qqq2_TVD(8)
+	integer(4) :: ss1, ss2
 	
 	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	Num = size(gl_BS)
@@ -2195,6 +2257,31 @@
     normal = gl_Gran_normal2(:, gr, now)
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
+	
+	if (par_TVD == .True.) then
+			ss1 = gl_Gran_neighbour_TVD(1, gr)
+			ss2 = gl_Gran_neighbour_TVD(2, gr)
+			if (ss1 /= 0 .and. ss2 /= 0) then
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+				df1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				df2 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff2 = norm2(rast)
+				qqq11 = gl_Cell_par(:, ss1)
+				qqq22 = gl_Cell_par(:, ss2)
+				
+				do i = 1, 8
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+				
+				qqq1 = qqq1_TVD
+				qqq2 = qqq2_TVD
+			end if
+	end if
         
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
@@ -2384,14 +2471,14 @@
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
-		gl_Gran_scheme => dev_gl_Gran_scheme
+		gl_Gran_scheme => dev_gl_Gran_scheme, gl_zone_Cell => dev_gl_zone_Cell, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
 	
 	integer(4) :: gr  ! Глобальный номер текущей грани
 	
-    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2
+    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, ss1, ss2
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
     real(8) :: dist, dsl, dsc, dsp, distant(3)
@@ -2401,6 +2488,8 @@
     real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc
     real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	real(8) :: df1, df2, dff1, dff2, rast(3)
+	real(8) :: qqq11(9), qqq22(9), qq, qqq1_TVD(9), qqq2_TVD(9)
 	
 	logical :: null_bn
 	
@@ -2434,6 +2523,7 @@
 	
 	! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
+			!if(gl_zone_Cell(s1) == 1) then
                 rad1 = norm2(gl_Cell_center2(:, s1, now))
                 rad2 = norm2(gl_Gran_center2(:, gr, now))
                 qqq1(1) = qqq1(1) * rad1**2 / rad2**2
@@ -2462,6 +2552,7 @@
 
                 ! Попробуем снести плотность пропорционально квадрату
                 if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
+				!if(gl_zone_Cell(s1) == 1) then
                     rad1 = norm2(gl_Cell_center2(:, s2, now))                              
                     rad2 = norm2(gl_Gran_center2(:, gr, now))
                     qqq2(1) = qqq2(1) * rad1**2 / rad2**2
@@ -2476,7 +2567,8 @@
                         fluid2(2, 1), fluid2(3, 1), fluid2(4, 1), aa, bb, cc)
                     call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &
                         aa, bb, cc, fluid2(2, 1), fluid2(3, 1), fluid2(4, 1))
-                end if
+				end if
+				
 
             else  ! В случае граничных ячеек - граничные условия
                 !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
@@ -2512,7 +2604,36 @@
                     end if
 
                 end if
-            end if
+	end if
+	
+	if (s2 >= 1 .and. par_TVD == .True.) then
+		if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
+			ss1 = gl_Gran_neighbour_TVD(1, gr)
+			ss2 = gl_Gran_neighbour_TVD(2, gr)
+			if (ss1 /= 0 .and. ss2 /= 0) then
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+				df1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				df2 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff2 = norm2(rast)
+				qqq11 = gl_Cell_par(:, ss1)
+				qqq22 = gl_Cell_par(:, ss2)
+				
+				do i = 1, 9
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+				
+				qqq1 = qqq1_TVD
+				qqq2 = qqq2_TVD
+			end if
+		end if
+	end if
+	
+	
             
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
@@ -2606,7 +2727,7 @@
 	
 	!if (time_step2 > time) then 
 		! Не смотри шаг по времени в хвосте из-за плохих ячеек
-		if (gl_Cell_center2(1, s1, now) > -150.0) then
+		if (.True.) then !(gl_Cell_center2(1, s1, now) > -150.0) then
 			time =  atomicmin(time_step2, time)   ! Атомарная операция взятия минимального значения
 		end if
 	!end if
@@ -2697,8 +2818,8 @@
 
             ! Определяем зону в которой находимся
             if(qqq(9)/qqq(1) < 50.0) then
-                !if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
-				if(gl_zone_Cell(gr) == 1) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
+				!if(gl_zone_Cell(gr) == 1) then
                     zone = 1
                 else
                     zone = 2
