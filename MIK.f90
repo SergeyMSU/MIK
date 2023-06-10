@@ -1397,9 +1397,10 @@
     implicit none
     
     integer(4), intent(in) :: ncell
-    real(8) :: r
+    real(8) :: r, tt
     real(8) :: ro, P_E, the, BE, BR, V1, V2, V3
     real(8) :: c(3), Matr(3, 3), Matr2(3, 3), cc(3), vv(3)
+	integer :: ijk
 
 	
 	Matr(1,1) = -0.9958639688067080
@@ -1454,14 +1455,28 @@
 	! print*, vv
 	!PAUSE
 	
+	the = -the + par_pi_8/2.0   ! Т.к. в данных по СВ на 1 а.е. угол от -90 до 90 у Алексашова
+	
 	cc = MATMUL(Matr, vv)
 	
-    ro = par_kk/(par_chi**2 * r**2)
-    P_E = (par_kk/(par_chi**2 * par_R0**2)) * par_chi**2 / (ggg * par_Mach_0**2)
-    c = DBLE(c) * par_chi/DBLE(r)
+	tt = ((the + par_pi_8/2.0)/(par_pi_8/18.0) - FLOOR((the + par_pi_8/2.0)/(par_pi_8/18.0)))
+	ijk = INT( (the + par_pi_8/2.0)/(par_pi_8/18.0) )
+	ro = (par_density_in(ijk + 1) * (1.0 - tt) + tt * par_density_in(ijk + 2))/ 0.04
     
+	!print*, the + par_pi_8/2.0, (the + par_pi_8/2.0)/(par_pi_8/18.0), tt, INT( (the + par_pi_8/2.0)/(par_pi_8/18.0) )
+	
+	!ro =  par_kk/(par_chi**2 * r**2)
+    !P_E = (par_kk/(par_chi**2 * par_R0**2)) * par_chi**2 / (ggg * par_Mach_0**2)
+	
+    !c = DBLE(c) * par_chi/DBLE(r)
+	
+	c = DBLE(c) * (par_velocity_in(ijk + 1) * (1.0 - tt) + tt * par_velocity_in(ijk + 2))/DBLE(r) * 0.0963179
+    P_E = (ro * norm2(c)**2) / (ggg * par_Mach_0**2)
+	
     ! Задаём плазму  (ro, u, v, w, p, bx, by, bz, Q)
-    gl_Cell_par(:, ncell) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro/)
+    !gl_Cell_par(:, ncell) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro/)
+	gl_Cell_par(:, ncell) = (/ro * (par_R0/r)**2, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), & 
+		P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro * (par_R0/r)**2/)
             
     ! Задаём мультифлюид (только первый сорт)
     gl_Cell_par_MF(:, 1, ncell) = (/0.0000001_8, c(1), c(2), c(3), 0.0000001_8 * P_E/ro /)
@@ -6057,7 +6072,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(146)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(148)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6188,7 +6203,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(147)
+    call Save_setka_bin(149)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()

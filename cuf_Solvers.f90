@@ -1947,7 +1947,7 @@
 				end do
 				
 				! Вычтем нормальную компоненту магнитного поля
-				if (gl_Gran_center2(1, gr, now) > -100.0) then
+				if (gl_Gran_center2(1, gr, now) > -100.0 .and. par_null_bn == .True.) then
 					qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
 					qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
 					gl_Cell_par(6:8, s1) = qqq1(6:8)
@@ -1961,7 +1961,7 @@
 	
 	
 	! Вычтем нормальную компоненту магнитного поля
-	if (gl_Gran_center2(1, gr, now) > -100.0) then
+	if (gl_Gran_center2(1, gr, now) > -100.0 .and. par_null_bn == .True.) then
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
 		if (par_TVD == .False.) then
@@ -2842,8 +2842,8 @@
                 if (ro3 <= 0.0_8) then
                     write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
 					write(*, *) qqq(1), Q3
-					write(*, *) Volume , Volume2
-					ro3 = 0.01
+					!write(*, *) Volume , Volume2
+					ro3 = 0.15
 				end if
 				
 				

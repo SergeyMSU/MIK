@@ -552,7 +552,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  50000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  100000 * 7  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2
@@ -877,7 +877,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 5000) == 0) then
+	if (mod(step, 500000) == 0) then
 		print*, "Renew TVD ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
