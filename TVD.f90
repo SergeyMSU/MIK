@@ -114,9 +114,9 @@
 		c4 = gl_Cell_center(:, cell4)
 		
 		if(DOT_PRODUCT(c2-c1, c4-c3) < 0.0) then
-			print*, gl_Gran_normal(:, gr)
-			print*, "Problem  93 TVD.f90  ", gr
-			PAUSE
+			!print*, gl_Gran_normal(:, gr)
+			!print*, "Problem  93 TVD.f90  ", gr
+			!PAUSE
 		end if
 		
 	end do

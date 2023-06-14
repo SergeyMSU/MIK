@@ -21,7 +21,7 @@
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt
+	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt, k1
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -38,6 +38,9 @@
     N2 = size(gl_RAY_A(1, :, 1))
 	
 	if(k > N3 .or. j > N2) return
+	
+	k1 = 0.0001
+	if(j <= 8) k1 = 0.3
 	
 	
 	if (j == 1) then
@@ -136,10 +139,10 @@
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035
+		vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
+		vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
 	end if
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -643,7 +646,8 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END, par_kk12 => dev_par_kk12
+		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END, par_kk12 => dev_par_kk12, &
+		par_kk13 => dev_par_kk13
 	use GEO_PARAM
 	use cudafor
 	
@@ -654,7 +658,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r
+    real(8), device :: the, phi, r, kk13, rd
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -774,18 +778,28 @@
 
             yzel = gl_RAY_A(i, j, k)
             ! Вычисляем координаты точки на луче
+			
+			kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * the/(par_pi_8/2.0)
+			
 
             ! до TS
 			if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
-			else if (i <= par_n_TS) then  ! До расстояния = R_TS
+			else if (i <= par_n_TS) then  
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
             !if (i <= par_n_TS) then  ! До расстояния = R_TS
             !    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
             else if (i <= par_n_HP) then  
                 r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-            else if (i <= par_n_BS) then 
-                r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+			else if (i == par_n_HP + 1) then 
+				rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+				r = R_HP + (R_HP - rd)
+			else if (i <= par_n_BS) then 
+				rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+				rd = rd + R_HP
+				r = rd + (R_BS - rd) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
+				!r = R_HP + (R_BS - R_HP) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
+                !r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
             else
                 r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
 			end if
@@ -793,6 +807,7 @@
 			if (i == par_n_TS - 1) then
 					r = R_TS - 0.5               
 			end if
+			
 
             ! Записываем новые координаты
             gl_x2(yzel, now2) = r * cos(the)
@@ -966,7 +981,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r,  x, y, z, rr
+    real(8), device :: the, phi, r,  x, y, z, rr, rd
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -994,6 +1009,10 @@
                 y = gl_y2(gl_RAY_B(par_n_HP, j, k), now2)
                 z = gl_z2(gl_RAY_B(par_n_HP, j, k), now2)
                 rr = (y**2 + z**2)**(0.5)
+				
+				y = gl_y2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+                z = gl_z2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+                rd = (y**2 + z**2)**(0.5)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1007,7 +1026,10 @@
                 
                 yzel = gl_RAY_C(i, j, k)
 
-                if (i <= par_n_BS - par_n_HP + 1) then
+				if(i == 2) then
+					r = rr + rd
+				else if (i <= par_n_BS - par_n_HP + 1) then
+					rr = rr + rd
                     r = rr + (i - 1) * (R_BS - rr)/(par_n_BS - par_n_HP)
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
@@ -1370,7 +1392,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r, x, y, z, x2, y2, z2
+    real(8), device :: the, phi, r, x, y, z, x2, y2, z2, rd
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1926,6 +1948,15 @@
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
 	
+	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
+	!if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
+	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
+	!end if
+	
+	
 	if (par_TVD == .True.) then
 			ss1 = gl_Gran_neighbour_TVD(1, gr)
 			ss2 = gl_Gran_neighbour_TVD(2, gr)
@@ -1946,13 +1977,17 @@
 					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
 				end do
 				
-				! Вычтем нормальную компоненту магнитного поля
-				if (gl_Gran_center2(1, gr, now) > -100.0 .and. par_null_bn == .True.) then
-					qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-					qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-					gl_Cell_par(6:8, s1) = qqq1(6:8)
-					gl_Cell_par(6:8, s2) = qqq2(6:8)
-				end if
+				
+				! Вычтем нормальную компоненту магнитного поля для снесённых значений
+			if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+				qqq1_TVD(6:8) = qqq1_TVD(6:8) - DOT_PRODUCT(normal, qqq1_TVD(6:8)) * normal
+				qqq2_TVD(6:8) = qqq2_TVD(6:8) - DOT_PRODUCT(normal, qqq2_TVD(6:8)) * normal
+				!if (par_TVD == .False.) then
+				!	gl_Cell_par(6:8, s1) = qqq1(6:8)
+				!	gl_Cell_par(6:8, s2) = qqq2(6:8)
+				!end if
+			end if
+				
 				
 				qqq1 = qqq1_TVD
 				qqq2 = qqq2_TVD
@@ -1961,14 +1996,14 @@
 	
 	
 	! Вычтем нормальную компоненту магнитного поля
-	if (gl_Gran_center2(1, gr, now) > -100.0 .and. par_null_bn == .True.) then
-		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-		if (par_TVD == .False.) then
-			gl_Cell_par(6:8, s1) = qqq1(6:8)
-			gl_Cell_par(6:8, s2) = qqq2(6:8)
-		end if
-	end if
+	!if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	!	!if (par_TVD == .False.) then
+	!	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
+	!	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
+	!	!end if
+	!end if
 	
 	
 	
@@ -2005,7 +2040,7 @@
 			center2(2) = gl_y2(yzel, now)
 			center2(3) = gl_z2(yzel, now)
 			
-			if ( sqrt(center2(2)**2 + center2(3)**2) > 15.0) then
+			if ( sqrt(center2(2)**2 + center2(3)**2) > 5.0) then
 			    if( DOT_PRODUCT(vec, center2 - center) < 0.0) CYCLE
 			end if
 			
@@ -2633,6 +2668,11 @@
 		end if
 	end if
 	
+	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	end if
 	
             
             ! Нужно вычислить скорость движения грани

@@ -39,6 +39,7 @@ module MY_CUDA
 	real(8), constant ::  dev_par_R_END
 	real(8), constant ::  dev_par_R_LEFT
 	real(8), constant ::  dev_par_al1
+	real(8), constant ::  dev_par_kk13
 	
 	
 	integer(4), device :: dev_mutex_1
@@ -403,6 +404,7 @@ module MY_CUDA
 		 dev_par_R_END = par_R_END
 		 dev_par_R_LEFT = par_R_LEFT
 		 dev_par_al1 = par_al1
+		 dev_par_kk13 = par_kk13
 		 
 	end subroutine Send_data_to_Cuda
 	
@@ -427,6 +429,7 @@ module MY_CUDA
         gl_Cell_center = dev_gl_Cell_center2(:, :, now)
         gl_Gran_square = dev_gl_Gran_square2(:, now)
 		par_al1 = dev_par_al1
+		par_kk13 = dev_par_kk13
 		gl_Gran_neighbour_TVD = dev_gl_Gran_neighbour_TVD
 		
 	end subroutine Send_data_to_Host_move
@@ -552,7 +555,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  100000 * 7  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  50000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2
@@ -564,6 +567,8 @@ module MY_CUDA
 	!if(par_al1 > 0.3) par_al1 = par_al1 - 0.0000002
 	!dev_par_al1 = par_al1
 		
+	if(par_kk13 > 0.5) par_kk13 = par_kk13 - 0.000002
+	dev_par_kk13 = par_kk13
 	
 	time_step = time_step2
 	!$cuf kernel do <<<1,1>>>
@@ -581,7 +586,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.False.) then  ! Есть ли вообще движение сетки
+	if(.True.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -856,7 +861,9 @@ module MY_CUDA
 	if (mod(step, 20000) == 0 .or. step == 2000 .or. step == 10000 .or. step == 5000 .or. step == 15000) then
 		print*, "PECHAT ", step
 		par_al1 = dev_par_al1
+		par_kk13 = dev_par_kk13
 		print*, "par_al1 = ", par_al1
+		print*, "par_kk13 = ", par_kk13
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
 		call Print_surface_2D()
@@ -877,7 +884,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 500000) == 0) then
+	if (mod(step, 5000) == 0) then
 		print*, "Renew TVD ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()

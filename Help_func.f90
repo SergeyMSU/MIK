@@ -38,7 +38,9 @@
     write(1) 1
 	write(1) par_al1
 	
-    write(1) 0
+    write(1) 1
+	write(1) par_kk13
+	
     write(1) 0
     write(1) 0
     write(1) 0
@@ -124,6 +126,11 @@
 	
 	
     read(1) n
+	if (n == 1) then
+        read(1) par_kk13
+	end if
+	
+	
     read(1) n
     read(1) n
     read(1) n
