@@ -1949,18 +1949,20 @@
     qqq2 = gl_Cell_par(1:8, s2)
 	
 	k1 = 1.0
-	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.1
+	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.5
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
-	!if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
-	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
-	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
-	!end if
+	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+		gl_Cell_par(6:8, s1) = qqq1(6:8)
+		gl_Cell_par(6:8, s2) = qqq2(6:8)
+		
+		
+	end if
 	
 	
-	if (par_TVD == .True.) then
+	if (.False. .and. par_TVD == .True.) then
 			ss1 = gl_Gran_neighbour_TVD(1, gr)
 			ss2 = gl_Gran_neighbour_TVD(2, gr)
 			if (ss1 /= 0 .and. ss2 /= 0) then
@@ -1983,7 +1985,7 @@
 				
 				! Вычтем нормальную компоненту магнитного поля для снесённых значений
 			!if ( sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
-			if ( gl_Gran_center2(1, gr, now) >= -20.0 .and. par_null_bn == .True.) then
+			if ( gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
 				qqq1_TVD(6:8) = qqq1_TVD(6:8) - DOT_PRODUCT(normal, qqq1_TVD(6:8)) * normal
 				qqq2_TVD(6:8) = qqq2_TVD(6:8) - DOT_PRODUCT(normal, qqq2_TVD(6:8)) * normal
 				!if (par_TVD == .False.) then
@@ -2016,8 +2018,18 @@
 	vec = vec - DOT_PRODUCT(vec, normal) * normal
 	center = gl_Gran_center2(:, gr, now)
         
-    call chlld(metod, normal(1), normal(2), normal(3), &
-            www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+	dsc = 0.0_8
+	
+	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		! Теперь сделаем для газовой динамики
+		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+		call chlld_gd(metod, normal(1), normal(2), normal(3), &
+                www, qqq1(1:5), qqq2(1:5), dsl, dsp, dsc, POTOK)
+	else
+		call chlld(metod, normal(1), normal(2), normal(3), &
+				www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+	end if
         
     dsc = k1 * (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
@@ -2628,7 +2640,10 @@
 						qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, qqq1(6), qqq1(7), qqq1(8), 100.0_8/)
 					end if
 					
-					qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					!qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					qqq2 = (/1.0_8, qqq1(2), qqq1(3), qqq1(4), 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					if(qqq2(3) < 0.0) qqq2(3) = 0.0
+					
                     fluid2(:, 1) = fluid1(:, 1)
                     fluid2(:, 2) = fluid1(:, 2)
                     fluid2(:, 3) = fluid1(:, 3)
@@ -2645,7 +2660,7 @@
                 end if
 	end if
 	
-	if (s2 >= 1 .and. par_TVD == .True.) then
+	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
 		if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
 			ss1 = gl_Gran_neighbour_TVD(1, gr)
 			ss2 = gl_Gran_neighbour_TVD(2, gr)
@@ -2674,7 +2689,7 @@
 	
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
-	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -20.0 .and. par_null_bn == .True.) then
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
 	end if

@@ -8,6 +8,8 @@
 	logical, parameter :: par_TVD = .True.				! ƒелаем ли “¬ƒ
 	logical, parameter :: par_null_bn = .True.          ! ќбнул€ть ли bn на контакте
 	
+	 real(8), parameter :: par_null_bn_x = -150.0_8   ! ќт какоко рассто€ни€ включаем вычитание bn
+	
 	
     real(8), parameter :: par_R_character = 35.6505         ! ’арактерный размер в задаче (рассто€ние до TS на начальном этапе построени€ сетки)
     real(8), parameter :: par_koeff_HP = 1.3            ! Ќа сколько умножить характерный размер дл€ получени€ HP
@@ -96,8 +98,9 @@
 		5.660302584234213, 5.303056768788817, 4.642336212635667, 3.865584371689210, 3.394746713363845, &
 		3.603241022818391/)  ! / 0.04
     
-    end module GEO_PARAM
+	end module GEO_PARAM
     
+	
     
     module STORAGE                       ! ћодуль глобальных данных и типов (все переменные начинаютс€ на gl - global)
     implicit none
@@ -111,9 +114,9 @@
     
     ! ѕараметр MOVE - означает, что эти массивы используютс€ (и инициализируютс€) только в случае движени€ сетки
     ! —корости движени€ узлов
-    real(8), allocatable :: gl_Vx(:)   ! набор z-координат узлов сетки    !MOVE
-    real(8), allocatable :: gl_Vy(:)   ! набор z-координат узлов сетки    !MOVE
-    real(8), allocatable :: gl_Vz(:)   ! набор z-координат узлов сетки    !MOVE
+    real(8), allocatable :: gl_Vx(:)   !     !MOVE
+    real(8), allocatable :: gl_Vy(:)   !     !MOVE
+    real(8), allocatable :: gl_Vz(:)   !     !MOVE
     integer(4), allocatable :: gl_Point_num(:)   ! —колько граней записали свою скорость движени€ в данный узел      !MOVE    
     
     !  оординаты узлов (сдвоенные дл€ случа€ движени€ сетки)
