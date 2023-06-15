@@ -40,7 +40,7 @@
 	if(k > N3 .or. j > N2) return
 	
 	k1 = 0.0001
-	if(j <= 8) k1 = 0.3
+	if(j <= 13) k1 = 0.3   ! 0.3
 	
 	
 	if (j == 1) then
@@ -349,11 +349,11 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = par_nat_HP * 0.001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
+				vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				vel(1) = 0.0
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = par_nat_HP * 0.001 * ((Ak/r) * (rr - r)) * ddt
+				vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 				vel(1) = 0.0
 			end if
 	
@@ -723,7 +723,7 @@
 	
 	
             
-        ! Обнулим для следующего успользования
+        ! Обнулим для следующего использования
         gl_Point_num(yzel) = 0
         gl_Vx(yzel) = 0.0
         gl_Vy(yzel) = 0.0
@@ -779,7 +779,7 @@
             yzel = gl_RAY_A(i, j, k)
             ! Вычисляем координаты точки на луче
 			
-			kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * the/(par_pi_8/2.0)
+			kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * (the/(par_pi_8/2.0))**2
 			
 
             ! до TS
@@ -796,8 +796,8 @@
 				r = R_HP + (R_HP - rd)
 			else if (i <= par_n_BS) then 
 				rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-				rd = rd + R_HP
-				r = rd + (R_BS - rd) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
+				rd = R_HP + (R_HP - rd)
+				r = rd + (R_BS - rd) * sgushenie_1( 1.0_8 * (i - par_n_HP - 1)/(par_n_BS - par_n_HP - 1), kk13 )
 				!r = R_HP + (R_BS - R_HP) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
                 !r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
             else
@@ -1013,6 +1013,7 @@
 				y = gl_y2(gl_RAY_B(par_n_HP - 1, j, k), now2)
                 z = gl_z2(gl_RAY_B(par_n_HP - 1, j, k), now2)
                 rd = (y**2 + z**2)**(0.5)
+				rr = rr + (rr - rd)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1027,10 +1028,9 @@
                 yzel = gl_RAY_C(i, j, k)
 
 				if(i == 2) then
-					r = rr + rd
+					r = rr
 				else if (i <= par_n_BS - par_n_HP + 1) then
-					rr = rr + rd
-                    r = rr + (i - 1) * (R_BS - rr)/(par_n_BS - par_n_HP)
+                    r = rr + (i - 2) * (R_BS - rr)/(par_n_BS - par_n_HP - 1)
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
@@ -1928,7 +1928,7 @@
 	real(8) :: www, dsl, dsp, dsc
 	integer(4) :: metod
 	real(8) :: df1, df2, dff1, dff2, rast(3)
-	real(8) :: qqq11(8), qqq22(8), qq, qqq1_TVD(8), qqq2_TVD(8)
+	real(8) :: qqq11(8), qqq22(8), qq, qqq1_TVD(8), qqq2_TVD(8), k1
 	integer(4) :: ss1, ss2
 	
 	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
@@ -1947,6 +1947,9 @@
     normal = gl_Gran_normal2(:, gr, now)
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
+	
+	k1 = 1.0
+	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.1
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
 	!if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
@@ -1979,7 +1982,8 @@
 				
 				
 				! Вычтем нормальную компоненту магнитного поля для снесённых значений
-			if (gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+			!if ( sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
+			if ( gl_Gran_center2(1, gr, now) >= -20.0 .and. par_null_bn == .True.) then
 				qqq1_TVD(6:8) = qqq1_TVD(6:8) - DOT_PRODUCT(normal, qqq1_TVD(6:8)) * normal
 				qqq2_TVD(6:8) = qqq2_TVD(6:8) - DOT_PRODUCT(normal, qqq2_TVD(6:8)) * normal
 				!if (par_TVD == .False.) then
@@ -2015,7 +2019,7 @@
     call chlld(metod, normal(1), normal(2), normal(3), &
             www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         
-    dsc = (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+    dsc = k1 * (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
 	!if (gl_Gran_center2(1, gr, now) < -200.0 .and. normal(2) > 0 .and. &
 	!		dabs(gl_Gran_center2(3, gr, now)) < 5.0) then
@@ -2669,7 +2673,8 @@
 	end if
 	
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
-	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -100.0 .and. par_null_bn == .True.) then
+	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -20.0 .and. par_null_bn == .True.) then
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
 	end if

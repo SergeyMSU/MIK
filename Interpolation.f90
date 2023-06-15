@@ -149,7 +149,7 @@
     close(1)
 	end subroutine Save_interpolate_bin
 	
-	subroutine Read_interpolate_bin(num)  ! Сохранение сетки в бинарном файле
+	subroutine Read_interpolate_bin(num)  
     ! Variables
     use STORAGE
     use GEO_PARAM

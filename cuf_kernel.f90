@@ -555,7 +555,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  50000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  800000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 1000) == 0) then
 			local1 = time_step2
@@ -567,8 +567,8 @@ module MY_CUDA
 	!if(par_al1 > 0.3) par_al1 = par_al1 - 0.0000002
 	!dev_par_al1 = par_al1
 		
-	if(par_kk13 > 0.5) par_kk13 = par_kk13 - 0.000002
-	dev_par_kk13 = par_kk13
+	!if(par_kk13 > 0.5) par_kk13 = par_kk13 - 0.000002
+	!dev_par_kk13 = par_kk13
 	
 	time_step = time_step2
 	!$cuf kernel do <<<1,1>>>
