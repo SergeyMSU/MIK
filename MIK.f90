@@ -77,6 +77,18 @@
 	end function angle_cilindr
 	
 	!@cuf attributes(host, device) & 
+    real(8) pure function sgushenie_1(x, par_al1)
+	! Функция для неравномерного распределения сетки по углу
+	! x от 0 до 1 и возвращает функция от 0 до 1
+    implicit none
+    real(8), intent(in) :: x, par_al1
+
+	sgushenie_1 = x * (par_al1 - 3.0 * (par_al1 - 1.0) * x + 2.0 * (par_al1 - 1.0)*x*x)
+	
+    return
+	end function sgushenie_1
+	
+	!@cuf attributes(host, device) & 
     integer(4) pure function signum(x)
         implicit none
         real(8), intent(in) :: x
@@ -6072,7 +6084,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(162)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(170)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6120,15 +6132,23 @@
 	!call Set_Interpolate_main()
 	
 	
-	!call Read_interpolate_bin(102)
-	
+	!call Read_interpolate_bin(163)
+	!
 	!call Re_interpolate()
-	
+	!
 	!call Dell_Interpolate()
 	
 	!par_kk12 = 1.0_8
 	!par_kk31 = 1.3_8
 	!par_R_LEFT = -460.0
+	
+	print*, par_n_IA, par_n_IB, par_R_inner
+	
+	!par_n_IA = 16
+	!par_n_IB = 18
+	!par_R_inner = 9.0_8
+	
+	!par_kk13 = 0.3
 	
     !call Start_MGD_move()
 	!pause
@@ -6178,7 +6198,7 @@
 	
 	
 	!call Set_Interpolate_main()
-	!call Save_interpolate_bin(102)
+	!call Save_interpolate_bin(163)
 	
 
     ! Перенормировка сортов обратно
@@ -6203,7 +6223,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(163)
+    call Save_setka_bin(171)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
@@ -6217,4 +6237,5 @@
 	! Сохраненные сетки
 	! 145 - до введения ТВД, но вариант ещё не установлен в хвосте
 	! 148 - до введения неизотропного с.в.
+	! 163 - до переделки сетки (чтобы вернуться придётся возвращать старое движение точек)
 

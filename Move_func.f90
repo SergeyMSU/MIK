@@ -625,7 +625,7 @@
     integer, intent(in) :: now
     real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), KORD(3), dist, ddt
     integer :: yzel, N1, N2, N3, i, j, k, yzel2
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13
     
     now2 = mod(now, 2) + 1   
 	
@@ -1188,7 +1188,7 @@
 			end if
 			
             
-            ! Обнулим для следующего успользования
+            ! Обнулим для следующего использования
             gl_Point_num(yzel) = 0
             gl_Vx(yzel) = 0.0
             gl_Vy(yzel) = 0.0
@@ -1208,18 +1208,29 @@
 
                 yzel = gl_RAY_A(i, j, k)
                 ! Вычисляем координаты точки на луче
+				
+				kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * (the/(par_pi_8/2.0))**2
 
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
-                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
-                else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
-                else if (i <= par_n_HP) then  
-                    r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-                else if (i <= par_n_BS) then 
-                    r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
-                else
-                    r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
+						r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+				else if (i <= par_n_TS) then  
+						r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
+				!if (i <= par_n_TS) then  ! До расстояния = R_TS
+				!    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
+				else if (i <= par_n_HP) then  
+					r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+				else if (i == par_n_HP + 1) then 
+					rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+					r = R_HP + (R_HP - rd)
+				else if (i <= par_n_BS) then 
+					rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
+					rd = R_HP + (R_HP - rd)
+					r = rd + (R_BS - rd) * sgushenie_1( 1.0_8 * (i - par_n_HP - 1)/(par_n_BS - par_n_HP - 1), kk13 )
+					!r = R_HP + (R_BS - R_HP) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
+					!r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+				else
+					r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
 				end if
 				
 				if (i == par_n_TS - 1) then
@@ -1343,6 +1354,12 @@
                 y = gl_y2(gl_RAY_B(par_n_HP, j, k), now2)
                 z = gl_z2(gl_RAY_B(par_n_HP, j, k), now2)
                 rr = (y**2 + z**2)**(0.5)
+				
+				
+				y = gl_y2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+                z = gl_z2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+                rd = (y**2 + z**2)**(0.5)
+				rr = rr + (rr - rd)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1356,8 +1373,10 @@
                 
                 yzel = gl_RAY_C(i, j, k)
 
-                if (i <= par_n_BS - par_n_HP + 1) then
-                    r = rr + (i - 1) * (R_BS - rr)/(par_n_BS - par_n_HP)
+                if(i == 2) then
+					r = rr
+				else if (i <= par_n_BS - par_n_HP + 1) then
+                    r = rr + (i - 2) * (R_BS - rr)/(par_n_BS - par_n_HP - 1)
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
