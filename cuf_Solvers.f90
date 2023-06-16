@@ -1118,8 +1118,8 @@
             R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси
-			if(R_HP < 20.0_8) then
-				R_HP = 20.0_8
+			if(R_HP < 15.0_8) then
+				R_HP = 15.0_8
 			end if
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
@@ -1338,10 +1338,12 @@
 
                 ! Вычисляем координаты точки на луче
 
-    !            y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
-				!z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
+				z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
 				!
-				!rr = sqrt(y**2 + z**2) * 0.4
+				rr = sqrt(y**2 + z**2)
+				if (rr < 20.0) r = r - (20.0 - rr)                ! Сдвигаем немного ниже
+				
 
                 yzel = gl_RAY_D(i, j, k)
                 
@@ -1949,7 +1951,7 @@
     qqq2 = gl_Cell_par(1:8, s2)
 	
 	k1 = 1.0
-	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.5
+	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
 	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
@@ -2024,7 +2026,7 @@
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
-		call chlld_gd(metod, normal(1), normal(2), normal(3), &
+		call chlld_gd(3, normal(1), normal(2), normal(3), &
                 www, qqq1(1:5), qqq2(1:5), dsl, dsp, dsc, POTOK)
 	else
 		call chlld(metod, normal(1), normal(2), normal(3), &
@@ -2033,11 +2035,12 @@
         
     dsc = k1 * (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
-	!if (gl_Gran_center2(1, gr, now) < -200.0 .and. normal(2) > 0 .and. &
-	!		dabs(gl_Gran_center2(3, gr, now)) < 5.0) then
+	!if (gl_Gran_center2(1, gr, now) < -250.0 .and. normal(2) > 0 .and. &
+	!		dabs(gl_Gran_center2(3, gr, now)) < 3.0) then
 	!		!print*, gl_Gran_center2(:, gr, now) 
-	!		dsc = dsc + 20.0
+	!		dsc = dsc - 50.0
 	!end if
+	
 	!
 	!
 	!if (gl_Gran_center2(1, gr, now) < -170.0 .and. normal(2) > 0 .and. &

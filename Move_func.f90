@@ -1302,7 +1302,6 @@
             R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
 			
 			
-			
                 
             do i = 1, N1
 

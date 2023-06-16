@@ -1690,15 +1690,16 @@
         
         
 
-        call Get_center(gl_Gran_neighbour(1, iter), node1)
-        node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
-        node1 = node2 - node1
-        
-        
-        if(DOT_PRODUCT(node1, c) < 0.0) then
-            print*, "ERROR 1333 ", DOT_PRODUCT(node1, c)
-            pause
-        end if
+   !     call Get_center(gl_Gran_neighbour(1, iter), node1)
+   !     node2 = (p(:,1) + p(:,2) + p(:,3) + p(:,4))/4.0
+   !     node1 = node2 - node1
+   !     
+   !     
+   !     if(DOT_PRODUCT(node1, c) < 0.0) then
+			!call Get_center(gl_Gran_neighbour(1, iter), node1)
+   !         print*, "ERROR 1333 ", node1
+   !         pause
+   !     end if
 
         ! Нужно записать площадь грани и нормаль в общий массив!
         
@@ -6066,6 +6067,7 @@
     use STORAGE
     use GEO_PARAM
 	use Interpolate
+	use Interpolate2
 	!@cuf use MY_CUDA
     implicit none
 
@@ -6084,7 +6086,7 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(172)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(186)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6166,6 +6168,8 @@
 	
     call CUDA_START_MGD_move()
 	
+	!call Set_Interpolate_main()       ! Проверим интерполяцию
+	
 	!call Set_Interpolate_main()
 	!call Streem_line(50.0_8, 0.001_8, 0.001_8, 1)
 	!call Streem_line(50.0_8, 20.001_8, 20.001_8, 2)
@@ -6211,6 +6215,15 @@
 	!call Re_interpolate()
 	
 	!call Dell_Interpolate()
+	
+	
+	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК
+	!pause
+	!call Int2_Set_Interpolate()
+	!call Int2_Initial()
+	!call Int2_Print_point_plane()
+	!pause
+	
 
     call Print_surface_2D()
     call Print_Setka_2D()
@@ -6223,7 +6236,7 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(173)
+    call Save_setka_bin(187)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
@@ -6238,4 +6251,6 @@
 	! 145 - до введения ТВД, но вариант ещё не установлен в хвосте
 	! 148 - до введения неизотропного с.в.
 	! 163 - до переделки сетки (чтобы вернуться придётся возвращать старое движение точек)
+	! 177 - до ручной поправки
+	! 184 - до включения null_bn везде на контакте
 

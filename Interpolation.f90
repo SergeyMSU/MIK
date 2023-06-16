@@ -8,20 +8,116 @@
 ! погрешности и неточности определени€ грани по четырЄм точкам алгоритм будет прыгать покругу 
 ! (по этим четырЄм €чейкам) и не найдЄт, где именно она лежит
 	
-	module Interpolate2
+	module Interpolate2  ! ћќƒ”Ћ№ Ќ≈ ƒќƒ≈ЋјЌ
 	! ћодуль интерпол€ции по тетраэдрам
     ! —троитс€ двойственна€ сетка к основной (с дополнительными узлами на разрывах)
 	! —троитьс€ сетка тетраэдров на двойственной сетке
 	USE GEO_PARAM
 	USE STORAGE
 	
+	implicit none
+	
+	
+	logical :: int2_work             ! ќпределена ли интерпол€ционна€ сетка (выделена ли пам€ть и т.д.)
+	
 	real(8), allocatable :: int2_coord(:, :)    ! (3, :) набор координат двойственной сетки (центры €чеек сетки 1)
+	
+	
+	
+    integer(4), allocatable :: int2_all_Cell(:, :)   ! ¬есь набор €чеек (8, :) - перва€ координата массива - это набор узлов €чейки
+	
+	integer(4), allocatable :: int2_Cell_A(:, :, :)   ! Ќабор A-ечеек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
 	
 	
 	contains
 	
+	subroutine Int2_Initial()
+	
+	integer(4) :: i, j, k, N1, N2, N3
+	! «аполн€ем интерпол€ционную сетку из основной
+	int2_Cell_A(1, :, :) = -1  ! ÷ентральна€ точка
+	
+	N1 = size(gl_Cell_A(:, 1, 1))
+	N2 = size(gl_Cell_A(1, :, 1))
+	N3 = size(gl_Cell_A(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, par_n_TS - 1
+				int2_Cell_A(i + 1, j, k) = gl_Cell_A(i, j, k)
+				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_TS, par_n_HP - 1
+				int2_Cell_A(i + 3, j, k) = gl_Cell_A(i, j, k)
+				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_HP, par_n_BS - 1
+				int2_Cell_A(i + 5, j, k) = gl_Cell_A(i, j, k)
+				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_BS, par_n_END - 1
+				int2_Cell_A(i + 6, j, k) = gl_Cell_A(i, j, k)
+				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+			end do
+		end do
+	end do
+	
+	
+	
+	end subroutine Int2_Initial
+	
+	
+	subroutine Int2_Print_point_plane()
+	
+	integer(4) :: i, j, k, N1, N2, N3
+	
+	open(1, file = 'Int2_print.txt')
+	
+	N1 = size(int2_Cell_A(:, 1, 1))
+	N2 = size(int2_Cell_A(1, :, 1))
+	N3 = size(int2_Cell_A(1, 1, :))
+	
+	do k = 1, 1
+		do j = 1, N2
+			do i = 1, N1
+				if( int2_Cell_A(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Cell_A(i, j, k))
+			end do
+		end do
+	end do
+	
+	write(1,*)
+	
+	close(1)
+	
+	end subroutine Int2_Print_point_plane
+	
+	
+	
+	
 	subroutine Int2_Set_Interpolate()
 	
+	allocate(int2_Cell_A( size(gl_Cell_A(:, 1, 1)) + 7, size(gl_Cell_A(1, :, 1)), size(gl_Cell_A(1, 1, :)) ))
+	allocate(int2_all_Cell(8, size(int2_Cell_A)))
+	allocate(int2_coord(3, size(gl_x)))
+	
+	int2_coord = 0.0
+	int2_all_Cell = -100
+	int2_Cell_A = -100
 	
 	end subroutine Int2_Set_Interpolate
 	
@@ -32,6 +128,12 @@
 	! »нтерпол€ци€ на основе основной сетки (покрыти€ пространства не полное, точки могут выпадать)
     
     implicit none
+	
+	logical, allocatable :: Int1_set_gran(:)   ! «аполнены ли треугольные грани в этой €чейке?
+	integer(4), allocatable :: Int1_grans_triangle(:, :, :)  ! (3, 12, :) “реугольные грани в каждой €чейке
+	! 12 граней в каждой €чейке, кажда€ грань состоит из трЄх узлов, : - количество €чеек в сетке
+	real(8), allocatable :: Int1_grans_normal(:, :, :)  ! (4, 12, :) ¬нешн€€ нормаль каждой грани в €чейке + параметр D
+	! n1 * x + n2 * y + n3 * z + D = 0  - уравнение грани - нормаль внешн€€
     
 	contains
 	
@@ -41,6 +143,9 @@
 	USE GEO_PARAM
 	USE STORAGE
 	implicit none
+	
+	integer :: i, j, k, N1, N2, N3, s, s1, s2, s3
+	real(8) :: aa(3), bb(3), normal(3), nn
 	
 	if (allocated(gl_Cell_gran_inter) == .True.) then
         STOP "Function Set_Interpolate vizvana neskolko raz!!! Dopustimo tolko 1 raz! _9876trtyuiokjhgfde45"    
@@ -61,6 +166,10 @@
 	allocate(gl_Cell_par_MF_inter, MOLD = gl_Cell_par_MF)
 	allocate(gl_Cell_dist_inter, MOLD = gl_Cell_dist)
 	
+	allocate(Int1_grans_triangle(3, 12, size(gl_Cell_par(1, :))))
+	allocate(Int1_grans_normal(4, 12, size(gl_Cell_par(1, :))))
+	allocate(Int1_set_gran( size(gl_Cell_par(1, :)) ))
+	
 	gl_Cell_gran_inter = gl_Cell_gran
 	gl_Gran_normal_inter = gl_Gran_normal
 	gl_Gran_center_inter = gl_Gran_center
@@ -70,11 +179,149 @@
 	gl_Cell_par_inter = gl_Cell_par
 	gl_Cell_par_MF_inter = gl_Cell_par_MF
 	gl_Cell_dist_inter = gl_Cell_dist
+	Int1_set_gran = .False.
+	
+	
+	! «аполн€ем треугольные грани
+	N1 = size(gl_all_Cell(1, :))
+	
+	do k = 1, N1
+		! 1
+		s = gl_Cell_neighbour(1, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 1, k) = (/ 2, 3, 6  /)
+			Int1_grans_triangle(:, 2, k) = (/ 3, 7, 6  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 3, s) == 4) .and. ANY( Int1_grans_triangle(:, 3, s) == 5) ) then
+				Int1_grans_triangle(:, 1, k) = (/ 2, 3, 6  /)
+				Int1_grans_triangle(:, 2, k) = (/ 3, 7, 6  /)
+			else
+				Int1_grans_triangle(:, 1, k) = (/ 2, 7, 6  /)
+				Int1_grans_triangle(:, 2, k) = (/ 2, 3, 7  /)
+			end if
+		end if
+		
+		! 2
+		s = gl_Cell_neighbour(2, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 3, k) = (/ 5, 4, 1  /)
+			Int1_grans_triangle(:, 4, k) = (/ 5, 8, 4  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 1, s) == 3) .and. ANY( Int1_grans_triangle(:, 1, s) == 6) ) then
+				Int1_grans_triangle(:, 3, k) = (/ 5, 4, 1  /)
+				Int1_grans_triangle(:, 4, k) = (/ 5, 8, 4  /)
+			else
+				Int1_grans_triangle(:, 3, k) = (/ 8, 4, 1  /)
+				Int1_grans_triangle(:, 4, k) = (/ 5, 8, 1  /)
+			end if
+		end if
+		
+		
+		! 3
+		s = gl_Cell_neighbour(3, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 5, k) = (/ 4, 7, 3  /)
+			Int1_grans_triangle(:, 6, k) = (/ 4, 8, 7  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 7, s) == 1) .and. ANY( Int1_grans_triangle(:, 7, s) == 6) ) then
+				Int1_grans_triangle(:, 5, k) = (/ 4, 7, 3  /)
+				Int1_grans_triangle(:, 6, k) = (/ 4, 8, 7  /)
+			else
+				Int1_grans_triangle(:, 5, k) = (/ 3, 8, 7  /)
+				Int1_grans_triangle(:, 6, k) = (/ 4, 8, 3  /)
+			end if
+		end if
+		
+		! 4
+		s = gl_Cell_neighbour(4, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 7, k) = (/ 1, 6, 5  /)
+			Int1_grans_triangle(:, 8, k) = (/ 1, 2, 6  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 5, s) == 4) .and. ANY( Int1_grans_triangle(:, 5, s) == 7) ) then
+				Int1_grans_triangle(:, 7, k) = (/ 1, 6, 5  /)
+				Int1_grans_triangle(:, 8, k) = (/ 1, 2, 6  /)
+			else
+				Int1_grans_triangle(:, 7, k) = (/ 2, 6, 5  /)
+				Int1_grans_triangle(:, 8, k) = (/ 1, 2, 5  /)
+			end if
+		end if
+		
+		
+		! 5
+		s = gl_Cell_neighbour(5, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 9, k) = (/ 5, 6, 8  /)
+			Int1_grans_triangle(:, 10, k) = (/ 6, 7, 8  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 11, s) == 4) .and. ANY( Int1_grans_triangle(:, 11, s) == 2) ) then
+				Int1_grans_triangle(:, 9, k) = (/ 5, 6, 8  /)
+				Int1_grans_triangle(:, 10, k) = (/ 6, 7, 8  /)
+			else
+				Int1_grans_triangle(:, 9, k) = (/ 5, 6, 7  /)
+				Int1_grans_triangle(:, 10, k) = (/ 5, 7, 8  /)
+			end if
+		end if
+		
+		
+		! 6
+		s = gl_Cell_neighbour(6, k)  
+		if(s <= 0 .or. Int1_set_gran(max(1, s)) == .False.) then
+			Int1_grans_triangle(:, 11, k) = (/ 1, 4, 2  /)
+			Int1_grans_triangle(:, 12, k) = (/ 2, 4, 3  /)
+		else
+			if ( ANY( Int1_grans_triangle(:, 9, s) == 6) .and. ANY( Int1_grans_triangle(:, 9, s) == 8) ) then
+				Int1_grans_triangle(:, 11, k) = (/ 1, 4, 2  /)
+				Int1_grans_triangle(:, 12, k) = (/ 2, 4, 3  /)
+			else
+				Int1_grans_triangle(:, 11, k) = (/ 1, 4, 3  /)
+				Int1_grans_triangle(:, 12, k) = (/ 2, 1, 3  /)
+			end if
+		end if
+		
+		Int1_set_gran(k) = .True.
+		
+		!gl_all_Cell(:, k)
+		
+		do j = 1, 12
+			s1 = Int1_grans_triangle(1, j, k)
+			s2 = Int1_grans_triangle(2, j, k)
+			s3 = Int1_grans_triangle(3, j, k)
+			
+			aa = (/ gl_x(gl_all_Cell(s2, k)), gl_y(gl_all_Cell(s2, k)), gl_z(gl_all_Cell(s2, k)) /) - (/ gl_x(gl_all_Cell(s1, k)), gl_y(gl_all_Cell(s1, k)), gl_z(gl_all_Cell(s1, k)) /)
+			bb = (/ gl_x(gl_all_Cell(s3, k)), gl_y(gl_all_Cell(s3, k)), gl_z(gl_all_Cell(s3, k)) /) - (/ gl_x(gl_all_Cell(s1, k)), gl_y(gl_all_Cell(s1, k)), gl_z(gl_all_Cell(s1, k)) /)
+		
+			normal(1) = aa(2) * bb(3) - aa(3) * bb(2) 
+			normal(2) = aa(3) * bb(1) - aa(1) * bb(3) 
+			normal(3) = aa(1) * bb(2) - aa(2) * bb(1) 
+			
+			nn = norm2(normal)
+			normal = normal/nn
+			
+			Int1_grans_normal(1:3, j, k) = normal
+			Int1_grans_normal(4, j, k) = -DOT_PRODUCT(normal, (/ gl_x(gl_all_Cell(s2, k)), gl_y(gl_all_Cell(s2, k)), gl_z(gl_all_Cell(s2, k)) /))
+			
+			aa = ((/ gl_x(gl_all_Cell(s1, k)), gl_y(gl_all_Cell(s1, k)), gl_z(gl_all_Cell(s1, k)) /) + &
+				(/ gl_x(gl_all_Cell(s2, k)), gl_y(gl_all_Cell(s2, k)), gl_z(gl_all_Cell(s2, k)) /) + &
+				(/ gl_x(gl_all_Cell(s3, k)), gl_y(gl_all_Cell(s3, k)), gl_z(gl_all_Cell(s3, k)) /))/3.0
+			
+			bb = gl_Cell_center(:, k)
+			
+			!if(DOT_PRODUCT(normal, aa - bb) < 0.0) print*, "Error normal 987656789uyghjmnbgyu"
+			
+		end do
+		
+		
+		! Ќадо сделать проверку нормалей и граней
+		
+		
+	end do
+	
 	
 	end subroutine Set_Interpolate_main
 	
 	subroutine Dell_Interpolate()
-	! ”дадить массивы интерпол€ции, если больше не нужны
+	! ”далить массивы интерпол€ции, если больше не нужны
 	USE STORAGE
 	implicit none
 	
@@ -87,10 +334,12 @@
 	DEALLOCATE(gl_Cell_neighbour_inter)
 	DEALLOCATE(gl_Cell_par_inter)
 	DEALLOCATE(gl_Cell_par_MF_inter)
+	DEALLOCATE(Int1_grans_triangle)
+	DEALLOCATE(Int1_grans_normal)
+	DEALLOCATE(Int1_set_gran)
+	
 	
 	end subroutine Dell_Interpolate
-	
-	
 	
 	subroutine Save_interpolate_bin(num)  ! —охранение сетки в бинарном файле
     ! Variables
@@ -331,8 +580,7 @@
 	call Find_tetraedr_Interpolate(x, y, z, num, F, F_mf)
 	
 	end subroutine Interpolate_point
-	
-	
+		
 	subroutine Get_Cell_Interpolate(x, y, z, num) 
 	! num - начальна€ €чейка поиска (если неизвестно, положить равной 1)
 	USE GEO_PARAM
@@ -393,7 +641,6 @@
 	num = n
 	
 	end subroutine Get_Cell_Interpolate
-	
 	
 	subroutine Find_tetraedr_Interpolate(x, y, z, num, F, F_mf)
 	! num - номер €чейки, в которой находитс€ точка
@@ -634,7 +881,6 @@
 	!print*, F(1)
 	
 	end subroutine Find_tetraedr_Interpolate
-	
 	
 	subroutine Streem_line(x, y, z, num)
 	! Variables

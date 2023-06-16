@@ -77,6 +77,7 @@
     inquire(file="save_" // name // ".bin", exist=exists)
     
     if (exists == .False.) then
+		pause "net faila!!!"
         STOP "net faila!!!"
     end if
     

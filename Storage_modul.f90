@@ -8,7 +8,7 @@
 	logical, parameter :: par_TVD = .True.				! Делаем ли ТВД
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
 	
-	 real(8), parameter :: par_null_bn_x = -150.0_8   ! От какоко расстояния включаем вычитание bn
+	 real(8), parameter :: par_null_bn_x = -16000.0_8   ! От какоко расстояния включаем вычитание bn
 	
 	
     real(8), parameter :: par_R_character = 35.6505         ! Характерный размер в задаче (расстояние до TS на начальном этапе построения сетки)
@@ -28,11 +28,11 @@
 	
 	real(8), parameter :: lock_move = 1.0_8 
 	real(8), parameter :: par_nat_TS = lock_move * 0.1 * 0.004_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = lock_move * 0.8_8 ! 1.0                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = lock_move * 0.1_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1 * 0.4_8! 0.3      ! Коэффицинт запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = lock_move * 0.8_8 ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = lock_move * 4.0_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
