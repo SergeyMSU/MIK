@@ -150,4 +150,17 @@
     
     
     close(1)
-    end subroutine Read_setka_bin
+	end subroutine Read_setka_bin
+	
+	subroutine Save_param()
+	! Variables
+	USE GEO_PARAM
+	
+	! Body of Save_param
+	open(1, file = "Setka_param.txt")
+	
+	WRITE (1, SETKA_PARAM) 
+	
+	close(1)
+	
+	end subroutine Save_param

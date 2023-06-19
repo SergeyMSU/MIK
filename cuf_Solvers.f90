@@ -40,7 +40,7 @@
 	if(k > N3 .or. j > N2) return
 	
 	k1 = 0.0001
-	if(j <= 13) k1 = 0.3   ! 0.3
+	if(j <= 13) k1 = 0.03   ! 0.3
 	
 	
 	if (j == 1) then
@@ -1118,8 +1118,8 @@
             R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси
-			if(R_HP < 15.0_8) then
-				R_HP = 15.0_8
+			if(R_HP < 20.0_8) then
+				R_HP = 20.0_8
 			end if
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
@@ -1312,6 +1312,9 @@
 	
 	if (k /= 1 .and. j == 1) return
 	
+	
+	!rrr = 100.0
+	
 	! Вычисляем координаты текущего луча в пространстве
                 phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
 				
@@ -1338,11 +1341,19 @@
 
                 ! Вычисляем координаты точки на луче
 
-				y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
-				z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				!y = gl_y2(gl_RAY_O(1, i - 1, k), now2)
+				!z = gl_z2(gl_RAY_O(1, i - 1, k), now2)
+				!!
+				!rr = sqrt(y**2 + z**2)
 				!
-				rr = sqrt(y**2 + z**2)
-				if (rr < 20.0) r = r - (20.0 - rr)                ! Сдвигаем немного ниже
+				!
+				!rrr = min(rrr, (rr/20.0))
+				!if (rr < 20.0) then
+				!	rr = r * rrr**2              ! Сдвигаем немного ниже
+				!else
+				!	rr = r
+				!end if
+				
 				
 
                 yzel = gl_RAY_D(i, j, k)
@@ -2035,10 +2046,9 @@
         
     dsc = k1 * (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
 	
-	!if (gl_Gran_center2(1, gr, now) < -250.0 .and. normal(2) > 0 .and. &
-	!		dabs(gl_Gran_center2(3, gr, now)) < 3.0) then
+	!if (gl_Gran_center2(1, gr, now) < -40.0 .and. gl_Cell_par(9, s1) > 50.0) then
 	!		!print*, gl_Gran_center2(:, gr, now) 
-	!		dsc = dsc - 50.0
+	!		dsc = dsc - 20.0
 	!end if
 	
 	!

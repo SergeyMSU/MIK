@@ -107,8 +107,6 @@
 	end subroutine Int2_Print_point_plane
 	
 	
-	
-	
 	subroutine Int2_Set_Interpolate()
 	
 	allocate(int2_Cell_A( size(gl_Cell_A(:, 1, 1)) + 7, size(gl_Cell_A(1, :, 1)), size(gl_Cell_A(1, 1, :)) ))

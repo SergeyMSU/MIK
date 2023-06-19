@@ -144,6 +144,7 @@
     include "Help_func.f90"
     include "Move_func.f90"
 	include "TVD.f90"
+	include "Surface_setting.f90"
 	
 	
 	!@cuf include "cuf_kernel.cuf"
@@ -6045,14 +6046,14 @@
     !end do
 	
 	! Проверяем параметры среды
-	N1 = size(gl_all_Cell(1, :))
-    do i = 1, N1
-		if (gl_Cell_par(1, i) <= 0.0) PAUSE "ERROR 55367fggfh"
-		if (gl_Cell_par_MF(1, 1, i) <= 0.0) PAUSE "ERROR sfergh453"
-		if (gl_Cell_par_MF(1, 2, i) <= 0.0) PAUSE "ERROR fghjki8765resdcvb"
-		if (gl_Cell_par_MF(1, 3, i) <= 0.0) PAUSE "ERROR 12345678ikjgfdssxcvfg"
-		if (gl_Cell_par_MF(1, 4, i) <= 0.0) PAUSE "ERROR dr45tgy7uj"
-	end do
+	!N1 = size(gl_all_Cell(1, :))
+ !   do i = 1, N1
+	!	if (gl_Cell_par(1, i) <= 0.0) PAUSE "ERROR 55367fggfh"
+	!	if (gl_Cell_par_MF(1, 1, i) <= 0.0) PAUSE "ERROR sfergh453"
+	!	if (gl_Cell_par_MF(1, 2, i) <= 0.0) PAUSE "ERROR fghjki8765resdcvb"
+	!	if (gl_Cell_par_MF(1, 3, i) <= 0.0) PAUSE "ERROR 12345678ikjgfdssxcvfg"
+	!	if (gl_Cell_par_MF(1, 4, i) <= 0.0) PAUSE "ERROR dr45tgy7uj"
+	!end do
 
 
     end subroutine Geometry_check
@@ -6068,6 +6069,7 @@
     use GEO_PARAM
 	use Interpolate
 	use Interpolate2
+	use Surface_setting
 	!@cuf use MY_CUDA
     implicit none
 
@@ -6083,10 +6085,10 @@
 	!call EXIT()
 
     ! Процесс построения сетки (не менять, все шаги необходимы для корректной работы)
-    !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
-    !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
+    call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
+    call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(186)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    !call Read_setka_bin(186)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6144,7 +6146,7 @@
 	!par_kk31 = 1.3_8
 	!par_R_LEFT = -460.0
 	
-	print*, par_n_IA, par_n_IB, par_R_inner
+	!print*, par_n_IA, par_n_IB, par_R_inner
 	
 	!par_n_IA = 16
 	!par_n_IB = 18
@@ -6166,7 +6168,7 @@
 	
 	!PAUSE
 	
-    call CUDA_START_MGD_move()
+    !call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()       ! Проверим интерполяцию
 	
@@ -6217,12 +6219,35 @@
 	!call Dell_Interpolate()
 	
 	
-	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК
+	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК _______________________________________________________________________________________
 	!pause
 	!call Int2_Set_Interpolate()
 	!call Int2_Initial()
 	!call Int2_Print_point_plane()
 	!pause
+	
+	!call Surf_Save_bin(186)
+	call Surf_Read_setka_bin(186)
+	
+	do i = 1, 100
+		if(mod(i, 20) == 0) print*, i
+		call Surf_Set_surf(20.0_8)
+	end do
+	
+	do i = 1, 20
+		if(mod(i, 20) == 0) print*, i
+		call Surf_Set_surf(1.0_8)
+	end do
+	
+	do i = 1, 100
+		if(mod(i, 20) == 0) print*, i
+		call Surf_Set_surf(0.2_8)
+	end do
+	
+	do i = 1, 100
+		if(mod(i, 20) == 0) print*, i
+		call Surf_Set_surf(0.03_8)
+	end do
 	
 
     call Print_surface_2D()
@@ -6236,12 +6261,12 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    call Save_setka_bin(187)
+    !call Save_setka_bin(189)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
 	call Print_Setka_3D_part()
-	
+	call Save_param()
 	!pause
 	
 	end program MIK
@@ -6253,4 +6278,5 @@
 	! 163 - до переделки сетки (чтобы вернуться придётся возвращать старое движение точек)
 	! 177 - до ручной поправки
 	! 184 - до включения null_bn везде на контакте
+	! 186 - до изменения движения контакта в хвосте (до 15 )   ! Считаем последней рабочей версией
 
