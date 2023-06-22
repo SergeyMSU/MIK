@@ -145,6 +145,7 @@
     include "Move_func.f90"
 	include "TVD.f90"
 	include "Surface_setting.f90"
+	include "cgod_3D.f90"
 	
 	
 	!@cuf include "cuf_kernel.cuf"
@@ -3684,9 +3685,9 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 1  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 1000  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        if (mod(step, 1) == 0) then
+        if (mod(step, 10) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
 			"  gran Center = ", gl_Gran_center2(:, mincell, now), "  minsort = ", min_sort, "  cell = ", gl_Gran_neighbour(1, mincell), gl_Gran_neighbour(2, mincell) 
 			!print*, gl_Gran_normal2(:, mincell, now)
@@ -3749,7 +3750,7 @@
         call Move_all(now, TT) 
 		
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
-		CYCLE
+		!CYCLE
 		
 		!do ijk = 1, 8
 		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
@@ -6046,14 +6047,25 @@
     !end do
 	
 	! Проверяем параметры среды
-	!N1 = size(gl_all_Cell(1, :))
- !   do i = 1, N1
-	!	if (gl_Cell_par(1, i) <= 0.0) PAUSE "ERROR 55367fggfh"
-	!	if (gl_Cell_par_MF(1, 1, i) <= 0.0) PAUSE "ERROR sfergh453"
-	!	if (gl_Cell_par_MF(1, 2, i) <= 0.0) PAUSE "ERROR fghjki8765resdcvb"
-	!	if (gl_Cell_par_MF(1, 3, i) <= 0.0) PAUSE "ERROR 12345678ikjgfdssxcvfg"
-	!	if (gl_Cell_par_MF(1, 4, i) <= 0.0) PAUSE "ERROR dr45tgy7uj"
-	!end do
+	N1 = size(gl_all_Cell(1, :))
+    do i = 1, N1
+		if (gl_Cell_par(1, i) <= 0.0) gl_Cell_par(1, i) = 0.000001
+		if (gl_Cell_par_MF(1, 1, i) <= 0.0) then
+			!print*, gl_Cell_par_MF(:, 1, i)
+			!print*, "Center = ", gl_Cell_center(:, i)
+			!PAUSE "ERROR ro sfergh453"
+			gl_Cell_par_MF(1, 1, i) = 0.000001
+		end if
+		if (gl_Cell_par_MF(1, 2, i) <= 0.0) gl_Cell_par_MF(1, 2, i) = 0.000001
+		if (gl_Cell_par_MF(1, 3, i) <= 0.0) gl_Cell_par_MF(1, 3, i) = 0.000001
+		if (gl_Cell_par_MF(1, 4, i) <= 0.0) gl_Cell_par_MF(1, 4, i) = 0.000001
+		
+		if (gl_Cell_par(5, i) <= 0.0) gl_Cell_par(5, i) = 0.000001
+		if (gl_Cell_par_MF(5, 1, i) <= 0.0) gl_Cell_par_MF(5, 1, i) = 0.000001
+		if (gl_Cell_par_MF(5, 2, i) <= 0.0) gl_Cell_par_MF(5, 2, i) = 0.000001
+		if (gl_Cell_par_MF(5, 3, i) <= 0.0) gl_Cell_par_MF(5, 3, i) = 0.000001
+		if (gl_Cell_par_MF(5, 4, i) <= 0.0) gl_Cell_par_MF(5, 4, i) = 0.000001
+	end do
 
 
     end subroutine Geometry_check
@@ -6073,22 +6085,24 @@
 	!@cuf use MY_CUDA
     implicit none
 
-    integer(4) :: i, NGRAN, j, nn
+    integer(4) :: i, NGRAN, j, nn, name_do, name_posle
 	integer :: istat
 	real(8) :: local1, F(9)
 	integer :: ierrSync, ierrAsync
 	
 	print*, "START PROGRAM"
 	
+	name_do = 204
+	name_posle = 205
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
 
     ! Процесс построения сетки (не менять, все шаги необходимы для корректной работы)
-    call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
-    call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
+    !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
+    !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    !call Read_setka_bin(186)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(name_do)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	
     
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -6168,7 +6182,7 @@
 	
 	!PAUSE
 	
-    !call CUDA_START_MGD_move()
+    call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()       ! Проверим интерполяцию
 	
@@ -6224,35 +6238,45 @@
 	!call Int2_Set_Interpolate()
 	!call Int2_Initial()
 	!call Int2_Print_point_plane()
-	!pause
+	
+	!call Set_Interpolate_main()
+	!call Save_interpolate_bin(186)
 	
 	!call Surf_Save_bin(186)
-	call Surf_Read_setka_bin(186)
-	
-	do i = 1, 100
-		if(mod(i, 20) == 0) print*, i
-		call Surf_Set_surf(20.0_8)
-	end do
-	
-	do i = 1, 20
-		if(mod(i, 20) == 0) print*, i
-		call Surf_Set_surf(1.0_8)
-	end do
-	
-	do i = 1, 100
-		if(mod(i, 20) == 0) print*, i
-		call Surf_Set_surf(0.2_8)
-	end do
-	
-	do i = 1, 100
-		if(mod(i, 20) == 0) print*, i
-		call Surf_Set_surf(0.03_8)
-	end do
-	
-
-    call Print_surface_2D()
-    call Print_Setka_2D()
-	call Print_Setka_y_2D()
+	!call Surf_Read_setka_bin(186)
+	!
+	!do i = 1, 100
+	!	if(mod(i, 20) == 0) print*, i
+	!	call Surf_Set_surf(20.0_8)
+	!end do
+	!
+	!do i = 1, 25
+	!	if(mod(i, 20) == 0) print*, i
+	!	call Surf_Set_surf(1.0_8)
+	!end do
+	!
+	!do i = 1, 5
+	!	if(mod(i, 20) == 0) print*, i
+	!	call Surf_Set_surf(0.2_8)
+	!end do
+	!
+	!do i = 1, 10
+	!	if(mod(i, 20) == 0) print*, i
+	!	call Surf_Set_surf(0.03_8)
+	!end do
+	!
+	!call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+	!call Read_interpolate_bin(186)
+	!print*, "Read interpolate"
+	!pause
+	!call Re_interpolate()
+	!print*, "RE interpolate"
+	!pause
+ !
+ !   call Print_surface_2D()
+ !   call Print_Setka_2D()
+	!call Print_Setka_y_2D()
+! Конец интерполяционного блока _____________________________________________________________________________
 	
     !call Print_all_surface("C")
     !call Print_all_surface("B")
@@ -6261,12 +6285,12 @@
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_surface_y_2D()
-    !call Save_setka_bin(189)
+    call Save_setka_bin(name_posle)
     ! Variables
     call Print_Contact_3D()
 	call Print_TS_3D()
 	call Print_Setka_3D_part()
-	call Save_param()
+	call Save_param(name_posle)
 	!pause
 	
 	end program MIK
@@ -6279,4 +6303,6 @@
 	! 177 - до ручной поправки
 	! 184 - до включения null_bn везде на контакте
 	! 186 - до изменения движения контакта в хвосте (до 15 )   ! Считаем последней рабочей версией
+	
+	! 200 - Новая сетка
 

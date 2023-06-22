@@ -3,6 +3,7 @@
 module Surface_setting  
 	! Модуль для сохранения положения поверхностей на одной сетке
     ! для последующей переинтерполяции их на другую
+	! Модуль работает и завершён
 	USE GEO_PARAM
 	USE STORAGE
 	USE My_func
@@ -110,7 +111,7 @@ module Surface_setting
 		
 		
 		! K - лучи
-		do j = 1, par_m_K
+		do j = par_m_K, 1, -1
 			! TS
 			yzel = gl_RAY_K(par_n_TS, j, k)
 			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
@@ -225,13 +226,18 @@ module Surface_setting
 	 
 	 j1 = size(Surf_TS_the(:, 1)) 
 	 do j = 1, size(Surf_TS_the(:, 1)) 
-		 if(Surf_TS_the(j, k1) > the) then
+		 if(Surf_TS_the(j, k1) >= the) then
 			 j1 = j
 			 EXIT
 		 end if
 	 end do
 	 
-	 t2 = ( the - Surf_TS_the(j1 - 1, k1) )/( Surf_TS_the(j1, k1) - Surf_TS_the(j1 - 1, k1) )
+	 if (j1 == 1) then
+		 j1 = 2
+		 t2 = 0.0
+	 else
+		t2 = ( the - Surf_TS_the(j1 - 1, k1) )/( Surf_TS_the(j1, k1) - Surf_TS_the(j1 - 1, k1) )
+	 end if
 	 
 	 a = Surf_TS_r(j1 - 1, k1 - 1)
 	 b = Surf_TS_r(j1, k1 - 1)
@@ -295,19 +301,22 @@ module Surface_setting
 	 end do
 	 
 	 if(j1 == 1) then
-		 t2 = 0.0
-		 j1 = 2
-	else
+		 t2 = (x)/( Surf_HP_x(j1, k1))
+		 a = Surf_HP_r_A(size(Surf_HP_the(:, 1)) , k1 - 1)
+		 b = Surf_HP_r(j1, k1 - 1)
+		 c = Surf_HP_r_A(size(Surf_HP_the(:, 1)) , k1)
+		 d = Surf_HP_r(j1, k1)
+		 Surf_Get_HP = ((1.0 - t1) * a + t1 * c) * (1.0 - t2) + ((1.0 - t1) * b + t1 * d) * t2
+	 else
+		 
 		t2 = ( x - Surf_HP_x(j1 - 1, k1) )/( Surf_HP_x(j1, k1) - Surf_HP_x(j1 - 1, k1) )
+		 a = Surf_HP_r(j1 - 1, k1 - 1)
+		 b = Surf_HP_r(j1, k1 - 1)
+		 c = Surf_HP_r(j1 - 1, k1)
+		 d = Surf_HP_r(j1, k1)
+		 Surf_Get_HP = ((1.0 - t1) * a + t1 * c) * (1.0 - t2) + ((1.0 - t1) * b + t1 * d) * t2
+	 
 	 end if
-	 
-	 a = Surf_HP_r(j1 - 1, k1 - 1)
-	 b = Surf_HP_r(j1, k1 - 1)
-	 c = Surf_HP_r(j1 - 1, k1)
-	 d = Surf_HP_r(j1, k1)
-	
-	 
-	 Surf_Get_HP = ((1.0 - t1) * a + t1 * c) * (1.0 - t2) + ((1.0 - t1) * b + t1 * d) * t2
 		
 	end if
 	

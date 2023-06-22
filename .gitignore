@@ -32,3 +32,5 @@ UpgradeLog3.htm
 cuf_kernel.cuf
 
 cuf_Solvers.cuf
+
+*.filepart

@@ -40,7 +40,7 @@
 	if(k > N3 .or. j > N2) return
 	
 	k1 = 0.0001
-	if(j <= 13) k1 = 0.03   ! 0.3
+	if(j <= 18) k1 = 0.03   ! 0.03
 	
 	
 	if (j == 1) then
@@ -1931,6 +1931,7 @@
 		gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, gl_Cell_center2 => dev_gl_Cell_center2
 	use GEO_PARAM
 	use cudafor
+	use cgod
 	
 	implicit none
 	integer, intent(in) :: now
@@ -1942,7 +1943,11 @@
 	integer(4) :: metod
 	real(8) :: df1, df2, dff1, dff2, rast(3)
 	real(8) :: qqq11(8), qqq22(8), qq, qqq1_TVD(8), qqq2_TVD(8), k1
-	integer(4) :: ss1, ss2
+	integer(4) :: ss1, ss2, kdir, KOBL, idgod
+	
+	KOBL = 0
+	kdir = 0
+	idgod = 0
 	
 	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	Num = size(gl_Contact)
@@ -2037,8 +2042,16 @@
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+		call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
+                                 normal(1), normal(2), normal(3), 1.0_8, &
+                                 www, qqq1(1:8), qqq2(1:8), &
+                                 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
+                                 POTOK)
+		if (idgod == 2) then
 		call chlld_gd(3, normal(1), normal(2), normal(3), &
                 www, qqq1(1:5), qqq2(1:5), dsl, dsp, dsc, POTOK)
+		end if
+		
 	else
 		call chlld(metod, normal(1), normal(2), normal(3), &
 				www, qqq1, qqq2, dsl, dsp, dsc, POTOK)

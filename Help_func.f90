@@ -152,12 +152,16 @@
     close(1)
 	end subroutine Read_setka_bin
 	
-	subroutine Save_param()
-	! Variables
+	subroutine Save_param(num)
+	! Сохраняет параметры программы (перечисленные в namelist в модуле GEO_PARAM) 
 	USE GEO_PARAM
-	
-	! Body of Save_param
-	open(1, file = "Setka_param.txt")
+	implicit none
+    integer, intent(in) :: num
+    character(len=5) :: name
+    
+    write(unit=name,fmt='(i5.5)') num
+    
+    open(1, file = "Setka_param_" // name // ".txt")
 	
 	WRITE (1, SETKA_PARAM) 
 	
