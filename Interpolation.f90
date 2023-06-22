@@ -20,22 +20,30 @@
 	
 	logical :: int2_work             ! Определена ли интерполяционная сетка (выделена ли память и т.д.)
 	
-	real(8), allocatable :: int2_coord(:, :)    ! (3, :) набор координат двойственной сетки (центры ячеек сетки 1)
+	real(8), allocatable :: int2_coord(:, :)    ! (3, :) набор координат двойственной сетки (центры ячеек сетки 1 + дополнительные)
 	
 	
 	
     integer(4), allocatable :: int2_all_Cell(:, :)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
+	integer(4), allocatable :: int2_Cell_A(:, :, :)
+	integer(4), allocatable :: int2_Cell_B(:, :, :)
+	integer(4), allocatable :: int2_Cell_C(:, :, :)
+	real(8), allocatable :: int2_Cell_center(:, :)   ! Центр ячеек (3, :) 
 	
-	integer(4), allocatable :: int2_Cell_A(:, :, :)   ! Набор A-ечеек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
-	
+	integer(4), allocatable :: int2_Point_A(:, :, :)   ! Набор A-точек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+	! Это точки - центры ячеек основной сетки
+	integer(4), allocatable :: int2_Point_B(:, :, :)   ! Набор B-точек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
+	integer(4), allocatable :: int2_Point_C(:, :, :)   ! Набор B-точек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
 	
 	contains
 	
 	subroutine Int2_Initial()
 	
-	integer(4) :: i, j, k, N1, N2, N3
+	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m
 	! Заполняем интерполяционную сетку из основной
-	int2_Cell_A(1, :, :) = -1  ! Центральная точка
+	int2_Point_A(1, :, :) = -1  ! Центральная точка
+	int2_Point_B(1, :, :) = -1  ! Центральная точка
+	
 	
 	N1 = size(gl_Cell_A(:, 1, 1))
 	N2 = size(gl_Cell_A(1, :, 1))
@@ -44,7 +52,7 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = 1, par_n_TS - 1
-				int2_Cell_A(i + 1, j, k) = gl_Cell_A(i, j, k)
+				int2_Point_A(i + 1, j, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 			end do
 		end do
@@ -53,7 +61,7 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = par_n_TS, par_n_HP - 1
-				int2_Cell_A(i + 3, j, k) = gl_Cell_A(i, j, k)
+				int2_Point_A(i + 3, j, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 			end do
 		end do
@@ -62,7 +70,7 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = par_n_HP, par_n_BS - 1
-				int2_Cell_A(i + 5, j, k) = gl_Cell_A(i, j, k)
+				int2_Point_A(i + 5, j, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 			end do
 		end do
@@ -71,36 +79,620 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = par_n_BS, par_n_END - 1
-				int2_Cell_A(i + 6, j, k) = gl_Cell_A(i, j, k)
+				int2_Point_A(i + 5, j, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 			end do
 		end do
 	end do
 	
+	! B - ячеейки !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	N1 = size(gl_Cell_B(:, 1, 1))
+	N2 = size(gl_Cell_B(1, :, 1))
+	N3 = size(gl_Cell_B(1, 1, :))
 	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, par_n_TS - 1
+				int2_Point_B(i + 1, j, k) = gl_Cell_B(i, j, k)
+				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_TS, N1
+				int2_Point_B(i + 3, j, k) = gl_Cell_B(i, j, k)
+				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+			end do
+		end do
+	end do
+	
+	
+	! C - точки  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	N1 = size(gl_Cell_C(:, 1, 1))
+	N2 = size(gl_Cell_C(1, :, 1))
+	N3 = size(gl_Cell_C(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, par_n_HP - par_n_TS
+				int2_Point_C(i, j, k) = gl_Cell_C(i, j, k)
+				ijk = gl_Cell_C(i, j, k)
+				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_HP - par_n_TS + 1, par_n_BS - par_n_TS
+				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
+				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_BS - par_n_TS + 1, par_n_END - par_n_TS
+				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
+				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+			end do
+		end do
+	end do
+	
+	
+	! Заполняем особые точки
+	N = size(gl_Cell_C) + size(gl_Cell_A) + size(gl_Cell_B)
+	int2_Point_A(1, :, :) = N + 1
+	int2_Point_B(1, :, :) = N + 1
+	int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
+	N = N + 1
+	
+	N1 = size(gl_Cell_A(:, 1, 1))
+	N2 = size(gl_Cell_A(1, :, 1))
+	N3 = size(gl_Cell_A(1, 1, :))
+	
+	! A
+	do k = 1, N3
+		do j = 1, N2
+			int2_Point_A(par_n_TS + 1, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+			N = N + 1
+			
+			int2_Point_A(par_n_TS + 2, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+			N = N + 1
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			int2_Point_A(par_n_HP + 3, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+			N = N + 1
+			
+			int2_Point_A(par_n_HP + 4, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+			N = N + 1
+		end do
+	end do
+	
+	!B
+	N1 = size(gl_Cell_B(:, 1, 1))
+	N2 = size(gl_Cell_B(1, :, 1))
+	N3 = size(gl_Cell_B(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			int2_Point_B(par_n_TS + 1, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+			N = N + 1
+			
+			int2_Point_B(par_n_TS + 2, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+			N = N + 1 
+		end do
+	end do
+	
+	!C
+	N1 = size(gl_Cell_C(:, 1, 1))
+	N2 = size(gl_Cell_C(1, :, 1))
+	N3 = size(gl_Cell_C(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			int2_Point_C(par_n_HP - par_n_TS + 1, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+			N = N + 1
+			
+			int2_Point_C(par_n_HP - par_n_TS + 2, j, k) = N + 1
+			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+			N = N + 1 
+		end do
+	end do
+	
+	! Заполняем ячейки (двойственную сетку)
+	
+	N = 1
+	
+	! A - точки 
+	N1 = size(int2_Point_A(:, 1, 1))
+	N2 = size(int2_Point_A(1, :, 1))
+	N3 = size(int2_Point_A(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2 - 1
+			do i = 1, N1 - 1
+				
+				if (i == par_n_TS + 1) CYCLE
+				if (i == par_n_HP + 3) CYCLE
+				
+				int2_Cell_A(i, j, k) = N
+				
+				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_A(i + 1, j + 1, k)
+				int2_all_Cell(4, N) = int2_Point_A(i, j + 1, k)
+				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_A(i + 1, j + 1, kk)
+				int2_all_Cell(8, N) = int2_Point_A(i, j + 1, kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	
+	! B - точки 
+	N1 = size(int2_Point_B(:, 1, 1))
+	N2 = size(int2_Point_B(1, :, 1))
+	N3 = size(int2_Point_B(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2 - 1
+			do i = 1, N1 - 1
+				
+				if (i == par_n_TS + 1) CYCLE
+				
+				int2_Cell_B(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_B(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_B(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_B(i + 1, j + 1, k)
+				int2_all_Cell(4, N) = int2_Point_B(i, j + 1, k)
+				int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_B(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_B(i + 1, j + 1, kk)
+				int2_all_Cell(8, N) = int2_Point_B(i, j + 1, kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	! C - точки 
+	N1 = size(int2_Point_C(:, 1, 1))
+	N2 = size(int2_Point_C(1, :, 1))
+	N3 = size(int2_Point_C(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2 - 1
+			do i = 1, N1 - 1
+				
+				if (i == par_n_HP - par_n_TS + 1) CYCLE
+				
+				int2_Cell_C(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_C(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_C(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_C(i + 1, j + 1, k)
+				int2_all_Cell(4, N) = int2_Point_C(i, j + 1, k)
+				int2_all_Cell(5, N) = int2_Point_C(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_C(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_C(i + 1, j + 1, kk)
+				int2_all_Cell(8, N) = int2_Point_C(i, j + 1, kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	!Залатываем дырки между группами !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
+	! A - точки 
+	N1 = size(int2_Point_A(:, 1, 1))
+	N2 = size(int2_Point_A(1, :, 1))
+	N3 = size(int2_Point_A(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = N2, N2
+			do i = 1, par_n_TS
+				
+				if (i == par_n_TS + 1) CYCLE
+				if (i == par_n_HP + 3) CYCLE
+				
+				int2_Cell_A(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(4, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+				int2_all_Cell(8, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	! A - точки 
+	N1 = size(int2_Point_A(:, 1, 1))
+	N2 = size(int2_Point_A(1, :, 1))
+	N3 = size(int2_Point_A(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = N2, N2
+			do i = par_n_TS + 3, N1 - 1
+				
+				if (i == par_n_TS + 1) CYCLE
+				if (i == par_n_HP + 3) CYCLE
+				
+				int2_Cell_A(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_C(i - par_n_TS - 1, 1, k)
+				int2_all_Cell(4, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, k)
+				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_C(i - par_n_TS - 1, 1, kk)
+				int2_all_Cell(8, N) = int2_Point_C(i - 1 - par_n_TS - 1, 1, kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	N1 = size(int2_Point_A(:, 1, 1))
+	N2 = size(int2_Point_A(1, :, 1))
+	N3 = size(int2_Point_A(1, 1, :))
+	
+	! Около тройной точки
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = N2, N2
+			do i = par_n_TS + 2, par_n_TS + 2
+				
+				int2_Cell_A(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+				int2_all_Cell(3, N) = int2_Point_C(1, 1, k)
+				int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+				int2_all_Cell(7, N) = int2_Point_C(1, 1, kk)
+				int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = N2, N2
+			do i = par_n_TS + 1, par_n_TS + 1
+				
+				int2_Cell_A(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(3, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(4, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(7, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+				int2_all_Cell(8, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	! Между B и C точками
+	
+	N1 = size(int2_Point_B(:, 1, 1))
+	N2 = size(int2_Point_B(1, :, 1))
+	N3 = size(int2_Point_B(1, 1, :))
+	
+	do k = 1, N3
+		
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = N2, N2
+			do i = par_n_TS + 3, N1 - 1
+				
+				int2_Cell_B(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_B(i, j, k)
+				int2_all_Cell(2, N) = int2_Point_C(1, i - par_n_TS - 2 , k)
+				int2_all_Cell(3, N) = int2_Point_C(1, i - par_n_TS - 1, k)
+				int2_all_Cell(4, N) = int2_Point_B(i + 1, j, k)
+				int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
+				int2_all_Cell(6, N) = int2_Point_C(1, i - par_n_TS - 2 , kk)
+				int2_all_Cell(7, N) = int2_Point_C(1, i - par_n_TS - 1, kk)
+				int2_all_Cell(8, N) = int2_Point_B(i + 1, j, kk)
+				
+				int2_Cell_center(:, N) = 0.0
+				do m = 1, 8
+					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+				end do
+				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+				
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
 	
 	end subroutine Int2_Initial
 	
+	subroutine Int2_Print_center()
+		implicit none
+		integer(4) :: i, j, k, N1, N2, N3
+		
+		open(1, file = 'Int2_center.txt')
+		
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_A(i, j, k) <= 0) CYCLE
+					write(1,*) int2_Cell_center(:, int2_Cell_A(i, j, k))
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_B(i, j, k) <= 0) CYCLE
+					write(1,*) int2_Cell_center(:, int2_Cell_B(i, j, k))
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_C(i, j, k) <= 0) CYCLE
+					write(1,*) int2_Cell_center(:, int2_Cell_C(i, j, k))
+				end do
+			end do
+		end do
+		
+		
+		close(1)
 	
+	end subroutine Int2_Print_center
+	
+	
+	subroutine Int2_Print_setka_2()
+	! печать двойственной сетки
+		implicit none
+		integer(4) :: i, j, k, N1, N2, N3, N
+		
+		N = size(int2_Cell_A(1, :, 1)) * size(int2_Cell_A(:, 1, 1)) + size(int2_Cell_B(1, :, 1)) * size(int2_Cell_B(:, 1, 1)) + &
+			size(int2_Cell_C(1, :, 1)) * size(int2_Cell_C(:, 1, 1))
+		
+		open(1, file = 'Int2_setka.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", 4 * N , ", F=FEPOINT, ET=LINESEG "
+		
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_A(i, j, k) <= 0) then
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+					else
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_A(i, j, k)))
+					end if
+					
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_B(i, j, k) <= 0) then
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+					else
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_B(i, j, k)))
+					end if
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, 1
+			do j = 1, N2
+				do i = 1, N1
+					if (int2_Cell_C(i, j, k) <= 0) then
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0
+					else
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_C(i, j, k)))
+					end if
+				end do
+			end do
+		end do
+		
+		! Connectivity list
+    do j = 0, N
+        write(1,*) 4 * j + 1, 4 * j + 2
+        write(1,*) 4 * j + 2, 4 * j + 3
+        write(1,*) 4 * j + 3, 4 * j + 4
+        write(1,*) 4 * j + 4, 4 * j + 1
+    end do
+		
+		
+		close(1)
+	
+	end subroutine Int2_Print_setka_2
+	
+
 	subroutine Int2_Print_point_plane()
 	
 	integer(4) :: i, j, k, N1, N2, N3
 	
 	open(1, file = 'Int2_print.txt')
 	
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
+	N1 = size(int2_Point_A(:, 1, 1))
+	N2 = size(int2_Point_A(1, :, 1))
+	N3 = size(int2_Point_A(1, 1, :))
 	
 	do k = 1, 1
 		do j = 1, N2
 			do i = 1, N1
-				if( int2_Cell_A(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Cell_A(i, j, k))
+				if( int2_Point_A(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_A(i, j, k))
 			end do
 		end do
 	end do
 	
-	write(1,*)
+	
+	N1 = size(int2_Point_B(:, 1, 1))
+	N2 = size(int2_Point_B(1, :, 1))
+	N3 = size(int2_Point_B(1, 1, :))
+	
+	do k = 1, 1
+		do j = 1, N2
+			do i = 1, N1
+				if( int2_Point_B(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_B(i, j, k))
+			end do
+		end do
+	end do
+	
+	
+	N1 = size(int2_Point_C(:, 1, 1))
+	N2 = size(int2_Point_C(1, :, 1))
+	N3 = size(int2_Point_C(1, 1, :))
+	
+	do k = 1, 1
+		do j = 1, N2
+			do i = 1, N1
+				if( int2_Point_C(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_C(i, j, k))
+			end do
+		end do
+	end do
+	
 	
 	close(1)
 	
@@ -109,13 +701,34 @@
 	
 	subroutine Int2_Set_Interpolate()
 	
-	allocate(int2_Cell_A( size(gl_Cell_A(:, 1, 1)) + 7, size(gl_Cell_A(1, :, 1)), size(gl_Cell_A(1, 1, :)) ))
-	allocate(int2_all_Cell(8, size(int2_Cell_A)))
-	allocate(int2_coord(3, size(gl_x)))
+	implicit none
+	integer :: n
+	! Выделения памяти и начальная инициализация
+	allocate(int2_Point_A( size(gl_Cell_A(:, 1, 1)) + 5, size(gl_Cell_A(1, :, 1)), size(gl_Cell_A(1, 1, :)) ))
+	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :)) ))
+	allocate( int2_Point_C( size(gl_Cell_C(:, 1, 1)) + 2, size(gl_Cell_C(1, :, 1)), size(gl_Cell_C(1, 1, :)) ) )
+	
+	n = size(gl_Cell_A(:, 1, 1)) + 3
+	n = n * size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(1, 1, :))
+	n = n + (size(gl_Cell_B(:, 1, 1)) + 1) * size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(1, 1, :))
+	n = n + size(gl_Cell_C(:, 1, 1)) * size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(1, 1, :))
+	
+	allocate(int2_all_Cell(8, n ))
+	allocate(int2_coord(3, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+	allocate(int2_Cell_center(3, n))
+	
+	allocate(int2_Cell_A(size(gl_Cell_A(:, 1, 1)) + 4, size(gl_Cell_A(1, :, 1)), size(gl_Cell_A(1, 1, :))))
+	allocate(int2_Cell_B(size(gl_Cell_B(:, 1, 1)) + 2, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :))))
+	allocate(int2_Cell_C(size(gl_Cell_C(:, 1, 1)) + 1, size(gl_Cell_C(1, :, 1)) - 1, size(gl_Cell_C(1, 1, :))))
 	
 	int2_coord = 0.0
 	int2_all_Cell = -100
-	int2_Cell_A = -100
+	int2_Point_A = -100
+	int2_Point_B = -100
+	int2_Cell_center(:, :) = 0.0
+	int2_Cell_A = 0
+	int2_Cell_B = 0
+	int2_Cell_C = 0
 	
 	end subroutine Int2_Set_Interpolate
 	

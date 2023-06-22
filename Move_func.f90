@@ -1746,23 +1746,25 @@
         b = p(:,4) - p(:,2)
 
         ! Нужно сохранить центр грани
-        gr_center = p(:, 1)
-        grc = 1
-        if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,2)
-        end if
-
-        if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,3)
-        end if
-
-        if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) &
-            .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,4)
-        end if
+		gr_center = p(:, 1) + p(:, 2) + p(:, 3) + p(:, 4)
+		grc = 4
+        !gr_center = p(:, 1)
+        !grc = 1
+        !if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,2)
+        !end if
+        !
+        !if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,3)
+        !end if
+        !
+        !if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) &
+        !    .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,4)
+        !end if
 
         gr_center = gr_center/grc
 

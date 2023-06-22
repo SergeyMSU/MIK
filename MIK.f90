@@ -1617,23 +1617,25 @@
         b = p(:,4) - p(:,2)
 
         ! Нужно сохранить центр грани
-        gr_center = p(:, 1)
-        grc = 1
-        if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,2)
-        end if
-
-        if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,3)
-        end if
-
-        if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) &
-            .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
-            grc = grc + 1
-            gr_center = gr_center + p(:,4)
-        end if
+		gr_center = p(:, 1) + p(:, 2) + p(:, 3) + p(:, 4)
+        grc = 4
+        !gr_center = p(:, 1)
+        !grc = 1
+        !if (gl_all_Gran(2, iter) /= gl_all_Gran(1, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,2)
+        !end if
+        !
+        !if (gl_all_Gran(3, iter) /= gl_all_Gran(2, iter) .and. gl_all_Gran(3, iter) /= gl_all_Gran(1, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,3)
+        !end if
+        !
+        !if (gl_all_Gran(4, iter) /= gl_all_Gran(1, iter) .and. gl_all_Gran(4, iter) /= gl_all_Gran(2, iter) &
+        !    .and. gl_all_Gran(4, iter) /= gl_all_Gran(3, iter)) then
+        !    grc = grc + 1
+        !    gr_center = gr_center + p(:,4)
+        !end if
 
         gr_center = gr_center/grc
 
@@ -6092,8 +6094,8 @@
 	
 	print*, "START PROGRAM"
 	
-	name_do = 204
-	name_posle = 205
+	name_do = 186! 205
+	name_posle = 999! 206
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
@@ -6171,8 +6173,8 @@
     !call Start_MGD_move()
 	!pause
 	
-	!call Set_Interpolate_main()
-	!!call Surface_setup()
+	 !call Set_Interpolate_main()
+	 !call Surface_setup()
  !   i = 1
 	!call Get_Cell_Interpolate( -226.83946549657_8, 97.1182680029345_8, -3.5212386335546_8, i) 
 	!call Dell_Interpolate()
@@ -6182,7 +6184,7 @@
 	
 	!PAUSE
 	
-    call CUDA_START_MGD_move()
+    !call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()       ! Проверим интерполяцию
 	
@@ -6235,9 +6237,12 @@
 	
 	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК _______________________________________________________________________________________
 	!pause
-	!call Int2_Set_Interpolate()
-	!call Int2_Initial()
-	!call Int2_Print_point_plane()
+	call Int2_Set_Interpolate()
+	call Int2_Initial()
+	call Int2_Print_point_plane()
+	call Int2_Print_center()
+	call Int2_Print_setka_2()
+	pause
 	
 	!call Set_Interpolate_main()
 	!call Save_interpolate_bin(186)
@@ -6304,5 +6309,5 @@
 	! 184 - до включения null_bn везде на контакте
 	! 186 - до изменения движения контакта в хвосте (до 15 )   ! Считаем последней рабочей версией
 	
-	! 200 - Новая сетка
+	! 200 - Новая сетка   203 до актвного движение контакта
 

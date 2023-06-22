@@ -520,14 +520,14 @@
 	! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 	r1 = sqrt(Bk(2)**2 + Bk(3)**2)
 			
-	!if (k > 1) then
-	!	yzel2 = gl_RAY_O(1, j, k - 1)
-	!else
-	!	yzel2 = gl_RAY_O(1, j, N3)
-	!end if
-	!Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-	!! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	!r2 = sqrt(Ck(2)**2 + Ck(3)**2)
+	if (k > 1) then
+		yzel2 = gl_RAY_O(1, j, k - 1)
+	else
+		yzel2 = gl_RAY_O(1, j, N3)
+	end if
+	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+	! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r2 = sqrt(Ck(2)**2 + Ck(3)**2)
 			
 	if (j > 1) then
 		yzel2 = gl_RAY_O(1, j - 1, k)
@@ -539,21 +539,21 @@
 	! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 	r3 = sqrt(Dk(2)**2 + Dk(3)**2)
 			
-	!if(k < N3) then
-	!	yzel2 = gl_RAY_O(1, j, k + 1)
-	!else
-	!	yzel2 = gl_RAY_O(1, j, 1)
-	!end if
-	!Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-	!! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	!r4 = sqrt(Ek(2)**2 + Ek(3)**2)
+	if(k < N3) then
+		yzel2 = gl_RAY_O(1, j, k + 1)
+	else
+		yzel2 = gl_RAY_O(1, j, 1)
+	end if
+	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+	! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+	r4 = sqrt(Ek(2)**2 + Ek(3)**2)
 	
 	!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
 	!dist = max(dist, 1.0_8)
 	
-	!rr = (r1 + r2 + r3 + r4)/4.0
+	rr = (r1 + r2 + r3 + r4)/4.0
 	
-	rr = (r1 + r3)/2.0
+	!rr = (r1 + r3)/2.0
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
