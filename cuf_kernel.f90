@@ -555,7 +555,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  20000  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  15000 * 7  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 300) == 0) then
 			local1 = time_step2
@@ -830,8 +830,8 @@ module MY_CUDA
 	!		dev_gl_Cell_par_MF = gl_Cell_par_MF
 	!end if
 	
-	if (.True. .and. mod(step, 6) == 0) then
-		do ijk = 1, 15  ! Несколько раз просчитываем внутреннюю область
+	if (.True. .and. mod(step, 10) == 0) then
+		do ijk = 1, 20  ! Несколько раз просчитываем внутреннюю область
 			dev_time_step_inner = 1000000.0
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 				write (*,*) 'Error Sinc start 18: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 

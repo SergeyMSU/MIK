@@ -6094,8 +6094,8 @@
 	
 	print*, "START PROGRAM"
 	
-	name_do = 186! 205
-	name_posle = 999! 206
+	name_do = 208! 186! 205
+	name_posle = 209! 999! 206
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
@@ -6184,7 +6184,7 @@
 	
 	!PAUSE
 	
-    !call CUDA_START_MGD_move()
+    call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()       ! Проверим интерполяцию
 	
@@ -6237,12 +6237,12 @@
 	
 	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК _______________________________________________________________________________________
 	!pause
-	call Int2_Set_Interpolate()
-	call Int2_Initial()
-	call Int2_Print_point_plane()
-	call Int2_Print_center()
-	call Int2_Print_setka_2()
-	pause
+	!call Int2_Set_Interpolate()
+	!call Int2_Initial()
+	!call Int2_Print_point_plane()
+	!call Int2_Print_center()
+	!call Int2_Print_setka_2()
+	!pause
 	
 	!call Set_Interpolate_main()
 	!call Save_interpolate_bin(186)
