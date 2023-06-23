@@ -78,6 +78,7 @@ module MY_CUDA
 	 real(8), device, allocatable :: dev_gl_Vx(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_Vy(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_Vz(:)   ! набор z-координат узлов сетки    !MOVE
+	 real(8), device, allocatable :: dev_gl_Vn(:)   ! набор z-координат узлов сетки    !MOVE
      integer(4), device, allocatable :: dev_gl_Point_num(:)   ! Сколько граней записали свою скорость движения в данный узел      !MOVE    
      real(8), device, allocatable :: dev_gl_x2(:, :)   ! (:, 2) набор x-координат узлов сетки     !MOVE
      real(8), device, allocatable :: dev_gl_y2(:, :)   ! (:, 2) набор y-координат узлов сетки     !MOVE
@@ -252,6 +253,7 @@ module MY_CUDA
 		 allocate(dev_gl_Vx(Npoint))
 		 allocate(dev_gl_Vy(Npoint))
 		 allocate(dev_gl_Vz(Npoint))
+		 allocate(dev_gl_Vn(Npoint))
 		 
 		 allocate(dev_gl_Point_num(Npoint))
 		 allocate(dev_gl_x2(Npoint, 2))
@@ -297,6 +299,7 @@ module MY_CUDA
 		dev_gl_Vx = 0.0
         dev_gl_Vy = 0.0
         dev_gl_Vz = 0.0
+		dev_gl_Vn = 0.0
         dev_gl_Point_num = 0
         dev_gl_x2(:, 1) = dev_gl_x
         dev_gl_x2(:, 2) = dev_gl_x
@@ -555,12 +558,13 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  15000 * 7  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  40000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 300) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
+		
 		
 		
 		
@@ -605,9 +609,6 @@ module MY_CUDA
 	call Cuda_Calc_move_BS<<<ceiling(real(Num)/256), 256>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
-	!dev_gl_Vx = 0.0
-	!dev_gl_Vy = 0.0
-	!dev_gl_Vz = 0.0
 	
 	
 	! Делаем три цикла поверхностного натяжения (по разным лучам, как на хосте) -------------------------------------------------------------------------
@@ -855,10 +856,11 @@ module MY_CUDA
 	dev_gl_Vx = 0.0
     dev_gl_Vy = 0.0
     dev_gl_Vz = 0.0
+	dev_gl_Vn = 0.0
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 20000) == 0 .or. step == 2000 .or. step == 10000 .or. step == 5000 .or. step == 15000) then
+	if (mod(step, 20000) == 0 .or. step == 1000 .or. step == 10000 .or. step == 2000 .or. step == 5000) then
 		print*, "PECHAT ", step
 		par_al1 = dev_par_al1
 		par_kk13 = dev_par_kk13

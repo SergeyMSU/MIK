@@ -139,10 +139,16 @@
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
+		
+		!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
+		
+		vel = 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.0001
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
+		
+		!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
+		
+		vel = 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.0001
 	end if
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -349,12 +355,18 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
-				vel(1) = 0.0
+				
+				!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
+				!vel(1) = 0.0
+				
+				vel = 0.00005 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
-				vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
-				vel(1) = 0.0
+				
+				!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
+				!vel(1) = 0.0
+		
+				vel = 0.00005 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
 			end if
 	
 	
@@ -474,14 +486,14 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, gl_Vn => dev_gl_Vn
 	use GEO_PARAM
 	use cudafor
 	
 	implicit none
 	integer, intent(in) :: now
 	
-	real(8) :: Time, dist,  r, rr, r1, r2, r3, r4, ddt
+	real(8) :: Time, dist,  r, rr, r1, r2, r3, r4, ddt, nd, nd2, kk
     real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
     integer :: i, j, k
 	
@@ -499,9 +511,9 @@
 	
 	if(k > N3 .or. j > N2) return
 	
-	if (k /= 1 .and. j == 1) then
-            return
-	end if
+	!if (k /= 1 .and. j == 1) then
+ !           return
+	!end if
 	
 	ddt = Time/0.000127
 			
@@ -532,8 +544,7 @@
 	if (j > 1) then
 		yzel2 = gl_RAY_O(1, j - 1, k)
 	else
-		return
-		!yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
+		yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
 	end if
 	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
 	! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
@@ -554,17 +565,30 @@
 	rr = (r1 + r2 + r3 + r4)/4.0
 	
 	!rr = (r1 + r3)/2.0
+	
+	
+	
 			
 	if (gl_Point_num(yzel) > 0) then
 		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
-		vel(1) = 0.0
+		
+		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
+		!vel(1) = 0.0
+		
+		vel = 0.00005 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
-		vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
-		vel(1) = 0.0
+		
+		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
+		!vel(1) = 0.0
+		
+		vel = 0.00005 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
 	end if
-			
+	
+	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
+	!nd = norm2(Ak)
+	!vel = 10.0 * gl_Vn * (Ak)/nd
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
@@ -1928,7 +1952,7 @@
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
 		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, norm2 => dev_norm2, gl_Vx => dev_gl_Vx, &
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, gl_Cell_center2 => dev_gl_Cell_center2
+		gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, gl_Cell_center2 => dev_gl_Cell_center2, gl_Vn => dev_gl_Vn
 	use GEO_PARAM
 	use cudafor
 	use cgod
@@ -2108,6 +2132,8 @@
             gl_Vx(yzel) = gl_Vx(yzel) + normal(1) * dsc
             gl_Vy(yzel) = gl_Vy(yzel) + normal(2) * dsc
             gl_Vz(yzel) = gl_Vz(yzel) + normal(3) * dsc
+			!qqq1(2:4) = qqq1(2:4) + qqq2(2:4)
+			!gl_Vn(yzel) = gl_Vn(yzel) + dabs(0.5 * norm2(qqq1(2:4)))
             gl_Point_num(yzel) = gl_Point_num(yzel) + 1
 			
 			call threadfence()                               ! Безопасный доступ к памяти

@@ -3621,11 +3621,11 @@
 	use Solvers
     implicit none
     integer :: step, now, now2, step2, min_sort, ijk, ijk2, min_sort2, N2, N3
-    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod, mincell
+    integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod, mincell, ss1, ss2
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: fluid1(5, 4), fluid2(5, 4)
-    real(8) :: dist, dsl, dsc, dsp, start_time, end_time
-    real(8) :: POTOK(9)
+    real(8) :: dist, dsl, dsc, dsp, start_time, end_time, rast(3), df1, df2, dff1, dff2, qqq11(9), qqq22(9)
+    real(8) :: POTOK(9), qqq1_TVD(9), qqq2_TVD(9)
     real(8) :: POTOK_MF(5)
     real(8) :: POTOK_MF_all(5, 4)
     real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc, sks, loc_time, loc_time2, rr, y, z
@@ -3727,26 +3727,8 @@
         !TT = 0.0
         ! Вычисляем новые скорости управляющих узлов
 		
-		!do ijk = 1, 8
-		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
-		!	print*, "posle ", gl_x2(gl_all_Cell(ijk, 200614), 2), gl_y2(gl_all_Cell(ijk, 200614), 2), gl_z2(gl_all_Cell(ijk, 200614), 2)
-		!end do
-		
-		!print*, "do = ", gl_Vx(40), gl_Vy(40), gl_Vz(40), gl_Point_num(40)
-		
         call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
 		
-		!print*, gl_Vx(40), gl_Vy(40), gl_Vz(40), gl_Point_num(40)
-		
-	 !   do ijk = 1, size(gl_TS(:))
-		!	write(*,*) ijk
-		!	if(gl_Point_num(gl_all_Gran(1, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(1, gl_TS(ijk)))
-		!	if(gl_Point_num(gl_all_Gran(2, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(2, gl_TS(ijk)))
-		!	if(gl_Point_num(gl_all_Gran(3, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(3, gl_TS(ijk)))
-		!	if(gl_Point_num(gl_all_Gran(4, gl_TS(ijk)))	/= 4) write(*,*) gl_Point_num(gl_all_Gran(4, gl_TS(ijk)))
-		!	write(*,*) "__"
-		!end do
-		!pause
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
         call Move_all(now, TT) 
@@ -3754,61 +3736,13 @@
         call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
 		!CYCLE
 		
-		!do ijk = 1, 8
-		!	print*, "do ", gl_x2(gl_all_Cell(ijk, 200614), 1), gl_y2(gl_all_Cell(ijk, 200614), 1), gl_z2(gl_all_Cell(ijk, 200614), 1)
-		!	print*, "posle ", gl_x2(gl_all_Cell(ijk, 200614), 2), gl_y2(gl_all_Cell(ijk, 200614), 2), gl_z2(gl_all_Cell(ijk, 200614), 2)
-		!    print*, "velocity ", gl_Vx(gl_all_Cell(ijk, 200614)), gl_Vy(gl_all_Cell(ijk, 200614)), gl_Vz(gl_all_Cell(ijk, 200614))
-		!    ijk2 = gl_all_Cell(ijk, 200614)
-		!end do
-		
-		
-		!do k = 1, size(gl_RAY_E(1, 1, :))
-		!	do j = 1, size(gl_RAY_E(1, :, 1))
-		!	    do i = 1, size(gl_RAY_E(:, 1, 1))
-		!	        if(ijk2 == gl_RAY_E(i, j, k)) then
-		!				print*, "YES, eto E! ", i, j, k
-		!			end if
-		!        end do
-		!    end do
-		!end do
-		
-		!pause
-		!CYCLE
-		
-	!	print*, gl_Cell_Volume2(1, now2)
-	!print*, gl_Cell_Volume2(10, now2)
-	!print*, gl_Cell_Volume2(100, now2)
-	!pause
-		
-	    !print*, gl_Gran_center2(:, 30, now2)
-     !   print*, gl_Gran_center2(:, 90, now2)
-     !   print*, gl_Gran_center2(:, 830, now2)
-     !   print*, "_______"
-     !   print*, gl_Gran_square2(10, now2)
-     !   print*, gl_Gran_square2(50, now2)
-     !   print*, gl_Gran_square2(300, now2)
-     !   print*, "_______"
-     !   print*, gl_Cell_Volume2(10, now2)
-     !   print*, gl_Cell_Volume2(50, now2)
-     !   print*, gl_Cell_Volume2(300, now2)
-     !   print*, "_______"
-     !   print*, gl_Gran_normal2(:, 10, now2)
-     !   print*, gl_Gran_normal2(:, 50, now2)
-     !   print*, gl_Gran_normal2(:, 300, now2)
-     !   print*, "_______"
-        
-        !ngran = size(gl_all_Gran_inner(:))
-        !ncell = size(gl_all_Cell_inner(:))
-        
-	    
-
         ! Теперь по основным граням
         ngran = size(gl_all_Gran(1, :))
         ncell = size(gl_all_Cell(1, :))
 		
 		!$omp parallel
         
-	 !$omp do private(metod, POTOK, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
+	 !$omp do private(metod, POTOK, ss1, ss2, qqq1_TVD, qqq2_TVD, rast, df1, df2, dff1, dff2, qqq11, qqq22, s1, s2, qqq1, qqq2, dist, dsl, dsp, dsc, rad1, rad2, aa, bb, cc, fluid1, fluid2, POTOK_MF, wc, null_bn, loc_time, loc_time2, min_sort2 ) 
 	  !   !$omp & reduction(min:time, min_sort, mincell)
         do gr = 1, ngran
 			metod = 2
@@ -3891,8 +3825,11 @@
 						qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, qqq1(6), qqq1(7), qqq1(8), 100.0_8/)
 					end if
 					
-					qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
-                    fluid2(:, 1) = fluid1(:, 1)
+					!qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+                    qqq2 = (/1.0_8, qqq1(2), qqq1(3), qqq1(4), 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					if(qqq2(3) < 0.0) qqq2(3) = 0.0
+					
+					fluid2(:, 1) = fluid1(:, 1)
                     fluid2(:, 2) = fluid1(:, 2)
                     fluid2(:, 3) = fluid1(:, 3)
                     fluid2(:, 4) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 0.5_8/)
@@ -3906,15 +3843,51 @@
                     end if
 
                 end if
-            end if
+			end if
+			
+			if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
+		        if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
+			        ss1 = gl_Gran_neighbour_TVD(1, gr)
+			        ss2 = gl_Gran_neighbour_TVD(2, gr)
+			        if (ss1 /= 0 .and. ss2 /= 0) then
+				        rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+				        df1 = norm2(rast)
+				        rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				        df2 = norm2(rast)
+				        rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				        dff1 = norm2(rast)
+				        rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				        dff2 = norm2(rast)
+				        qqq11 = gl_Cell_par(:, ss1)
+				        qqq22 = gl_Cell_par(:, ss2)
+				
+				        do i = 1, 9
+					        qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					        qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				        end do
+				
+				        qqq1 = qqq1_TVD
+				        qqq2 = qqq2_TVD
+			        end if
+		        end if
+			end if
+			
+			! Вычитаем для снесённых значений нормальною компоненту магнитного поля
+	        !if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
+	        if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		        qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+		        qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+
+	end if
             
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
+		
 			
 			
-			!if(gl_Gran_type(gr) == 1) metod = 2
+			metod = gl_Gran_scheme(gr)
 			
-			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !3
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3
 			
 			!if(gl_Gran_type(gr) == 2) null_bn = .True.
 			
@@ -3984,7 +3957,7 @@
 			
             !call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
             !    wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
-            loc_time2 = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+            loc_time2 = 0.99 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 				loc_time = loc_time2
@@ -4003,7 +3976,7 @@
             call chlld_gd(0, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
 			
-			loc_time2 = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			loc_time2 = 0.99 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 			    loc_time = loc_time2
@@ -4018,7 +3991,7 @@
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
             
 			
-			loc_time2 = 1.0! 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			loc_time2 = 0.99 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 			    loc_time = loc_time2
@@ -4031,7 +4004,7 @@
             call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
             
-			loc_time2 = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			loc_time2 = 0.99 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 			    loc_time = loc_time2
@@ -4045,7 +4018,7 @@
             call chlld_gd(1, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
             
-			loc_time2 = 0.9 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
+			loc_time2 = 0.99 * dist/( max(dabs(dsl), dabs(dsp)) + dabs(wc))
 			
 			if(loc_time2 < loc_time) then
 			    loc_time = loc_time2
@@ -4076,7 +4049,7 @@
 			
 			
 			! Теперь сравниваем с глобальным временем
-			if (gl_Cell_center2(1, s1, now) > -100.0) then
+			if (gl_Cell_center2(1, s1, now) > -100000.0) then
 			    if(loc_time < time) then
 			        !$omp critical
                     if(loc_time < time) then
@@ -4147,7 +4120,7 @@
                 !qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
                 !qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
 
-                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 2.3) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
                     zone = 1
                 else
                     zone = 2
@@ -4262,7 +4235,7 @@
                 ro3 = fluid1(1, i)* Volume / Volume2 - TT * POTOK_MF_all(1, i) / Volume2 + TT * SOURSE(1, i + 1)
                 if (ro3 <= 0.0_8) then
                     print*, "Ro < 0  in sort ", i,  ro3, fluid1(1, i), "|||", gl_Cell_center(:, gr)
-					ro3 = 0.05
+					ro3 = 0.01
                     !print*, "gl_Cell_center(:, gr)", gl_Cell_center(:, gr)
                     !print*, "gl_Cell_info(gr)", gl_Cell_info(gr)
                     !print*, fluid1(:, i)
@@ -6094,8 +6067,11 @@
 	
 	print*, "START PROGRAM"
 	
-	name_do = 208! 186! 205
-	name_posle = 209! 999! 206
+	!name_do = 186
+	!name_posle = 999
+	
+	name_do = 213
+	name_posle = 214
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
@@ -6135,7 +6111,7 @@
     !call Start_GD_2(100000)
     !call Initial_conditions()
 
-    print*, "Size = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
+    print*, "Size inner gran and cell = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
     call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
     call Find_TVD_sosed()

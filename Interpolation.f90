@@ -29,6 +29,7 @@
 	integer(4), allocatable :: int2_Cell_B(:, :, :)
 	integer(4), allocatable :: int2_Cell_C(:, :, :)
 	real(8), allocatable :: int2_Cell_center(:, :)   ! Центр ячеек (3, :) 
+	integer(4), allocatable :: int2_all_neighbours(:, :)  ! (6, :)  по 6 соседей на каждую ячейки
 	
 	integer(4), allocatable :: int2_Point_A(:, :, :)   ! Набор A-точек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
 	! Это точки - центры ячеек основной сетки
@@ -95,7 +96,7 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = 1, par_n_TS - 1
-				int2_Point_B(i + 1, j, k) = gl_Cell_B(i, j, k)
+				int2_Point_B(i + 1, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 			end do
 		end do
@@ -104,7 +105,7 @@
 	do k = 1, N3
 		do j = 1, N2
 			do i = par_n_TS, N1
-				int2_Point_B(i + 3, j, k) = gl_Cell_B(i, j, k)
+				int2_Point_B(i + 3, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 			end do
 		end do
@@ -145,7 +146,7 @@
 	end do
 	
 	
-	! Заполняем особые точки
+	! Заполняем особые точки (поверхности разрывов)
 	N = size(gl_Cell_C) + size(gl_Cell_A) + size(gl_Cell_B)
 	int2_Point_A(1, :, :) = N + 1
 	int2_Point_B(1, :, :) = N + 1
@@ -188,11 +189,11 @@
 	
 	do k = 1, N3
 		do j = 1, N2
-			int2_Point_B(par_n_TS + 1, j, k) = N + 1
+			int2_Point_B(par_n_TS + 1, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 			N = N + 1
 			
-			int2_Point_B(par_n_TS + 2, j, k) = N + 1
+			int2_Point_B(par_n_TS + 2, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 			N = N + 1 
 		end do
@@ -220,10 +221,21 @@
 	N2 = size(int2_Point_A(1, :, 1))
 	N3 = size(int2_Point_A(1, 1, :))
 	
-	
+	!A
 	do i = 2, N1
 		int2_Point_A(i, 1, :) = N + 1
 		int2_coord(:, N + 1) = (/ int2_coord(1, int2_Point_A(i, 2, 1)), 0.0_8, 0.0_8 /)
+		N = N + 1
+	end do
+	
+	N1 = size(int2_Point_B(:, 1, 1))
+	N2 = size(int2_Point_B(1, :, 1))
+	N3 = size(int2_Point_B(1, 1, :))
+	
+	!B
+	do i = 2, N1
+		int2_Point_B(i, 1, :) = N + 1
+		int2_coord(:, N + 1) = (/ int2_coord(1, int2_Point_B(i, 2, 1)), 0.0_8, 0.0_8 /)
 		N = N + 1
 	end do
 	
@@ -288,16 +300,17 @@
 				
 				int2_Cell_B(i, j, k) = N
 				int2_all_Cell(1, N) = int2_Point_B(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_B(i + 1, j, k)
+				int2_all_Cell(4, N) = int2_Point_B(i + 1, j, k)
 				int2_all_Cell(3, N) = int2_Point_B(i + 1, j + 1, k)
-				int2_all_Cell(4, N) = int2_Point_B(i, j + 1, k)
+				int2_all_Cell(2, N) = int2_Point_B(i, j + 1, k)
 				int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_B(i + 1, j, kk)
+				int2_all_Cell(8, N) = int2_Point_B(i + 1, j, kk)
 				int2_all_Cell(7, N) = int2_Point_B(i + 1, j + 1, kk)
-				int2_all_Cell(8, N) = int2_Point_B(i, j + 1, kk)
+				int2_all_Cell(6, N) = int2_Point_B(i, j + 1, kk)
 				
 				int2_Cell_center(:, N) = 0.0
 				do m = 1, 8
+					ijk = int2_all_Cell(m, N)
 					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
 				end do
 				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
@@ -322,7 +335,7 @@
 				
 				if (i == par_n_HP - par_n_TS + 1) CYCLE
 				
-				int2_Cell_C(i, j, k) = N
+				int2_Cell_C(i + 1, j, k) = N
 				int2_all_Cell(1, N) = int2_Point_C(i, j, k)
 				int2_all_Cell(2, N) = int2_Point_C(i + 1, j, k)
 				int2_all_Cell(3, N) = int2_Point_C(i + 1, j + 1, k)
@@ -345,7 +358,7 @@
 	
 	!Залатываем дырки между группами !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
-	! A - точки 
+	! AB  - точки 
 	N1 = size(int2_Point_A(:, 1, 1))
 	N2 = size(int2_Point_A(1, :, 1))
 	N3 = size(int2_Point_A(1, 1, :))
@@ -382,7 +395,7 @@
 		end do
 	end do
 	
-	! A - точки 
+	! AC - точки 
 	N1 = size(int2_Point_A(:, 1, 1))
 	N2 = size(int2_Point_A(1, :, 1))
 	N3 = size(int2_Point_A(1, 1, :))
@@ -393,7 +406,7 @@
 		if (kk > N3) kk = 1
 		
 		do j = N2, N2
-			do i = par_n_TS + 3, N1 - 1
+			do i = par_n_TS + 2, N1 - 1
 				
 				if (i == par_n_TS + 1) CYCLE
 				if (i == par_n_HP + 3) CYCLE
@@ -402,11 +415,19 @@
 				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
 				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
 				int2_all_Cell(3, N) = int2_Point_C(i - par_n_TS - 1, 1, k)
-				int2_all_Cell(4, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, k)
+				if (i == par_n_TS + 2) then
+					int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+				else
+					int2_all_Cell(4, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, k)
+				end if
 				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
 				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
 				int2_all_Cell(7, N) = int2_Point_C(i - par_n_TS - 1, 1, kk)
-				int2_all_Cell(8, N) = int2_Point_C(i - 1 - par_n_TS - 1, 1, kk)
+				if (i == par_n_TS + 2) then
+					int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+				else
+					int2_all_Cell(8, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, kk)
+				end if
 				
 				int2_Cell_center(:, N) = 0.0
 				do m = 1, 8
@@ -424,34 +445,34 @@
 	N3 = size(int2_Point_A(1, 1, :))
 	
 	! Около тройной точки
-	do k = 1, N3
-		
-		kk = k + 1
-		if (kk > N3) kk = 1
-		
-		do j = N2, N2
-			do i = par_n_TS + 2, par_n_TS + 2
-				
-				int2_Cell_A(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_C(1, 1, k)
-				int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_C(1, 1, kk)
-				int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
-				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
-			end do
-		end do
-	end do
+	!do k = 1, N3
+	!	
+	!	kk = k + 1
+	!	if (kk > N3) kk = 1
+	!	
+	!	do j = N2, N2
+	!		do i = par_n_TS + 2, par_n_TS + 2
+	!			
+	!			int2_Cell_A(i, j, k) = N
+	!			int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+	!			int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+	!			int2_all_Cell(3, N) = int2_Point_C(1, 1, k)
+	!			int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+	!			int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+	!			int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+	!			int2_all_Cell(7, N) = int2_Point_C(1, 1, kk)
+	!			int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+	!			
+	!			int2_Cell_center(:, N) = 0.0
+	!			do m = 1, 8
+	!				int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+	!			end do
+	!			int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+	!			
+	!			N = N + 1
+	!		end do
+	!	end do
+	!end do
 	
 	do k = 1, N3
 		
@@ -484,27 +505,27 @@
 	
 	! Между B и C точками
 	
-	N1 = size(int2_Point_B(:, 1, 1))
-	N2 = size(int2_Point_B(1, :, 1))
-	N3 = size(int2_Point_B(1, 1, :))
+	N1 = size(int2_Point_C(:, 1, 1))
+	N2 = size(int2_Point_C(1, :, 1))
+	N3 = size(int2_Point_C(1, 1, :))
 	
 	do k = 1, N3
 		
 		kk = k + 1
 		if (kk > N3) kk = 1
 		
-		do j = N2, N2
-			do i = par_n_TS + 3, N1 - 1
+		do j = 1, N2 - 1
+			do i = 1, 1
 				
-				int2_Cell_B(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_B(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_C(1, i - par_n_TS - 2 , k)
-				int2_all_Cell(3, N) = int2_Point_C(1, i - par_n_TS - 1, k)
-				int2_all_Cell(4, N) = int2_Point_B(i + 1, j, k)
-				int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_C(1, i - par_n_TS - 2 , kk)
-				int2_all_Cell(7, N) = int2_Point_C(1, i - par_n_TS - 1, kk)
-				int2_all_Cell(8, N) = int2_Point_B(i + 1, j, kk)
+				int2_Cell_C(i, j, k) = N
+				int2_all_Cell(1, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(2, N) = int2_Point_C(i, j , k)
+				int2_all_Cell(3, N) = int2_Point_C(i, j + 1, k)
+				int2_all_Cell(4, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), k)
+				int2_all_Cell(5, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), kk)
+				int2_all_Cell(6, N) = int2_Point_C(i, j , kk)
+				int2_all_Cell(7, N) = int2_Point_C(i, j + 1, kk)
+				int2_all_Cell(8, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), kk)
 				
 				int2_Cell_center(:, N) = 0.0
 				do m = 1, 8
@@ -517,7 +538,9 @@
 		end do
 	end do
 	
-	print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
+	!print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
+	
+	! Прописываем связи и соседей всем ячейкам
 	
 	end subroutine Int2_Initial
 	
@@ -581,7 +604,7 @@
 			size(int2_Cell_C(1, :, 1)) * size(int2_Cell_C(:, 1, 1))
 		
 		open(1, file = 'Int2_setka.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", 4 * N , ", F=FEPOINT, ET=LINESEG "
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Q'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", 4 * N , ", F=FEPOINT, ET=LINESEG "
 		
 		N1 = size(int2_Cell_A(:, 1, 1))
 		N2 = size(int2_Cell_A(1, :, 1))
@@ -591,15 +614,15 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_A(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0, 1
+						write(1,*) 0.0, 0.0, 0.0, 1
+						write(1,*) 0.0, 0.0, 0.0, 1
+						write(1,*) 0.0, 0.0, 0.0, 1
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_A(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_A(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_A(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_A(i, j, k))), 1
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_A(i, j, k))), 1
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_A(i, j, k))), 1
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_A(i, j, k))), 1
 					end if
 					
 				end do
@@ -614,15 +637,15 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_B(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0, 2
+						write(1,*) 0.0, 0.0, 0.0, 2
+						write(1,*) 0.0, 0.0, 0.0, 2
+						write(1,*) 0.0, 0.0, 0.0, 2
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_B(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_B(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_B(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_B(i, j, k))), 2
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_B(i, j, k))), 2
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_B(i, j, k))), 2
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_B(i, j, k))), 2
 					end if
 				end do
 			end do
@@ -636,15 +659,15 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_C(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
-						write(1,*) 0.0, 0.0, 0.0
+						write(1,*) 0.0, 0.0, 0.0, 3
+						write(1,*) 0.0, 0.0, 0.0, 3
+						write(1,*) 0.0, 0.0, 0.0, 3
+						write(1,*) 0.0, 0.0, 0.0, 3
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_C(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_C(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_C(i, j, k)))
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_C(i, j, k))), 3
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_C(i, j, k))), 3
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_C(i, j, k))), 3
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_C(i, j, k))), 3
 					end if
 				end do
 			end do
@@ -669,6 +692,7 @@
 	integer(4) :: i, j, k, N1, N2, N3
 	
 	open(1, file = 'Int2_print.txt')
+	write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z' , 'T' ZONE T= 'HP'"
 	
 	N1 = size(int2_Point_A(:, 1, 1))
 	N2 = size(int2_Point_A(1, :, 1))
@@ -677,12 +701,12 @@
 	do k = 1, 1
 		do j = 1, N2
 			do i = 1, N1
-				if( int2_Point_A(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_A(i, j, k))
+				if( int2_Point_A(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_A(i, j, k)), 1
 			end do
 		end do
 	end do
 	
-	
+	!
 	N1 = size(int2_Point_B(:, 1, 1))
 	N2 = size(int2_Point_B(1, :, 1))
 	N3 = size(int2_Point_B(1, 1, :))
@@ -690,12 +714,12 @@
 	do k = 1, 1
 		do j = 1, N2
 			do i = 1, N1
-				if( int2_Point_B(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_B(i, j, k))
+				if( int2_Point_B(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_B(i, j, k)), 2
 			end do
 		end do
 	end do
-	
-	
+	!
+	!
 	N1 = size(int2_Point_C(:, 1, 1))
 	N2 = size(int2_Point_C(1, :, 1))
 	N3 = size(int2_Point_C(1, 1, :))
@@ -703,7 +727,7 @@
 	do k = 1, 1
 		do j = 1, N2
 			do i = 1, N1
-				if( int2_Point_C(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_C(i, j, k))
+				if( int2_Point_C(i, j, k) > 0 ) write(1,*) int2_coord(:, int2_Point_C(i, j, k)), 3
 			end do
 		end do
 	end do
@@ -720,21 +744,24 @@
 	integer :: n
 	! Выделения памяти и начальная инициализация
 	allocate(int2_Point_A( size(gl_Cell_A(:, 1, 1)) + 5, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :)) ))
-	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :)) ))
+	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3, size(gl_Cell_B(1, :, 1)) + 1, size(gl_Cell_B(1, 1, :)) ))
 	allocate( int2_Point_C( size(gl_Cell_C(:, 1, 1)) + 2, size(gl_Cell_C(1, :, 1)), size(gl_Cell_C(1, 1, :)) ) )
 	
-	n = size(gl_Cell_A(:, 1, 1)) + 3
-	n = n * size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(1, 1, :))
+	n = size(gl_Cell_A(:, 1, 1)) + 2
+	n = n * (size(gl_Cell_A(1, :, 1)) + 1) * size(gl_Cell_A(1, 1, :))
 	n = n + (size(gl_Cell_B(:, 1, 1)) + 1) * size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(1, 1, :))
-	n = n + size(gl_Cell_C(:, 1, 1)) * size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(1, 1, :))
+	n = n + (size(gl_Cell_C(:, 1, 1)) + 1) * (size(gl_Cell_C(1, :, 1)) - 1) * size(gl_Cell_C(1, 1, :))
+	n = n + size(int2_Point_A(1, 1, :))
 	
-	allocate(int2_all_Cell(8, n ))
+	allocate(int2_all_Cell(8, n ))  ! Добавили ячейку около тройной точки
 	allocate(int2_coord(3, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
 	allocate(int2_Cell_center(3, n))
 	
 	allocate(int2_Cell_A(size(gl_Cell_A(:, 1, 1)) + 4, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :))))
 	allocate(int2_Cell_B(size(gl_Cell_B(:, 1, 1)) + 2, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :))))
-	allocate(int2_Cell_C(size(gl_Cell_C(:, 1, 1)) + 1, size(gl_Cell_C(1, :, 1)) - 1, size(gl_Cell_C(1, 1, :))))
+	allocate(int2_Cell_C(size(gl_Cell_C(:, 1, 1)) + 2, size(gl_Cell_C(1, :, 1)) - 1, size(gl_Cell_C(1, 1, :))))
+	
+	allocate(int2_all_neighbours(6, size(int2_all_Cell(1, :)) ))
 	
 	int2_coord = 0.0
 	int2_all_Cell = -100
@@ -744,6 +771,7 @@
 	int2_Cell_A = 0
 	int2_Cell_B = 0
 	int2_Cell_C = 0
+	int2_all_neighbours = 0 
 	
 	end subroutine Int2_Set_Interpolate
 	
