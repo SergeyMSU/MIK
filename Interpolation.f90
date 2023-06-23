@@ -28,6 +28,7 @@
 	integer(4), allocatable :: int2_Cell_A(:, :, :)
 	integer(4), allocatable :: int2_Cell_B(:, :, :)
 	integer(4), allocatable :: int2_Cell_C(:, :, :)
+	
 	real(8), allocatable :: int2_Cell_center(:, :)   ! ÷ентр €чеек (3, :) 
 	integer(4), allocatable :: int2_all_neighbours(:, :)  ! (6, :)  по 6 соседей на каждую €чейки
 	
@@ -40,7 +41,7 @@
 	
 	subroutine Int2_Initial()
 	
-	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m
+	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj
 	! «аполн€ем интерпол€ционную сетку из основной
 	int2_Point_A(1, :, :) = -1  ! ÷ентральна€ точка
 	int2_Point_B(1, :, :) = -1  ! ÷ентральна€ точка
@@ -541,6 +542,186 @@
 	!print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
 	
 	! ѕрописываем св€зи и соседей всем €чейкам
+	
+	! св€зи ƒл€ A - €чеек ---------------------------------------------------------------------------------------------------
+	N1 = size(int2_Cell_A(:, 1, 1))
+	N2 = size(int2_Cell_A(1, :, 1))
+	N3 = size(int2_Cell_A(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, N1 - 1
+				int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 2, N1
+				int2_all_neighbours(2, int2_Cell_A(i, j, k)) = int2_Cell_A(i - 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2 - 1
+			do i = 1, N1
+				int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j + 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 2, N2
+			do i = 1, N1
+				int2_all_neighbours(4, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j - 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(5, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k - 1
+		if (kk < 1) kk = N3
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(6, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
+			end do
+		end do
+	end do
+	
+	! св€зи ƒл€ B - €чеек ---------------------------------------------------------------------------------------------------
+	N1 = size(int2_Cell_B(:, 1, 1))
+	N2 = size(int2_Cell_B(1, :, 1))
+	N3 = size(int2_Cell_B(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, N1 - 1
+				int2_all_neighbours(1, int2_Cell_B(i, j, k)) = int2_Cell_B(i + 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 2, N1
+				int2_all_neighbours(2, int2_Cell_B(i, j, k)) = int2_Cell_B(i - 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2 - 1
+			do i = 1, N1
+				int2_all_neighbours(3, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j + 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 2, N2
+			do i = 1, N1
+				int2_all_neighbours(4, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j - 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(5, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k - 1
+		if (kk < 1) kk = N3
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(6, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
+			end do
+		end do
+	end do
+	
+	! св€зи ƒл€ C - €чеек ---------------------------------------------------------------------------------------------------
+	N1 = size(int2_Cell_C(:, 1, 1))
+	N2 = size(int2_Cell_C(1, :, 1))
+	N3 = size(int2_Cell_C(1, 1, :))
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 1, N1 - 1
+				int2_all_neighbours(1, int2_Cell_C(i, j, k)) = int2_Cell_C(i + 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = 2, N1
+				int2_all_neighbours(2, int2_Cell_C(i, j, k)) = int2_Cell_C(i - 1, j, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 1, N2 - 1
+			do i = 1, N1
+				int2_all_neighbours(3, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j + 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		do j = 2, N2
+			do i = 1, N1
+				int2_all_neighbours(4, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j - 1, k)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k + 1
+		if (kk > N3) kk = 1
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(5, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
+			end do
+		end do
+	end do
+	
+	do k = 1, N3
+		kk = k - 1
+		if (kk < 1) kk = N3
+		
+		do j = 1, N2
+			do i = 1, N1
+				int2_all_neighbours(6, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
+			end do
+		end do
+	end do
+	
+	! “еперь нужно отдельно прописать св€зи на стыках групп + на поверхност€х разрыва + в тройной точке
+	
 	
 	end subroutine Int2_Initial
 	
