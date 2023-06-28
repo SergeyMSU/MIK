@@ -4798,7 +4798,7 @@
     M1 = size(gl_Cell_C(:, 1, 1))
 	
 	open(1, file = 'Print_Contact_3D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) + 4 * N3 , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1) + N3, ", F=FEPOINT, ET=quadrilateral "
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Vn_1'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) + 4 * N3 , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1) + N3, ", F=FEPOINT, ET=quadrilateral "
 	
 	
 	do k = 1, N3
@@ -6067,11 +6067,11 @@
 	
 	print*, "START PROGRAM"
 	
-	!name_do = 186
-	!name_posle = 999
-	
-	name_do = 213
-	name_posle = 214
+	name_do = 186
+	name_posle = 999
+	   
+    !name_do = 224
+    !name_posle = 225
 	
 	!@cuf call CUDA_info()
 	!call EXIT()
@@ -6160,7 +6160,7 @@
 	
 	!PAUSE
 	
-    call CUDA_START_MGD_move()
+    !call CUDA_START_MGD_move()
 	
 	!call Set_Interpolate_main()       ! Проверим интерполяцию
 	
@@ -6213,13 +6213,24 @@
 	
 	! ИНТЕРПОЛЯЦИОННЫЙ БЛОК _______________________________________________________________________________________
 	!pause
-	!call Int2_Set_Interpolate()
-	!call Int2_Initial()
-	!call Int2_Print_point_plane()
-	!call Int2_Print_center()
-	!call Int2_Print_setka_2()
-	!pause
+	call Int2_Set_Interpolate()
+	call Int2_Initial()
+	call Int2_Print_point_plane()
+	call Int2_Print_center()
+	call Int2_Print_setka_2()
+	call Int2_Print_sosed()
+	call Int2_Print_my()
+	call Int2_Print_tetraedron(1307808 + 1)
+	call Int2_Print_tetraedron(1307808 + 4)
+	call Int2_Print_tetraedron(1307808 + 6)
+	call Int2_Print_tetraedron(1294272 + 1)
+	call Int2_Print_tetraedron(1294272 + 2)
+	call Int2_Print_tetraedron(1294272 + 3)
+	call Int2_Print_tetraedron(1294272 + 4)
+	call Int2_Print_tetraedron(1294272 + 5)
+	call Int2_Print_tetraedron(1294272 + 6)
 	
+	pause
 	!call Set_Interpolate_main()
 	!call Save_interpolate_bin(186)
 	
