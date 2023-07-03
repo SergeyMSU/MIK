@@ -6221,14 +6221,10 @@
 	call Int2_Print_sosed()
 	call Int2_Print_my()
 	call Int2_Print_tetraedron(1307808 + 1)
-	call Int2_Print_tetraedron(1307808 + 4)
-	call Int2_Print_tetraedron(1307808 + 6)
-	call Int2_Print_tetraedron(1294272 + 1)
-	call Int2_Print_tetraedron(1294272 + 2)
-	call Int2_Print_tetraedron(1294272 + 3)
-	call Int2_Print_tetraedron(1294272 + 4)
-	call Int2_Print_tetraedron(1294272 + 5)
-	call Int2_Print_tetraedron(1294272 + 6)
+	
+	i = 3
+	call Get_tetraedron(10.0_8, 10.0_8, 10.0_8, i)
+	print*, "Tetraedron = ", i
 	
 	pause
 	!call Set_Interpolate_main()

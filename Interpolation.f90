@@ -22,6 +22,9 @@
 	
 	real(8), allocatable :: int2_coord(:, :)    ! (3, :) набор координат двойственной сетки (центры ячеек сетки 1 + дополнительные)
 	
+	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
+    !real(8), allocatable :: int2_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
+	
 	
 	
     integer(4), allocatable :: int2_all_Cell(:, :)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
@@ -41,14 +44,16 @@
 	integer(4), allocatable :: int2_all_tetraendron(:, :)  ! (4 грани, :)
 	integer(4), allocatable :: int2_gran_point(:, :)  ! (3 точки, :)
 	integer(4), allocatable :: int2_gran_sosed(:)  ! (:)  номер тетраэдра, соседнего с этой гранью
-	real(8), allocatable :: int2_gran_normal(:, :)  ! (3 точки, :)
+	!real(8), allocatable :: int2_gran_normal(:, :)  ! (3 точки, :)
+	real(8), allocatable :: int2_plane_tetraendron(:, :, :)  ! (4 числа задают плоскость, 4 грани, : тетраэдров)
+	! A x + B y + C z + D = 0  при этом ABC - внешняя нормаль к тетраэдру (если > 0, то точка вне тетраэдра)
 	
 	contains
 	
 	subroutine Int2_Initial()
 	
 	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj, s1, s2, ss1, ss2, l
-	real(8) :: a1(3), a2(3), a3(3), b1(3), b2(3), b3(3)
+	real(8) :: a1(3), a2(3), a3(3), b1(3), b2(3), b3(3), aa(3), bb(3), normal(3)
 	! Заполняем интерполяционную сетку из основной
 	int2_Point_A(1, :, :) = -1  ! Центральная точка
 	int2_Point_B(1, :, :) = -1  ! Центральная точка
@@ -63,6 +68,8 @@
 			do i = 1, par_n_TS - 1
 				int2_Point_A(i + 1, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+				
 			end do
 		end do
 	end do
@@ -72,6 +79,8 @@
 			do i = par_n_TS, par_n_HP - 1
 				int2_Point_A(i + 3, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+					
 			end do
 		end do
 	end do
@@ -81,6 +90,7 @@
 			do i = par_n_HP, par_n_BS - 1
 				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 			end do
 		end do
 	end do
@@ -90,6 +100,7 @@
 			do i = par_n_BS, par_n_END - 1
 				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 			end do
 		end do
 	end do
@@ -106,6 +117,7 @@
 			do i = 1, par_n_TS - 1
 				int2_Point_B(i + 1, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
 			end do
 		end do
 	end do
@@ -115,6 +127,7 @@
 			do i = par_n_TS, N1
 				int2_Point_B(i + 3, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
 			end do
 		end do
 	end do
@@ -131,6 +144,7 @@
 				int2_Point_C(i, j, k) = gl_Cell_C(i, j, k)
 				ijk = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 			end do
 		end do
 	end do
@@ -140,6 +154,7 @@
 			do i = par_n_HP - par_n_TS + 1, par_n_BS - par_n_TS
 				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 			end do
 		end do
 	end do
@@ -149,6 +164,7 @@
 			do i = par_n_BS - par_n_TS + 1, par_n_END - par_n_TS
 				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 			end do
 		end do
 	end do
@@ -159,6 +175,7 @@
 	int2_Point_A(1, :, :) = N + 1
 	int2_Point_B(1, :, :) = N + 1
 	int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
+	int2_Cell_par(:, N + 1) = 0.0
 	N = N + 1
 	
 	N1 = size(gl_Cell_A(:, 1, 1))
@@ -170,10 +187,12 @@
 		do j = 1, N2
 			int2_Point_A(par_n_TS + 1, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_A(par_n_TS + 2, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS, j, k) )
 			N = N + 1
 		end do
 	end do
@@ -182,10 +201,12 @@
 		do j = 1, N2
 			int2_Point_A(par_n_HP + 3, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_A(par_n_HP + 4, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP, j, k) )
 			N = N + 1
 		end do
 	end do
@@ -199,10 +220,12 @@
 		do j = 1, N2
 			int2_Point_B(par_n_TS + 1, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_B(par_n_TS + 2, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS, j, k) )
 			N = N + 1 
 		end do
 	end do
@@ -216,10 +239,12 @@
 		do j = 1, N2
 			int2_Point_C(par_n_HP - par_n_TS + 1, j, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
 			N = N + 1
 			
 			int2_Point_C(par_n_HP - par_n_TS + 2, j, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 			N = N + 1 
 		end do
 	end do
@@ -232,7 +257,11 @@
 	!A
 	do i = 2, N1
 		int2_Point_A(i, 1, :) = N + 1
-		int2_coord(:, N + 1) = (/ int2_coord(1, int2_Point_A(i, 2, 1)), 0.0_8, 0.0_8 /)
+		int2_coord(:, N + 1) = 0.0
+		
+		do k = 1, N3
+			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, 1)), 0.0_8, 0.0_8 /)
+		end do
 		N = N + 1
 	end do
 	
@@ -1439,6 +1468,49 @@
 	end if
 	print*, "END auto connect"
 	
+	! Заполняем плоскости тетраедров
+	
+	N1 = size(int2_plane_tetraendron(1, 1, :))
+	
+	do i = 1, N1
+		if (int2_all_tetraendron(1, i) == 0) CYCLE  ! Нет тетраэдра
+		
+		do j = 1, 4
+			s1 = int2_all_tetraendron(j, i) ! Номер грани тетраедра
+			a1 = int2_coord(:, int2_gran_point(1, s1))
+			a2 = int2_coord(:, int2_gran_point(2, s1))
+			a3 = int2_coord(:, int2_gran_point(3, s1))
+			
+			aa = a3 - a1
+			bb = a2 - a1
+		
+			normal(1) = aa(2) * bb(3) - aa(3) * bb(2) 
+			normal(2) = aa(3) * bb(1) - aa(1) * bb(3) 
+			normal(3) = aa(1) * bb(2) - aa(2) * bb(1)  
+			
+			int2_plane_tetraendron(1:3, j, i) = normal
+			int2_plane_tetraendron(4, j, i) = -DOT_PRODUCT(normal, a1)
+			
+			k = j + 1
+			if (k > 4) k = 1
+			s2 = int2_all_tetraendron(k, i) ! Номер другой грани тетраедра
+			do ii = 1, 3
+				if(int2_gran_point(ii, s2) /= int2_gran_point(1, s1) .and. int2_gran_point(ii, s2) /= int2_gran_point(2, s1) .and. &
+				  int2_gran_point(ii, s2) /= int2_gran_point(3, s1)) then
+					if ( DOT_PRODUCT(int2_plane_tetraendron(1:3, j, i), int2_coord(:, int2_gran_point(ii, s2))) + &
+						int2_plane_tetraendron(4, j, i) > 0) then
+						int2_plane_tetraendron(:, j, i) = -int2_plane_tetraendron(:, j, i)
+					end if
+					EXIT
+				end if
+			end do
+			
+		
+		end do
+		
+	end do
+	
+	
 	!print*, "proverka sosedey"
 	!
 	!N1 = size(int2_all_tetraendron(1, :))
@@ -1481,51 +1553,100 @@
 	!print*, "end proverka sosedey"
 	
 	
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
+	!N1 = size(int2_Cell_A(:, 1, 1))
+	!N2 = size(int2_Cell_A(1, :, 1))
+	!N3 = size(int2_Cell_A(1, 1, :))
 	
 	!print*, "Size = ", size(int2_Cell_C) + size(int2_Cell_A) + size(int2_Cell_B), size(int2_all_Cell(1, :))
 	
-	do k = 1, 1
-		do j = N2, N2
-			do i = par_n_TS + 1, par_n_TS + 1
-				s1 = int2_Cell_A(i, j, k)
-				if (s1 == 0) CYCLE
-				
-				print*, int2_all_Cell(:, s1)
-				!if(s1 == 215713) then
-				!	print*, i, j, k
-				!	print*, int2_all_neighbours(:, s1)
-				!else
-				!	CYCLE
-				!end if
-				
-				print*, "seriya tetraendrov  ", (s1 - 1) * 6
-				do l = 1, 6
-					print*, "*******************************************************************"
-					print*, "l = ", l
-					print*, int2_all_tetraendron(:, (s1 - 1) * 6 + l)
-					do ii = 1, 4
-						print*, "gran = ", ii
-						ijk = int2_all_tetraendron(ii, (s1 - 1) * 6 + l)
-						if (ijk /= 0) then
-							print*, "Sosed = ", int2_gran_sosed(int2_all_tetraendron(ii, (s1 - 1) * 6 + l))
-							print*, "yzel = ", int2_gran_point(:, ijk)
-						else
-							print*, "no gran"
-						end if
-					end do
-					
-					
-				end do
-				
-			end do
-		end do
-	end do
+	!do k = 1, 1
+	!	do j = N2, N2
+	!		do i = par_n_TS + 1, par_n_TS + 1
+	!			s1 = int2_Cell_A(i, j, k)
+	!			if (s1 == 0) CYCLE
+	!			
+	!			print*, int2_all_Cell(:, s1)
+	!			!if(s1 == 215713) then
+	!			!	print*, i, j, k
+	!			!	print*, int2_all_neighbours(:, s1)
+	!			!else
+	!			!	CYCLE
+	!			!end if
+	!			
+	!			print*, "seriya tetraendrov  ", (s1 - 1) * 6
+	!			do l = 1, 6
+	!				print*, "*******************************************************************"
+	!				print*, "l = ", l
+	!				print*, int2_all_tetraendron(:, (s1 - 1) * 6 + l)
+	!				do ii = 1, 4
+	!					print*, "gran = ", ii
+	!					ijk = int2_all_tetraendron(ii, (s1 - 1) * 6 + l)
+	!					if (ijk /= 0) then
+	!						print*, "Sosed = ", int2_gran_sosed(int2_all_tetraendron(ii, (s1 - 1) * 6 + l))
+	!						print*, "yzel = ", int2_gran_point(:, ijk)
+	!					else
+	!						print*, "no gran"
+	!					end if
+	!				end do
+	!				
+	!				
+	!			end do
+	!			
+	!		end do
+	!	end do
+	!end do
 	
 	end subroutine Int2_Initial
 	
+	subroutine Get_tetraedron(x, y, z, num)
+	! Найти тетраедр, которому принадлежит точка
+	! num по умолчанию должен быть равен 3
+	implicit none
+	real(8), intent(in) :: x, y, z
+	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка
+	integer(4) :: i, j, r(3)
+	
+	r = (/ x, y, z /)
+	
+	if (int2_all_tetraendron(1, num) == 0) then
+		print*, "Takogo tetraedra net! ERROR  86tryjbyui98765rtyujhvdrtyu8765erthgg"
+	end if
+	
+	
+11	CONTINUE	
+	
+	do i = 1, 4
+		
+		if( DOT_PRODUCT(int2_plane_tetraendron(1:3, i, num), r ) + &
+						int2_plane_tetraendron(4, i, num) > 0 ) then
+			
+			num = int2_gran_sosed(int2_all_tetraendron(i, num))
+			GO TO 11
+			
+		end if
+	end do
+	
+	
+	end subroutine Get_tetraedron
+	
+	logical pure function Belong_tetraedron(x, y, z, num)
+	! Принадлежит ли точка тетраедру 
+	implicit none
+	real(8), intent(in) :: x, y, z
+	integer(4), intent(in) :: num  ! Тетраэдр, в котором предположительно находится точка
+	integer(4) :: i, j
+	do i = 1, 4
+		
+		if( DOT_PRODUCT(int2_plane_tetraendron(1:3, i, num), (/ x, y, z /) ) + &
+						int2_plane_tetraendron(4, i, num) > 0 ) then
+			Belong_tetraedron = .False.
+			return
+		end if
+	end do
+	
+	Belong_tetraedron = .True.
+	return
+	end function Belong_tetraedron
 	
 	subroutine Int2_Print_my()
 		implicit none
@@ -1940,9 +2061,12 @@
 	allocate(int2_all_tetraendron(4, 6 * n))
 	allocate(int2_gran_point(3, 6 * n * 4))
 	allocate(int2_gran_sosed(6 * n * 4))
-	allocate(int2_gran_normal(3, 6 * n * 4))
+	!allocate(int2_gran_normal(3, 6 * n * 4))
+	allocate(int2_plane_tetraendron(4, 4, 6 * n))
 	
+	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	
+	int2_plane_tetraendron = 0.0
 	int2_coord = 0.0
 	int2_all_Cell = -100
 	int2_Point_A = -100
@@ -1955,7 +2079,8 @@
 	int2_all_tetraendron = 0
 	int2_gran_point = 0
 	int2_gran_sosed = 0
-	int2_gran_normal = 0.0
+	!int2_gran_normal = 0.0
+	int2_Cell_par = 0.0
 	
 	end subroutine Int2_Set_Interpolate
 	
@@ -2012,6 +2137,8 @@
 	allocate(Int1_grans_triangle(3, 12, size(gl_Cell_par(1, :))))
 	allocate(Int1_grans_normal(4, 12, size(gl_Cell_par(1, :))))
 	allocate(Int1_set_gran( size(gl_Cell_par(1, :)) ))
+	
+	
 	
 	gl_Cell_gran_inter = gl_Cell_gran
 	gl_Gran_normal_inter = gl_Gran_normal
