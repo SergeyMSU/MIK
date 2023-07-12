@@ -6215,6 +6215,8 @@
 	
 	! »Õ“≈–œŒÀﬂ÷»ŒÕÕ€… ¡ÀŒ  _______________________________________________________________________________________
 	!pause
+	
+	
 	call Int2_Set_Interpolate()
 	call Int2_Initial()
 	call Int2_Print_point_plane()
@@ -6255,12 +6257,12 @@
 	!call Int2_Print_Cell(167674)
 	
 	
-	print*, "DDD", int2_all_tetraendron(:, 1195701)
-	do i = 1, 4
-	print*, int2_gran_sosed(int2_all_tetraendron(i, 1195701))
-	end do
+	!print*, "DDD", int2_all_tetraendron(:, 1195701)
+	!do i = 1, 4
+	!print*, int2_gran_sosed(int2_all_tetraendron(i, 1195701))
+	!end do
 	
-	pause
+	!pause
 	
 	!i = 3
 	!call Int2_Get_tetraedron(10.0_8, 10.0_8, 10.0_8, i)

@@ -19,7 +19,8 @@
     real(8) :: par_R_END = 300.0         !  
     real(8) :: par_R_LEFT = -240.0 ! -390.0         !  Левая граница
     real(8), parameter :: par_pi_8 = acos(-1.0_8)         
-    real(8), parameter :: par_pi_4 = acos(-1.0_4)        
+    real(8), parameter :: par_pi_4 = acos(-1.0_4)      
+	real(8), parameter :: par_sqrtpi = sqrt(par_pi_8)
     real(8), parameter :: cpi4 = 12.56637061435917295384
     real(8), parameter :: ggg = (5.0/3.0)
     real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
