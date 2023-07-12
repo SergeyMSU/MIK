@@ -146,6 +146,7 @@
 	include "TVD.f90"
 	include "Surface_setting.f90"
 	include "cgod_3D.f90"
+	include "Monte-Karlo.f90"
 	
 	
 	!@cuf include "cuf_kernel.cuf"
@@ -6058,11 +6059,12 @@
 	use Interpolate2
 	use Surface_setting
 	!@cuf use MY_CUDA
+	use Monte_Karlo
     implicit none
 
     integer(4) :: i, NGRAN, j, nn, name_do, name_posle
-	integer :: istat
-	real(8) :: local1, F(9)
+	integer :: istat, s1,s2,s3, n1,n2, n3, k
+	real(8) :: local1, F(9), b
 	integer :: ierrSync, ierrAsync
 	
 	print*, "START PROGRAM"
@@ -6220,11 +6222,53 @@
 	call Int2_Print_setka_2()
 	call Int2_Print_sosed()
 	call Int2_Print_my()
-	call Int2_Print_tetraedron(1307808 + 1)
+	call Int2_Print_tetraedron(1195701)
+	call Int2_Print_tetraedron(1195978)
+	call Int2_Print_tetraedron(1195703)
+	call Int2_Print_tetraedron(1195700)
+	call Int2_Print_tetraedron(1195980)
+	call Int2_Print_tetraedron(165849)
+	call Int2_Print_tetraedron(165850)
+	call Int2_Print_tetraedron(166285)
+	call Int2_Print_tetraedron(1005785)
+	call Int2_Print_tetraedron(1006035)
+	call Int2_Print_tetraedron(1006037)
+	call Int2_Print_tetraedron(1007840)
+	call Int2_Print_tetraedron(1004228)
+	call Int2_Print_tetraedron(165851)
+	call Int2_Set_interpol_matrix()
 	
-	i = 3
-	call Get_tetraedron(10.0_8, 10.0_8, 10.0_8, i)
-	print*, "Tetraedron = ", i
+	!n1 = size(int2_Cell_B(:, 1, 1))
+	!n2 = size(int2_Cell_B(1, :, 1))
+	!n3 = size(int2_Cell_B(1, 1, :))
+	!
+	!do k = 1, n3
+	!	do j = 1, n2
+	!		do i = 1, n1
+	!			if(int2_Cell_B(i, j, k) == 167674) print*, "167674", i, j, k
+	!		end do
+	!	end do
+	!end do
+	!
+	!print*, n1, n2, n3
+	!
+	!call Int2_Print_Cell(167674)
+	
+	
+	print*, "DDD", int2_all_tetraendron(:, 1195701)
+	do i = 1, 4
+	print*, int2_gran_sosed(int2_all_tetraendron(i, 1195701))
+	end do
+	
+	pause
+	
+	!i = 3
+	!call Int2_Get_tetraedron(10.0_8, 10.0_8, 10.0_8, i)
+	!print*, "PAR"
+	!call Int2_Get_par(10.0_8, 10.0_8, 10.0_8, i, F)
+	
+	print*, "M_K"
+	call M_K_start()
 	
 	pause
 	!call Set_Interpolate_main()

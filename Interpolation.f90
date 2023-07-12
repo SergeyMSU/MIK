@@ -8,14 +8,12 @@
 ! погрешности и неточности определения грани по четырём точкам алгоритм будет прыгать покругу 
 ! (по этим четырём ячейкам) и не найдёт, где именно она лежит
 	
-	module Interpolate2  ! МОДУЛЬ НЕ ДОДЕЛАН
+	module Interpolate2  
 	! Модуль интерполяции по тетраэдрам
     ! Строится двойственная сетка к основной (с дополнительными узлами на разрывах)
 	! Строиться сетка тетраэдров на двойственной сетке
 	USE GEO_PARAM
 	USE STORAGE
-	
-	implicit none
 	
 	
 	logical :: int2_work             ! Определена ли интерполяционная сетка (выделена ли память и т.д.)
@@ -33,7 +31,7 @@
 	integer(4), allocatable :: int2_Cell_C(:, :, :)
 	
 	real(8), allocatable :: int2_Cell_center(:, :)   ! Центр ячеек двойственной сетки (3, :) 
-	integer(4), allocatable :: int2_all_neighbours(:, :)  ! (6, :)  по 6 соседей на каждую ячейки
+	integer(4), allocatable :: int2_all_neighbours(:, :)  ! (6, :)  по 6 соседей на каждую ячейку
 	
 	integer(4), allocatable :: int2_Point_A(:, :, :)   ! Набор A-точек размерности 3 (на этом луче, в этой плоскости, по углу в пространстве)
 	! Это точки - центры ячеек основной сетки
@@ -42,6 +40,8 @@
 	
 	! Тетраэдры
 	integer(4), allocatable :: int2_all_tetraendron(:, :)  ! (4 грани, :)
+	integer(4), allocatable :: int2_all_tetraendron_point(:, :)  ! (4 точки, :)
+	real(8), allocatable :: int2_all_tetraendron_matrix(:, :, :)  ! (4, 4, :)
 	integer(4), allocatable :: int2_gran_point(:, :)  ! (3 точки, :)
 	integer(4), allocatable :: int2_gran_sosed(:)  ! (:)  номер тетраэдра, соседнего с этой гранью
 	!real(8), allocatable :: int2_gran_normal(:, :)  ! (3 точки, :)
@@ -260,8 +260,9 @@
 		int2_coord(:, N + 1) = 0.0
 		
 		do k = 1, N3
-			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, 1)), 0.0_8, 0.0_8 /)
+			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, k)), 0.0_8, 0.0_8 /)
 		end do
+		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
 		N = N + 1
 	end do
 	
@@ -272,7 +273,12 @@
 	!B
 	do i = 2, N1
 		int2_Point_B(i, 1, :) = N + 1
-		int2_coord(:, N + 1) = (/ int2_coord(1, int2_Point_B(i, 2, 1)), 0.0_8, 0.0_8 /)
+		int2_coord(:, N + 1) = 0.0
+		
+		do k = 1, N3
+			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_B(i, 2, k)), 0.0_8, 0.0_8 /)
+		end do
+		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
 		N = N + 1
 	end do
 	
@@ -1192,11 +1198,11 @@
 				
 				
 				
-				int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-				int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-				
-				int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+				!int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+				!int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
 			end do
 		end do
 	end do
@@ -1209,11 +1215,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-				
-				int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
+				!int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+				!int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 			end do
 		end do
 	end do
@@ -1226,16 +1232,16 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-				int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				
-				int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
+				!int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+				!int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+				!
+				!!int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
+				!!int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
 			end do
 		end do
 	end do
 	
-	! Находем соседей между ячейками (в B - группе)
+	! Находим соседей между ячейками (в B - группе)
 	
 	N1 = size(int2_Cell_B(:, 1, 1))
 	N2 = size(int2_Cell_B(1, :, 1))
@@ -1249,11 +1255,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 20) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 2) = (s2 - 1) * 6 + 5
-				
-				int2_gran_sosed((s2 - 1) * 24 + 12) = (s1 - 1) * 6 + 6
-				int2_gran_sosed((s1 - 1) * 24 + 21) = (s2 - 1) * 6 + 3
+				!int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+				!int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
 			end do
 		end do
 	end do
@@ -1266,11 +1272,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-				
-				int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 2
+				!!int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+				!!int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 			end do
 		end do
 	end do
@@ -1283,11 +1289,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-				int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				
-				int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
+				!int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+				!int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+				!int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
 			end do
 		end do
 	end do
@@ -1306,11 +1312,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 20) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 2) = (s2 - 1) * 6 + 5
-				
-				int2_gran_sosed((s2 - 1) * 24 + 12) = (s1 - 1) * 6 + 6
-				int2_gran_sosed((s1 - 1) * 24 + 21) = (s2 - 1) * 6 + 3
+				!int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+				!int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
 			end do
 		end do
 	end do
@@ -1323,11 +1329,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-				
-				int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 2
+				!!int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+				!!int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+				!int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 			end do
 		end do
 	end do
@@ -1340,11 +1346,11 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-				int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				
-				int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
+				!int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+				!int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+				!
+				!int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+				!int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
 			end do
 		end do
 	end do
@@ -1414,10 +1420,20 @@
 		do j = 1, 6
 			s1 = (i - 1) * 6 + j  ! Номер тетраэра
 			
+			
 			if(int2_all_tetraendron(1, s1) == 0) CYCLE !Нет тетраэдра
 			
 			loop3: do k = 1, 4 ! Бежим по граням тетраэдра
+				
+				!if(s1 == 1195701) then
+				!print*, int2_all_tetraendron(:, s1)
+				!continue
+				!end if
+				
+				
 				s2 = (i - 1) * 24 + (j - 1) * 4 + k  ! Номер грани
+				ijk = int2_gran_sosed(s2)   ! для отладки
+
 				if (int2_gran_sosed(s2) /= 0) CYCLE ! Сосед уже найдён
 				! Сосед не определён, нужно искать по координатам
 				a1 = int2_coord(:, int2_gran_point(1, s2))
@@ -1481,6 +1497,10 @@
 			a2 = int2_coord(:, int2_gran_point(2, s1))
 			a3 = int2_coord(:, int2_gran_point(3, s1))
 			
+			if (j == 1) int2_all_tetraendron_point(1, i) = int2_gran_point(1, s1)
+			if (j == 1) int2_all_tetraendron_point(2, i) = int2_gran_point(2, s1)
+			if (j == 1) int2_all_tetraendron_point(3, i) = int2_gran_point(3, s1)
+			
 			aa = a3 - a1
 			bb = a2 - a1
 		
@@ -1497,6 +1517,7 @@
 			do ii = 1, 3
 				if(int2_gran_point(ii, s2) /= int2_gran_point(1, s1) .and. int2_gran_point(ii, s2) /= int2_gran_point(2, s1) .and. &
 				  int2_gran_point(ii, s2) /= int2_gran_point(3, s1)) then
+					if (j == 1) int2_all_tetraendron_point(4, i) = int2_gran_point(ii, s2)
 					if ( DOT_PRODUCT(int2_plane_tetraendron(1:3, j, i), int2_coord(:, int2_gran_point(ii, s2))) + &
 						int2_plane_tetraendron(4, j, i) > 0) then
 						int2_plane_tetraendron(:, j, i) = -int2_plane_tetraendron(:, j, i)
@@ -1598,14 +1619,20 @@
 	
 	end subroutine Int2_Initial
 	
-	subroutine Get_tetraedron(x, y, z, num)
+	subroutine Int2_Get_tetraedron(x, y, z, num)
 	! Найти тетраедр, которому принадлежит точка
 	! num по умолчанию должен быть равен 3
 	implicit none
 	real(8), intent(in) :: x, y, z
 	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка
-	integer(4) :: i, j, r(3)
+	integer(4) :: num2
+	integer(4) :: nummm(8), ijk
+	integer(4) :: i, j, m, mk
+	real(8) :: r(3)
 	
+	nummm = 0
+	ijk = 1
+	mk = 1
 	r = (/ x, y, z /)
 	
 	if (int2_all_tetraendron(1, num) == 0) then
@@ -1615,19 +1642,206 @@
 	
 11	CONTINUE	
 	
+	nummm(ijk) = num
+	ijk = ijk + 1
+	if(ijk > 8) ijk = 1
+	
+	m = 0
 	do i = 1, 4
 		
-		if( DOT_PRODUCT(int2_plane_tetraendron(1:3, i, num), r ) + &
-						int2_plane_tetraendron(4, i, num) > 0 ) then
+		if( DOT_PRODUCT(int2_plane_tetraendron(1:3, i, num), r ) + int2_plane_tetraendron(4, i, num) > 0 ) then
+			m = 1
+			num2 = int2_gran_sosed(int2_all_tetraendron(i, num))
+			if(num2 == 0) CYCLE
+			num = num2
 			
-			num = int2_gran_sosed(int2_all_tetraendron(i, num))
+			if( ANY(nummm == num) ) then
+				 num = -1
+				 return
+			end if
+		
+			
 			GO TO 11
 			
 		end if
 	end do
 	
+	if(m == 1) then
+		num = 0      ! Выход за пределы области
+	end if
 	
-	end subroutine Get_tetraedron
+	
+	
+	end subroutine Int2_Get_tetraedron
+	
+	subroutine Int2_Time_fly(r, V, time, num, next)
+	! Variables
+	real(8), intent(in) :: r(3), V(3)
+	integer(4), intent(in) :: num  ! Номер тетраэдра, в котором находится частица
+	integer(4), intent(out) :: next  ! Номер следующего тетраэдра
+	real(8), intent(out) :: time
+
+	integer(4) :: i, n2
+	real(8) :: t2
+	time = 10000000.0
+	
+	n2 = 1
+	
+	do i = 1, 4
+		t2 = -(DOT_PRODUCT(r, int2_plane_tetraendron(1:3, i, num)) + int2_plane_tetraendron(4, i, num))&
+			/(DOT_PRODUCT(V, int2_plane_tetraendron(1:3, i, num)))
+		if (t2 < 0) CYCLE
+		if(t2 < time) then
+			time = t2
+			n2 = i
+		end if
+	end do
+	
+	next = int2_gran_sosed(int2_all_tetraendron(n2, num))
+	
+	end subroutine Int2_Time_fly
+	
+	
+	subroutine Int2_Get_par(x, y, z, num, PAR)
+	! Найти тетраедр, которому принадлежит точка и получить значения параметров
+	! num по умолчанию должен быть равен 3
+	implicit none
+	real(8), intent(in) :: x, y, z
+	real(8), intent(out) :: PAR(9)     ! Выходные параметры
+	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	integer(4) :: i, j, r(3)
+	real(8), dimension(4, 4) :: Minv
+	real(8), dimension(4, 4) :: M
+	real(8), dimension(4) :: work  ! work array for LAPACK
+	real(8), dimension(1, 4) :: vec
+	integer, dimension(4) :: ipiv   ! pivot indices
+	integer :: n, info
+	
+	!$inter external DGETRF
+	!$inter external DGETRI
+	
+	info = 0
+	
+	call Int2_Get_tetraedron(x, y, z, num)
+	
+	if(num == 0) then
+		print*, "Nen tetr"
+		return
+	end if
+	
+	
+	M(:, 1) = 1.0_8
+	M(1, 2:4) = int2_coord(:, int2_all_tetraendron_point(1, num) )
+	M(2, 2:4) = int2_coord(:, int2_all_tetraendron_point(2, num) )
+	M(3, 2:4) = int2_coord(:, int2_all_tetraendron_point(3, num) )
+	M(4, 2:4) = int2_coord(:, int2_all_tetraendron_point(4, num) )
+	
+	Minv = M
+	n = size(M,1)
+	
+	
+	!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+	
+	if (info /= 0) then
+     stop 'Matrix is numerically singular! wfergt56y454erthy5t'
+	end if
+	
+	!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+	
+	if (info /= 0) then
+     stop 'Matrix inversion failed! frfg543565tttg'
+	end if
+	
+	
+	vec(1, 1) = 1.0_8
+	vec(1, 2:4) = (/ x, y, z /)
+	
+	vec = MATMUL(vec, Minv)
+
+	
+	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+	
+	
+	end subroutine Int2_Get_par
+	
+	subroutine Int2_Set_interpol_matrix()
+	! Заполняем интерполяционные матрицы для всех ячееек и записываем в память
+	
+	integer(4):: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	integer(4) :: i, j, r(3)
+	real(8), dimension(4, 4) :: Minv
+	real(8), dimension(4, 4) :: M
+	real(8), dimension(4) :: work  ! work array for LAPACK
+	real(8), dimension(1, 4) :: vec
+	integer, dimension(4) :: ipiv   ! pivot indices
+	integer :: n, info
+	
+	!$inter external DGETRF
+	!$inter external DGETRI
+	
+	info = 0
+	
+	do num = 1, size(int2_all_tetraendron_point(1, :))
+		
+		if(int2_all_tetraendron(1, num) == 0) CYCLE
+		
+		M(:, 1) = 1.0_8
+		M(1, 2:4) = int2_coord(:, int2_all_tetraendron_point(1, num) )
+		M(2, 2:4) = int2_coord(:, int2_all_tetraendron_point(2, num) )
+		M(3, 2:4) = int2_coord(:, int2_all_tetraendron_point(3, num) )
+		M(4, 2:4) = int2_coord(:, int2_all_tetraendron_point(4, num) )
+	
+		Minv = M
+		n = size(M,1)
+	
+	
+		!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+	
+		if (info /= 0) then
+		 stop 'Matrix is numerically singular! wfergt56y454erthy5t'
+		end if
+	
+		!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+	
+		if (info /= 0) then
+		 stop 'Matrix inversion failed! frfg543565tttg'
+		end if
+		
+		int2_all_tetraendron_matrix(:,:, num) = Minv
+	end do
+	
+	end subroutine Int2_Set_interpol_matrix
+	
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR)
+	! Найти тетраедр, которому принадлежит точка и получить значения параметров
+	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
+	! предполагается, что матрицы лежат в памяти
+	! num по умолчанию должен быть равен 3
+	implicit none
+	real(8), intent(in) :: x, y, z
+	real(8), intent(out) :: PAR(9)     ! Выходные параметры
+	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	
+	real(8), dimension(4, 4) :: Minv
+	real(8), dimension(1, 4) :: vec
+	
+	
+	call Int2_Get_tetraedron(x, y, z, num)
+	
+	Minv = int2_all_tetraendron_matrix(:, :, num)
+	
+	vec(1, 1) = 1.0_8
+	vec(1, 2:4) = (/ x, y, z /)
+	
+	vec = MATMUL(vec, Minv)
+
+	
+	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+	
+	
+	end subroutine Int2_Get_par_fast
 	
 	logical pure function Belong_tetraedron(x, y, z, num)
 	! Принадлежит ли точка тетраедру 
@@ -1678,6 +1892,40 @@
 		
 		
 	end subroutine Int2_Print_my
+	
+	subroutine Int2_Print_Cell(n)  ! Печатает ячейку с номером n
+    use GEO_PARAM
+    use STORAGE
+
+    implicit none
+    integer, intent(in) :: n
+    integer(4) :: i, k
+
+    open(1, file = 'one_Cell.txt')
+
+
+    write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", 8, ", E =  ", 12 , ", F=FEPOINT, ET=LINESEG "
+
+    do i = 1, 8
+            write(1,*) int2_coord(:, int2_all_Cell(i, n))
+    end do
+
+    write(1,*) "1 2"
+    write(1,*) "2 3"
+    write(1,*) "3 4"
+    write(1,*) "4 1"
+    write(1,*) "1 5"
+    write(1,*) "2 6"
+    write(1,*) "3 7"
+    write(1,*) "4 8"
+    write(1,*) "5 6"
+    write(1,*) "6 7"
+    write(1,*) "7 8"
+    write(1,*) "8 5"
+
+    close(1)
+
+    end subroutine Int2_Print_Cell
 	
 	subroutine Int2_Print_tetraedron(n)
 		implicit none
@@ -2059,6 +2307,8 @@
 	allocate(int2_all_neighbours(6, size(int2_all_Cell(1, :)) ))
 	
 	allocate(int2_all_tetraendron(4, 6 * n))
+	allocate(int2_all_tetraendron_point(4, 6 * n))
+	allocate(int2_all_tetraendron_matrix(4, 4, 6 * n))
 	allocate(int2_gran_point(3, 6 * n * 4))
 	allocate(int2_gran_sosed(6 * n * 4))
 	!allocate(int2_gran_normal(3, 6 * n * 4))
@@ -2077,6 +2327,8 @@
 	int2_Cell_C = 0
 	int2_all_neighbours = 0 
 	int2_all_tetraendron = 0
+	int2_all_tetraendron_point = 0
+	int2_all_tetraendron_matrix = 0.0
 	int2_gran_point = 0
 	int2_gran_sosed = 0
 	!int2_gran_normal = 0.0
