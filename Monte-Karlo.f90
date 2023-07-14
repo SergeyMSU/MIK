@@ -5,16 +5,21 @@ module Monte_Karlo
 	USE GEO_PARAM
 	USE STORAGE
 	USE Interpolate2
+	USE My_func
 	
 	implicit none
 	
 	integer(4), parameter :: par_stek = 1000000  ! Глубина стека (заранее выделяется память под него)
 	integer(4), parameter :: par_n_potok = 1  ! Число потоков (у каждого потока свой стек)
-	integer(4), parameter :: par_n_zone = 7  ! 
+	integer(4), parameter :: par_n_zone = 7  !  Количество радиусов (но есть ещё внешняя зона)
+	integer(4), parameter :: par_m_zone = 6  !  Количество лучей по углу (от 0 до 180)
+	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
 	real(8), parameter :: par_Rmax = 200.0  !  Радиус сферы, с которой запускаем частицы
 	
 	real(8) :: MK_R_zone(par_n_zone)   ! Радиусы зон
-	
+	real(8) :: MK_al_zone(par_m_zone)   ! Лучи зон
+	real(8) :: MK_SINKR(par_m_zone + 1)   ! Критические синусы для каждой зоны по углу
+	real(8), allocatable :: MK_Mu(:, :, :)   ! Веса зон (par_n_zone + 1, par_m_zone + 1, сортов)
 	
 	real(8) :: MK_gam_zone(par_n_zone)   ! Параметр гамма для зон
 	real(8) :: MK_A0_, MK_A1_   ! Параметры для начального запуска
@@ -23,10 +28,10 @@ module Monte_Karlo
 	
 	integer(4), parameter :: par_num_1 = 1   ! Число исходных частиц первого типа (с полусферы)
 	
-	real(8), allocatable :: M_K_particle(:, :, :)   ! Частицы (7, par_stek, число потоков)
-	! (три координаты, три скорости, вес)
-	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы (2, par_stek, число потоков)
-	! (в какой ячейке частица, зона рождения)
+	real(8), allocatable :: M_K_particle(:, :, :)   ! Частицы (8, par_stek, число потоков)
+	! (три координаты, три скорости, вес, радиус перегелия)
+	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы (4, par_stek, число потоков)
+	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
 	
 	integer(4), allocatable :: sensor(:, :, :)  !(3, 2, : par_n_potok число потоков)  ! датчики случайных чисел 
 	! Каждому потоку по два датчика
@@ -39,10 +44,10 @@ module Monte_Karlo
 	
 	subroutine M_K_start()
 	! Variables
-	integer(4) :: potok, num, i, cell
+	integer(4) :: potok, num, i, cell, to_i, to_j
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
 	logical :: bb
-	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz
+	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel
 	
 	call M_K_Set()    ! Создали массивы
 	call Get_sensor() ! Считали датчики случайных чисел
@@ -53,6 +58,7 @@ module Monte_Karlo
 		
 		! Запускаем частицы первого типа
 		do num = 1, par_num_1
+			continue
 			call MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
 			
 			do i = 1, par_n_zone + 1
@@ -70,9 +76,14 @@ module Monte_Karlo
 				if(i /= par_n_zone + 1 .or. bb == .True.) then
 					! Добавляем частицу в стек
 					stek(potok) = stek(potok) + 1
-					M_K_particle(:, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) /)
+					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) /)
 					M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
-					M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
+					M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
+					call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
+						to_i, to_j, r_peregel)
+					M_K_particle(8, stek(potok), potok) = r_peregel
+					M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
+					M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 				end if
 			end do
 			call M_K_Fly(potok)
@@ -103,34 +114,50 @@ module Monte_Karlo
 	
 	integer(4), intent(in) :: n_potok  ! Номер потока 
 	
-	real(8) :: particle(7)
-	integer(4):: particle_2(1), i
+	real(8) :: particle(8)
+	integer(4):: particle_2(4), i
 	
 	integer(4) :: num  ! Номер частицы, верхняя в стеке
 	integer(4) :: cell ! Номер ячейки, в которой находится частица
 	integer(4) :: next ! Номер ячейки, в которую попадёт частица в следующий раз
 	integer(4) :: area2  ! Зона, в которой сейчас находится ячейка
 	integer(4) :: II  ! На сколько атомов расщепляется атом при перезарядке
-	logical :: bb
+	integer(4) :: to_i, to_j, from_i, from_j
+	logical :: bb, bb2
 	
 	real(8) :: time ! Оценочное время до вылета частицы из ячейки
 	real(8) :: time2 ! Время до перезарядки
 	
 	real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
-	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu
+	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
 	real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
-	real(8) :: v1, v2, v3
+	real(8) :: v1, v2, v3, r_peregel
 	
 	real(8) :: Wr(par_n_zone + 1), Wthe(par_n_zone + 1), Wphi(par_n_zone + 1), mu_(par_n_zone + 1)
 	
+	integer(4) :: step
+ 
+	step = 0
 	
 	do while (stek(n_potok) >= 1)
+		
+		step = step + 1
+		
+		if (mod(step, 1000) == 0) print*, "stek = ", stek(n_potok)
+		!pause
+		
+		if(stek(n_potok) > par_stek * 0.9) then
+			print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
+			pause
+			STOP
+		end if
+		
+			
 		num = stek(n_potok)
 		stek(n_potok) = stek(n_potok) - 1
 		! Берём все параметры частицы
 		particle = M_K_particle(:, num, n_potok)
 		particle_2 = M_K_particle_2(:, num, n_potok)
-		mu = particle(7)                                ! Вес частицы
 		!print*, "stek(n_potok) = ", stek(n_potok)
 		!print*, particle
 		!print*, particle_2
@@ -139,19 +166,31 @@ module Monte_Karlo
 		
 		loop1: do  ! пока частица не вылетит из области
 			cell = particle_2(1)
+			mu = particle(7)                                ! Вес частицы
 		
 			call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
 			
 			time = max(0.00000001, time * 1.001) ! Увеличим время, чтобы частица точно вышла из ячейки
 			
-			Int2_Get_par_fast2(particle(1), particle(2), particle(3), cell, PAR)
+			!call Int2_Get_par_fast2(particle(1), particle(2), particle(3), cell, PAR)
+			PAR = int2_Cell_par(:, int2_all_tetraendron_point(1, cell))  ! Взяли значения в каком-то узле
+			
 			cp = sqrt(PAR(5)/PAR(1))
 			vx = PAR(2)
 			vy = PAR(3)
 			vz = PAR(4)
+			ro = PAR(1)
+			
+			if(ro <= 0.0 .or. ro > 1000.0) then
+				print*, PAR
+				print*, "___"
+				print*, cell, int2_all_tetraendron_point(:, cell)
+				pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
+			end if
+			
 			area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
 		
-			! Найдём время до перезарядки и веса частиц
+			! Найдём время до перезарядки и веса частиц  ****************************************************************************************
 			u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
 			if (u / cp > 7.0) then
 				uz = MK_Velosity_1(u, cp);
@@ -161,13 +200,12 @@ module Monte_Karlo
 			end if
 			kappa = (nu_ex * time)
 			
-			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
+			call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
 			
 			t_ex = -(time / kappa) * log(1.0 - ksi * (1.0 - exp(-kappa)))  ! Время до перезарядки
 			t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
 			mu_ex = mu * (1.0 - exp(-kappa)) ! вес перезаряженного атома
 			mu2 = mu - mu_ex  ! вес оставшегося неперезаряженного атома
-			particle(7) = mu2
 
 			r_ex = particle(1:3) + t_ex * particle(4:6)   ! Координаты перезарядки
 			
@@ -180,9 +218,10 @@ module Monte_Karlo
 			
 			r = norm2(r_ex)  ! Расстояние от точки перезарядки до Солнца
 			
-			! Накапливаем моменты и т.д.
+			from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
+			from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
 			
-			spherical_skorost(z, x, y, Vz, Vx, Vy, Vr, Vphi, Vtheta)
+			! Накапливаем моменты и т.д.
 			
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
@@ -191,28 +230,47 @@ module Monte_Karlo
 			if (area2 == 0 .or. Ur / cp > 3.0) then   ! Без геометрического расщепления
 				II = 0  ! II - это сколько дополнительных атомов запускается (помимо основного)
 			else
-				II = MK_geo_zones(r, 1.2) - 1
+				II = MK_geo_zones(r, 1.2_8) - 1
 			end if
 			
-			call M_K_Change_Velosity4(potok, Ur/cp, Uthe/cp, Uphi/cp, Vr/cp, Vthe/cp, Vphi/cp, Wr, Wthe, Wphi, mu_, &
-				cp, r, I, r_ex(1), r_ex(2), r_ex(3), bb)
+			call M_K_Change_Velosity4(n_potok, Ur/cp, Uthe/cp, Uphi/cp, Vr/cp, Vthe/cp, Vphi/cp, Wr, Wthe, Wphi, mu_, &
+				cp, r, II, r_ex(1), r_ex(2), r_ex(3), bb)
 			
 			Wr = Wr * cp
 			Wthe = Wthe * cp
 			Wphi = Wphi * cp
 			
 			do i = 1, II + 1
-				if (i == II + 1 .and. bb = .False.) CYCLE  ! Если не запускается основной атом
+				if(i == II + 1 .and. bb == .False.) CYCLE  ! Если не запускается основной атом
 				call dekard_skorost(r_ex(1), r_ex(2), r_ex(3), Wr(i), Wphi(i), Wthe(i), v1, v2, v3)
+				V = (/ v1, v2, v3 /)
+				
+				call MK_Distination(r_ex, V, to_i, to_j, r_peregel)  ! Находим зону назначения в точке перегелия для рулетки
+				
+				mu3 = mu_ex * mu_(i)
+				call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
+				
+				if(bb2 == .False.) CYCLE  ! Не запускаем эту частицу, она вырубается
+				
 				! Запишем новую частицу в стек
 				stek(n_potok) = stek(n_potok) + 1
 				M_K_particle(1:3, stek(n_potok), n_potok) = r_ex
-				M_K_particle(4:6, stek(n_potok), n_potok) = (/ v1, v2, v3 /)
-				M_K_particle(7, stek(n_potok), n_potok) = mu_ex * mu_(i)
+				M_K_particle(4:6, stek(n_potok), n_potok) = V
+				M_K_particle(7, stek(n_potok), n_potok) = mu3
+				M_K_particle(8, stek(n_potok), n_potok) = r_peregel
+
+				M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+				
+				
 			end do
 			
+			! Проверяем, нужно ли вырубить неперезаряженную часть атома
+			call MK_ruletka(n_potok, particle_2(3), particle_2(4), from_i, from_j, particle_2(2), &
+					r, particle(8), mu2, bb2)
+			if(bb2 == .False.) EXIT loop1  ! Не запускаем эту частицу, она вырубается
+			particle(7) = mu2
 		
-			! Находим следующую ячайку
+			! Находим следующую ячейку
 			
 			particle(1:3) = particle(1:3) + time * particle(4:6)
 			if(next == 0) EXIT loop1  ! частица долетела до края области
@@ -275,19 +333,22 @@ module Monte_Karlo
 	
 	subroutine M_K_Set()
 	
-		integer(4) :: i
+		integer(4) :: i, j
 		real(8) :: Yr
 		
-		allocate(M_K_particle(7, par_stek, par_n_potok))
-		allocate(M_K_particle_2(2, par_stek, par_n_potok))
+		allocate(M_K_particle(8, par_stek, par_n_potok))
+		allocate(M_K_particle_2(4, par_stek, par_n_potok))
 		allocate(sensor(3, 2, par_n_potok))
 		allocate(stek(par_n_potok))
+		allocate(MK_Mu(par_n_zone + 1, par_m_zone + 1, par_n_sort))
 	
+		MK_Mu = 100.0
 		M_K_particle = 0.0
 		M_K_particle_2 = 0
 		stek = 0
 		sensor = 1
 		
+		! Задаём радиусы зон
 		MK_R_zone(1) = 1.0
 		MK_R_zone(2) = 2.15
 		MK_R_zone(3) = 4.6
@@ -296,10 +357,33 @@ module Monte_Karlo
 		MK_R_zone(6) = 46.0
 		MK_R_zone(7) = 99.0
 		
-		! Задаём начальные параметры
+		! Задаём лучи зон
+		MK_al_zone(1) = 1 * par_pi_8/7
+		MK_al_zone(2) = 2 * par_pi_8/7
+		MK_al_zone(3) = 3 * par_pi_8/7
+		MK_al_zone(4) = 4 * par_pi_8/7
+		MK_al_zone(5) = 5 * par_pi_8/7
+		MK_al_zone(6) = 6 * par_pi_8/7
+		
+		! Задаём критические веса
+		
+		do j = 1, par_m_zone + 1
+			do i = 1, par_n_zone
+				MK_Mu(i, j, :) = 100.0 * (MK_R_zone(i)/par_Rmax)**2
+			end do
+		end do
+		
+		
+		MK_SINKR(1) = sin(MK_al_zone(1))
+		MK_SINKR(par_m_zone + 1) = sin(MK_al_zone(par_m_zone))
+		
+		do i = 2, par_m_zone
+			MK_SINKR(i) = max( dabs(sin(MK_al_zone(i))), dabs(sin(MK_al_zone(i - 1))) )
+		end do
+		
 		do i = 1, par_n_zone
 			MK_gam_zone(i) = 1.0 / ((par_Rmax / MK_R_zone(i))**2 - 1.0)
-			if (MK_gam_zone(i) < 0.0) STOP "ERROR gamma 56789oihgfr6uijt6789"
+			if (MK_gam_zone(i) < 0.0) pause "ERROR gamma 56789oihgfr6uijt6789"
 		end do
 		
 		Yr = dabs(par_Velosity_inf)
@@ -723,7 +807,90 @@ end subroutine M_K_Change_Velosity4
 	bb = .True.
 	return
 	
-end subroutine MK_Init_Parametrs
+	end subroutine MK_Init_Parametrs
+	
+	
+	subroutine MK_Distination(r, V, to_i, to_j, rr)
+		! Variables
+		real(8), intent(in) :: r(3), V(3)
+		real(8), intent(out) :: rr
+		integer(4), intent(out) :: to_i, to_j
+		
+		real(8) :: time_do_peregel, rk(3)
+		
+		time_do_peregel = -DOT_PRODUCT(r, V) / kvv(V(1), V(2), V(3))
+		rk = r + time_do_peregel * V
+		rr = norm2(rk)
+		
+		to_i = MK_geo_zones(rr, 1.0_8)
+		to_j = MK_alpha_zones( polar_angle( rk(1), sqrt(rk(2)**2 + rk(3)**2) ) )
+	
+	end subroutine MK_Distination
+	
+	subroutine MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area, r, r_per, mu3, bb2)
+		real(8), intent(in out) :: mu3
+		real(8), intent(in) :: r, r_per
+		integer(4), intent(in) :: n_potok, to_i, to_j, from_i, from_j, area
+		logical, intent(out) :: bb2
+		
+		real(8) :: mu, ksi
+		
+		mu = min( MK_Mu(to_i, to_j, area) * 0.3 * MK_SINKR(to_j) * (r_per/par_Rmax)**2, &
+					MK_Mu(from_i, from_j, area) * 0.3 * MK_SINKR(from_j) * (r/par_Rmax)**2)
+		
+		if (mu3 >= mu) then
+			bb2 = .True.
+			return
+		else
+			call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
+			if (mu3 >= ksi * mu) then
+				mu3 = mu;
+				bb2 = .True.
+				return
+			else
+				bb2 = .False.
+				return
+			end if
+		end if
+		
+		bb2 = .False.
+		return
+	
+	end subroutine MK_ruletka
+	
+	integer(4) pure function MK_alpha_zones(al)
+		real(8), intent(in) :: al
+		integer(4) :: i
+		
+		do i = 1, par_m_zone
+			if(al < MK_al_zone(i)) then
+				MK_alpha_zones = i
+				return
+			end if
+		end do
+		
+		MK_alpha_zones = par_m_zone + 1
+		return
+		
+	end function MK_alpha_zones
+	
+	
+integer(4) pure function MK_geo_zones(r, k)
+	! В какой геометрической зоне сейчас находится атом (зоны считаются с нуля)
+	real(8), intent (in) :: r, k
+	integer(4) :: i
+
+	do i = 1, par_n_zone
+		if (r < k * MK_R_zone(i)) then
+			MK_geo_zones = i
+			return
+		end if
+	end do
+	
+	MK_geo_zones = par_n_zone + 1
+	
+end function MK_geo_zones
+	
 	
 	real(8) pure function MK_F(X, gam, Y)
 	
@@ -1202,21 +1369,7 @@ real(8) pure function MK_f2(V, gam, ur, ut)
 		(1.0 + erf((-ur + gam * V + V) / b)))
 end function MK_f2
 
-integer(4) pure function MK_geo_zones(r, k)
-	! В какой геометрической зоне сейчас находится атом (зоны считаются с нуля)
-	real(8), intent (in) :: r, k
-	integer(4) :: i
 
-	do i = 1, par_n_zone
-		if (r < k * MK_R_zone(i)) then
-			MK_geo_zones = i
-			return
-		end if
-	end do
-	
-	MK_geo_zones = par_n_zone + 1
-	
-end function MK_geo_zones
 
 	
 	
@@ -1236,7 +1389,7 @@ end function MK_geo_zones
 	
 	if (par_n_potok * 2 > 1021) then
 		print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
-		STOP
+		pause
 	end if
 	
 	open(1, file = "rnd_my.txt", status = 'old')

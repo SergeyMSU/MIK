@@ -187,8 +187,8 @@
 	int2_Point_A(1, :, :) = N + 1
 	int2_Point_B(1, :, :) = N + 1
 	int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
-	int2_Cell_par(:, N + 1) = 0.0
-	int2_Cell_par2(:, N + 1) = 0
+	int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(1, 1, 1) )
+	int2_Cell_par2(:, N + 1) = 1
 	N = N + 1
 	
 	N1 = size(gl_Cell_A(:, 1, 1))
@@ -279,11 +279,15 @@
 	do i = 2, N1
 		int2_Point_A(i, 1, :) = N + 1
 		int2_coord(:, N + 1) = 0.0
+		int2_Cell_par(:, N + 1) = 0.0
+		int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_A(i, 2, 1))
 		
 		do k = 1, N3
 			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, k)), 0.0_8, 0.0_8 /)
+			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_A(i, 2, k))
 		end do
 		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
+		int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
 		N = N + 1
 	end do
 	
@@ -295,11 +299,15 @@
 	do i = 2, N1
 		int2_Point_B(i, 1, :) = N + 1
 		int2_coord(:, N + 1) = 0.0
+		int2_Cell_par(:, N + 1) = 0.0
+		int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_B(i, 2, 1))
 		
 		do k = 1, N3
 			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_B(i, 2, k)), 0.0_8, 0.0_8 /)
+			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_B(i, 2, k))
 		end do
 		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
+		int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
 		N = N + 1
 	end do
 	
@@ -1251,22 +1259,14 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 2) == int2_gran_point(1, (s1 - 1) * 24 + 20)) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 2) == int2_gran_point(2, (s1 - 1) * 24 + 20)) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 2) == int2_gran_point(3, (s1 - 1) * 24 + 20)) then
-							int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-							int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-						end if
-					end if
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 2), int2_gran_point(:, (s1 - 1) * 24 + 20))) then
+					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 21) == int2_gran_point(1, (s1 - 1) * 24 + 12) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 21) == int2_gran_point(2, (s1 - 1) * 24 + 12) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 21) == int2_gran_point(3, (s1 - 1) * 24 + 12) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-						end if
-					end if
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 21), int2_gran_point(:, (s1 - 1) * 24 + 12) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 				end if
 				
 			end do
@@ -1287,23 +1287,16 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 13) == int2_gran_point(1, (s1 - 1) * 24 + 24) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 13) == int2_gran_point(2, (s1 - 1) * 24 + 24) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 13) == int2_gran_point(3, (s1 - 1) * 24 + 24) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-							int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-						end if
-					end if
+				
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 13), int2_gran_point(:, (s1 - 1) * 24 + 24) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
 				end if
 				
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 8) ==  int2_gran_point(1, (s1 - 1) * 24 + 17) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 8) ==  int2_gran_point(2, (s1 - 1) * 24 + 17) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 8) ==  int2_gran_point(3, (s1 - 1) * 24 + 17) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
-							int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
-						end if
-					end if
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 8), int2_gran_point(:, (s1 - 1) * 24 + 17) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
 				end if
 				
 			end do
@@ -1327,23 +1320,17 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 15) ==  int2_gran_point(1, (s1 - 1) * 24 + 9) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 15) ==  int2_gran_point(2, (s1 - 1) * 24 + 9) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 15) ==  int2_gran_point(3, (s1 - 1) * 24 + 9) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-						end if
-					end if
+				
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+				end if
+
+				if( Int2_Comparison(int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 3) ==  int2_gran_point(1, (s1 - 1) * 24 + 6) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 3) ==  int2_gran_point(2, (s1 - 1) * 24 + 6) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 3) ==  int2_gran_point(3, (s1 - 1) * 24 + 6) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-							int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-						end if
-					end if
-				end if
 					
 			end do
 		end do
@@ -1360,23 +1347,16 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 2) ==  int2_gran_point(1, (s1 - 1) * 24 + 20) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 2) ==  int2_gran_point(2, (s1 - 1) * 24 + 20) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 2) ==  int2_gran_point(3, (s1 - 1) * 24 + 20) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-							int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 21) ==  int2_gran_point(1, (s1 - 1) * 24 + 12) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 21) ==  int2_gran_point(2, (s1 - 1) * 24 + 12) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 21) ==  int2_gran_point(3, (s1 - 1) * 24 + 12) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 				end if
+				
 				
 			end do
 		end do
@@ -1393,22 +1373,15 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 13) ==  int2_gran_point(1, (s1 - 1) * 24 + 24) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 13) ==  int2_gran_point(2, (s1 - 1) * 24 + 24) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 13) ==  int2_gran_point(3, (s1 - 1) * 24 + 24) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-							int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-						end if
-					end if
+
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 17) ==  int2_gran_point(1, (s1 - 1) * 24 + 8) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 17) ==  int2_gran_point(2, (s1 - 1) * 24 + 8) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 17) ==  int2_gran_point(3, (s1 - 1) * 24 + 8) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
-							int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
 				end if
 				
 			end do
@@ -1429,22 +1402,14 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 15) ==  int2_gran_point(1, (s1 - 1) * 24 + 9) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 15) ==  int2_gran_point(2, (s1 - 1) * 24 + 9) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 15) ==  int2_gran_point(3, (s1 - 1) * 24 + 9) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 3) ==  int2_gran_point(1, (s1 - 1) * 24 + 6) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 3) ==  int2_gran_point(2, (s1 - 1) * 24 + 6) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 3) ==  int2_gran_point(3, (s1 - 1) * 24 + 6) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-							int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
 				end if
 				
 			end do
@@ -1459,22 +1424,14 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 2) ==  int2_gran_point(1, (s1 - 1) * 24 + 20) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 2) ==  int2_gran_point(2, (s1 - 1) * 24 + 20) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 2) ==  int2_gran_point(3, (s1 - 1) * 24 + 20) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-							int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20))) then
+					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 21) ==  int2_gran_point(1, (s1 - 1) * 24 + 12) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 21) ==  int2_gran_point(2, (s1 - 1) * 24 + 12) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 21) ==  int2_gran_point(3, (s1 - 1) * 24 + 12) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-						end if
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
 				end if
 				
 			end do
@@ -1489,23 +1446,17 @@
 				
 				if(s1 == 0 .or. s2 == 0) CYCLE
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 13) ==  int2_gran_point(1, (s1 - 1) * 24 + 24) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 13) ==  int2_gran_point(2, (s1 - 1) * 24 + 24) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 13) ==  int2_gran_point(3, (s1 - 1) * 24 + 24) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-							int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-						end if	
-					end if
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
 				end if
 				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 17) ==  int2_gran_point(1, (s1 - 1) * 24 + 8) ) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 17) ==  int2_gran_point(2, (s1 - 1) * 24 + 8) ) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 17) ==  int2_gran_point(3, (s1 - 1) * 24 + 8) ) then
-							int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
-							int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
-						end if
-					end if
+				
+				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
+					int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
 				end if
+				
 				
 			end do
 		end do

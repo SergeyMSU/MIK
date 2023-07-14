@@ -6069,6 +6069,8 @@
 	
 	print*, "START PROGRAM"
 	
+	
+	
 	name_do = 186
 	name_posle = 999
 	   
