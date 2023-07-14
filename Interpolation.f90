@@ -21,6 +21,9 @@
 	real(8), allocatable :: int2_coord(:, :)    ! (3, :) набор координат двойственной сетки (центры ячеек сетки 1 + дополнительные)
 	
 	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
+	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)
+	! в какой зоне лежит данный узел
+	
     !real(8), allocatable :: int2_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
 	
 	
@@ -69,6 +72,7 @@
 				int2_Point_A(i + 1, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 				
 			end do
 		end do
@@ -80,6 +84,7 @@
 				int2_Point_A(i + 3, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 					
 			end do
 		end do
@@ -91,6 +96,7 @@
 				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 			end do
 		end do
 	end do
@@ -101,6 +107,7 @@
 				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
 				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 			end do
 		end do
 	end do
@@ -118,6 +125,7 @@
 				int2_Point_B(i + 1, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
 			end do
 		end do
 	end do
@@ -128,6 +136,7 @@
 				int2_Point_B(i + 3, j + 1, k) = gl_Cell_B(i, j, k)
 				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
 			end do
 		end do
 	end do
@@ -145,6 +154,7 @@
 				ijk = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 			end do
 		end do
 	end do
@@ -155,6 +165,7 @@
 				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 			end do
 		end do
 	end do
@@ -165,6 +176,7 @@
 				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
 				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 			end do
 		end do
 	end do
@@ -176,6 +188,7 @@
 	int2_Point_B(1, :, :) = N + 1
 	int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
 	int2_Cell_par(:, N + 1) = 0.0
+	int2_Cell_par2(:, N + 1) = 0
 	N = N + 1
 	
 	N1 = size(gl_Cell_A(:, 1, 1))
@@ -188,11 +201,13 @@
 			int2_Point_A(par_n_TS + 1, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS - 1, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_A(par_n_TS + 2, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS, j, k) )
 			N = N + 1
 		end do
 	end do
@@ -202,11 +217,13 @@
 			int2_Point_A(par_n_HP + 3, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP - 1, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_A(par_n_HP + 4, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP, j, k) )
 			N = N + 1
 		end do
 	end do
@@ -221,11 +238,13 @@
 			int2_Point_B(par_n_TS + 1, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS - 1, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS - 1, j, k) )
 			N = N + 1
 			
 			int2_Point_B(par_n_TS + 2, j + 1, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS, j, k) )
 			N = N + 1 
 		end do
 	end do
@@ -240,11 +259,13 @@
 			int2_Point_C(par_n_HP - par_n_TS + 1, j, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS, j, k) )
 			N = N + 1
 			
 			int2_Point_C(par_n_HP - par_n_TS + 2, j, k) = N + 1
 			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
+			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 			N = N + 1 
 		end do
 	end do
@@ -1201,25 +1222,15 @@
 				if(j == N2 .and. i == par_n_TS + 2) CYCLE
 				if(j == N2 - 1 .and. i == par_n_TS + 2) CYCLE
 				
-				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 3) == int2_gran_point(1, (s1 - 1) * 24 + 6)) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 3) == int2_gran_point(2, (s1 - 1) * 24 + 6)) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 3) == int2_gran_point(3, (s1 - 1) * 24 + 6)) then
-							int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-							int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-						end if
-					end if
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 3), int2_gran_point(:, (s1 - 1) * 24 + 6))) then
+					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
 				end if
 				
 				
-				
-				if(int2_gran_point(1, (s2 - 1) * 24 + 15) == int2_gran_point(1, (s1 - 1) * 24 + 9)) then
-					if(int2_gran_point(2, (s2 - 1) * 24 + 15) == int2_gran_point(2, (s1 - 1) * 24 + 9)) then
-						if(int2_gran_point(3, (s2 - 1) * 24 + 15) == int2_gran_point(3, (s1 - 1) * 24 + 9)) then
-							int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-							int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-						end if
-					end if
+				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 15), int2_gran_point(:, (s1 - 1) * 24 + 9))) then
+					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
 				end if
 				
 				
@@ -1825,6 +1836,25 @@
 	
 	end subroutine Int2_Get_tetraedron
 	
+	logical pure function Int2_Comparison(a, b)
+		! Сравнение наборов
+		integer(4), intent(in) :: a(3), b(3)
+		
+		if(a(1) == b(1) .or. a(1) == b(2) .or. a(1) == b(3)) then
+			if(a(2) == b(1) .or. a(2) == b(2) .or. a(2) == b(3)) then
+				if(a(3) == b(1) .or. a(3) == b(2) .or. a(3) == b(3)) then
+					Int2_Comparison = .True.
+					return
+				end if
+			end if
+		end if
+		
+		Int2_Comparison = .False.
+		return
+	
+	end function Int2_Comparison
+	
+	
 	subroutine Int2_Time_fly(r, V, time, num, next)
 	! Variables
 	real(8), intent(in) :: r(3), V(3)
@@ -1993,6 +2023,36 @@
 	
 	
 	end subroutine Int2_Get_par_fast
+	
+	subroutine Int2_Get_par_fast2(x, y, z, num, PAR)
+	! Здесь точно известно в каком тетраэдое точка
+	! Найти тетраедр, которому принадлежит точка и получить значения параметров
+	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
+	! предполагается, что матрицы лежат в памяти
+	! num по умолчанию должен быть равен 3
+	implicit none
+	real(8), intent(in) :: x, y, z
+	real(8), intent(out) :: PAR(9)     ! Выходные параметры
+	integer(4), intent(in) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	
+	real(8), dimension(4, 4) :: Minv
+	real(8), dimension(1, 4) :: vec
+	
+	
+	
+	Minv = int2_all_tetraendron_matrix(:, :, num)
+	
+	vec(1, 1) = 1.0_8
+	vec(1, 2:4) = (/ x, y, z /)
+	
+	vec = MATMUL(vec, Minv)
+
+	
+	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+	
+	
+	end subroutine Int2_Get_par_fast2
 	
 	logical pure function Belong_tetraedron(x, y, z, num)
 	! Принадлежит ли точка тетраедру 
@@ -2466,6 +2526,8 @@
 	allocate(int2_plane_tetraendron(4, 4, 6 * n))
 	
 	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
+	allocate(int2_Cell_par2( 1, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
+	
 	
 	int2_plane_tetraendron = 0.0
 	int2_coord = 0.0
@@ -2484,6 +2546,7 @@
 	int2_gran_sosed = 0
 	!int2_gran_normal = 0.0
 	int2_Cell_par = 0.0
+	int2_Cell_par2 = 1
 	
 	end subroutine Int2_Set_Interpolate
 	
