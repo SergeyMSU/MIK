@@ -14,6 +14,7 @@
 	! Строиться сетка тетраэдров на двойственной сетке
 	USE GEO_PARAM
 	USE STORAGE
+	USE My_func
 	
 	
 	logical :: int2_work             ! Определена ли интерполяционная сетка (выделена ли память и т.д.)
@@ -50,13 +51,16 @@
 	!real(8), allocatable :: int2_gran_normal(:, :)  ! (3 точки, :)
 	real(8), allocatable :: int2_plane_tetraendron(:, :, :)  ! (4 числа задают плоскость, 4 грани, : тетраэдров)
 	! A x + B y + C z + D = 0  при этом ABC - внешняя нормаль к тетраэдру (если > 0, то точка вне тетраэдра)
+	integer(4), allocatable :: int2_all_Volume(:)  ! Объём тетраэдров
+	
+	real(8), allocatable :: int2_Moment(:, :, :)  ! (9, par_n_sort, :)
 	
 	contains
 	
 	subroutine Int2_Initial()
 	
 	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj, s1, s2, ss1, ss2, l
-	real(8) :: a1(3), a2(3), a3(3), b1(3), b2(3), b3(3), aa(3), bb(3), normal(3)
+	real(8) :: a1(3), a2(3), a3(3), a4(3), b1(3), b2(3), b3(3), aa(3), bb(3), normal(3), S, di
 	! Заполняем интерполяционную сетку из основной
 	int2_Point_A(1, :, :) = -1  ! Центральная точка
 	int2_Point_B(1, :, :) = -1  ! Центральная точка
@@ -1638,6 +1642,35 @@
 		
 	end do
 	
+	! Вычислим объёмы тетраэдров ******************************************************************
+	N1 = size(int2_all_tetraendron(1, :))
+	do i = 1, N1
+		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+		if(int2_all_tetraendron_point(2, i) == 0) CYCLE
+		if(int2_all_tetraendron_point(3, i) == 0) CYCLE
+		if(int2_all_tetraendron_point(4, i) == 0) CYCLE
+		
+		a1 = int2_coord(:, int2_all_tetraendron_point(1, i))
+		a2 = int2_coord(:, int2_all_tetraendron_point(2, i))
+		a3 = int2_coord(:, int2_all_tetraendron_point(3, i))
+		a4 = int2_coord(:, int2_all_tetraendron_point(4, i))
+		
+		b1 = a2 - a1
+		b2 = a3 - a1
+		
+		b3(1) = b1(2) * b2(3) - b1(3) * b2(2)
+        b3(2) = b1(3) * b2(1) - b1(1) * b2(3)
+        b3(3) = b1(1) * b2(2) - b1(2) * b2(1)
+		S = norm2(b3)
+		b3 = b3/S
+		
+		di = dabs(DOT_PRODUCT(a4, b3) - DOT_PRODUCT(b3, a1))
+		
+		int2_all_Volume(i) = S * di/3.0
+		
+	end do
+	
+	
 	
 	!print*, "proverka sosedey"
 	!
@@ -1734,16 +1767,19 @@
 	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка
 	integer(4) :: num2
 	!integer(4) :: nummm(8), ijk
-	integer(4) :: i, j, m, mk
+	integer(4) :: i, j, m, mk, rk
 	real(8) :: r(3)
 	
 	!nummm = 0
 	!ijk = 1
 	mk = 0  ! Счётчик итераций
+	rk = 0
 	r = (/ x, y, z /)
 	
 	if (int2_all_tetraendron(1, num) == 0) then
+		
 		print*, "Takogo tetraedra net! ERROR  86tryjbyui98765rtyujhvdrtyu8765erthgg"
+		return
 	end if
 	
 	
@@ -1754,7 +1790,14 @@
 	!if(ijk > 8) ijk = 1
 	mk = mk + 1
 	
-	if(mk > 10000) then
+	if(mk > 3000) then
+		if(rk == 0) then
+			r(1) = r(1) + 0.000001
+			r(2) = r(2) + 0.000001
+			mk = 1
+			rk = 1
+			GO TO 11
+		end if
 		num = -1
 		return
 	end if
@@ -1857,7 +1900,7 @@
 	call Int2_Get_tetraedron(x, y, z, num)
 	
 	if(num == 0) then
-		print*, "Nen tetr"
+		print*, "Net tetr"
 		return
 	end if
 	
@@ -1961,6 +2004,11 @@
 	
 	call Int2_Get_tetraedron(x, y, z, num)
 	
+	if(num == 0) then
+		!print*, "Net tetr"
+		return
+	end if
+	
 	Minv = int2_all_tetraendron_matrix(:, :, num)
 	
 	vec(1, 1) = 1.0_8
@@ -2023,6 +2071,183 @@
 	Belong_tetraedron = .True.
 	return
 	end function Belong_tetraedron
+	
+	subroutine Int_2_Cut_tetr(cell, A, B, C, D, bb, CUT)
+	! Разрез тетраэдра плоскостью, результат - три точки
+		integer(4), intent(in) :: cell    ! Какой тетрадр режим
+		real(8), intent(in) :: A, B, C, D  ! Уравнение плоскости
+		logical, intent(out) :: bb
+		real(8), intent(out) :: CUT(3, 4)  ! (3 координаты, 4 точки)
+		
+		real(8) :: a1(3), a2(3), a3(3), a4(3), n(3), t, AA(3), p(3, 4)
+		integer(4) :: i1, i2, i3, i4, M(2, 6), i, k
+		
+		if(int2_all_tetraendron_point(1, cell) == 0) then
+			bb = .False.   ! Плоскость не пересекает тетраэдр
+			return
+		end if
+		
+		if(int2_all_tetraendron_point(2, cell) == 0) then
+			bb = .False.   ! Плоскость не пересекает тетраэдр
+			return
+		end if
+		
+		if(int2_all_tetraendron_point(3, cell) == 0) then
+			bb = .False.   ! Плоскость не пересекает тетраэдр
+			return
+		end if
+		
+		if(int2_all_tetraendron_point(4, cell) == 0) then
+			bb = .False.   ! Плоскость не пересекает тетраэдр
+			return
+		end if
+		
+		
+		
+		a1 = int2_coord(:, int2_all_tetraendron_point(1, cell))
+		a2 = int2_coord(:, int2_all_tetraendron_point(2, cell))
+		a3 = int2_coord(:, int2_all_tetraendron_point(3, cell))
+		a4 = int2_coord(:, int2_all_tetraendron_point(4, cell))
+		
+		i1 = signum(a1(1) * A + a1(2) * B + a1(3) * C + D)
+		i2 = signum(a2(1) * A + a2(2) * B + a2(3) * C + D)
+		i3 = signum(a3(1) * A + a3(2) * B + a3(3) * C + D)
+		i4 = signum(a4(1) * A + a4(2) * B + a4(3) * C + D)
+		
+		if(i1 == 0 .and. i2 == 1 .and. i3 == 1 .and. i4 == 1) GO TO 101
+		if(i1 == 0 .and. i2 == -1 .and. i3 == -1 .and. i4 == -1) GO TO 101
+		if(i1 == 1 .and. i2 == 0 .and. i3 == 1 .and. i4 == 1) GO TO 101
+		if(i1 == -1 .and. i2 == 0 .and. i3 == -1 .and. i4 == -1) GO TO 101
+		if(i1 == 1 .and. i2 == 1 .and. i3 == 0 .and. i4 == 1) GO TO 101
+		if(i1 == -1 .and. i2 == -1 .and. i3 == 0 .and. i4 == -1) GO TO 101
+		if(i1 == 1 .and. i2 == 1 .and. i3 == 1 .and. i4 == 0) GO TO 101
+		if(i1 == -1 .and. i2 == -1 .and. i3 == -1 .and. i4 == 0) GO TO 101
+		
+		
+		if(i1 /= 0) then
+			if(i1 == i2) then
+				i2 = signum(a3(1) * A + a3(2) * B + a3(3) * C + D)
+				if(i1 == i2) then
+					i2 = signum(a4(1) * A + a4(2) * B + a4(3) * C + D)
+					if(i1 == i2) then
+						bb = .False.   ! Плоскость не пересекает тетраэдр
+						return
+					end if
+				end if
+			end if
+		end if
+		
+		! Плоскость пересекает тетраэдр
+		bb = .True.
+		AA = (/ A, B, C /)
+		p(:, 1) = a1
+		p(:, 2) = a2
+		p(:, 3) = a3
+		p(:, 4) = a4
+			
+		M(:, 1) = (/ 1, 2 /)
+		M(:, 2) = (/ 1, 3 /)
+		M(:, 3) = (/ 1, 4 /)
+		M(:, 4) = (/ 2, 4 /)
+		M(:, 5) = (/ 2, 3 /)
+		M(:, 6) = (/ 3, 4 /)
+		
+		k = 1
+		do i = 1, 6
+			i1 = M(1, i)
+			i2 = M(2, i)
+			if(signum(DOT_PRODUCT(AA, p(:, i1)) + D) == signum(DOT_PRODUCT(AA, p(:, i2)) + D)) CYCLE
+			n = p(:, i2) - p(:, i1)
+			t = (-D - DOT_PRODUCT(AA, p(:, i1)))/DOT_PRODUCT(AA, n)
+			CUT(:, k) = p(:, i1) + t * n
+			k = k + 1
+			if(k == 5) EXIT
+		end do
+		
+		if(k == 4) then
+			CUT(:, 4) = CUT(:, 3)
+		end if
+		
+		
+		return
+		
+101		continue
+		bb = .False.   ! Плоскость не пересекает тетраэдр
+		return
+	
+	end subroutine Int_2_Cut_tetr
+	
+	subroutine Int_2_Print_par_2D(A, B, C, D)  ! Печатает 2Д сетку с линиями в Техплот
+	
+		real(8), intent(in) :: A, B, C, D
+		integer :: i, n, j, num
+		real(8) :: Mach, PAR(9), PAR_MK(9), a1(3), a2(3), b1(3), b2(3), b3(3), S
+		real(8), allocatable :: CUT(:, :, :)
+		logical :: bb
+		
+		allocate(CUT(3, 4, 500000))
+		
+		num = 3
+		n = 1
+		do i = 1, size(int2_all_tetraendron(1, :))
+			call Int_2_Cut_tetr(i, A, B, C, D, bb, CUT(:, :, n))
+			
+			if (bb == .True.) then
+				! Если четвёрка неправильно ориентирована
+				a1 = CUT(:, 2, n) - CUT(:, 1, n)
+				a2 = CUT(:, 4, n) - CUT(:, 3, n)
+				
+				if(DOT_PRODUCT(a1, a2) > 0) then
+					a1 = CUT(:, 4, n)
+					CUT(:, 4, n) = CUT(:, 3, n)
+					CUT(:, 3, n) = a1
+				end if
+
+				b1 = CUT(:, 3, n) - CUT(:, 1, n)
+				b2 = CUT(:, 4, n) - CUT(:, 2, n)
+				b3(1) = b1(2) * b2(3) - b1(3) * b2(2)
+				b3(2) = b1(3) * b2(1) - b1(1) * b2(3)
+				b3(3) = b1(1) * b2(2) - b1(2) * b2(1)
+				S = norm2(b3)
+				if(S < 0.000001) CYCLE
+				
+				b1 = (CUT(:, 1, n) + CUT(:, 2, n) + CUT(:, 3, n) + CUT(:, 4, n))/4.0
+				do j = 1, 4
+					b2 = b1 - CUT(:, j, n)
+					CUT(:, j, n) = CUT(:, j, n) + b2 * 0.0001 / norm2(b2)
+				end do
+				
+				
+				n = n + 1
+				!print*, i
+				!pause
+			end if
+			if(n > 500000) EXIT
+		end do
+			
+
+		open(1, file = 'print_par_2D_interpolate.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
+		write(1,*) "'bx', 'by', 'bz', 'Q'"
+		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
+
+		do i = 1, (n - 1)
+			do j = 1, 4
+				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR)
+				if(num < 1) num = 3
+				write(1,*) CUT(:, j, i), PAR
+			end do
+		end do
+
+		do i = 1, (n - 1)
+			write(1,*) 4 * (i - 1) + 1, 4 * (i - 1) + 2, 4 * (i - 1) + 3, 4 * (i - 1) + 4
+		end do
+		
+		deallocate(CUT)
+		close(1)
+
+
+	end subroutine Int_2_Print_par_2D
 	
 	subroutine Int2_Print_my()
 		implicit none
@@ -2444,7 +2669,7 @@
 	
 	
 	subroutine Int2_Set_Interpolate()
-	
+	USE GEO_PARAM
 	implicit none
 	integer :: n
 	! Выделения памяти и начальная инициализация
@@ -2469,6 +2694,7 @@
 	allocate(int2_all_neighbours(6, size(int2_all_Cell(1, :)) ))
 	
 	allocate(int2_all_tetraendron(4, 6 * n))
+	allocate(int2_all_Volume(6 * n))
 	allocate(int2_all_tetraendron_point(4, 6 * n))
 	allocate(int2_all_tetraendron_matrix(4, 4, 6 * n))
 	allocate(int2_gran_point(3, 6 * n * 4))
@@ -2478,8 +2704,10 @@
 	
 	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Cell_par2( 1, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
+	allocate(int2_Moment(9, par_n_sort, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
 	
-	
+	int2_Moment = 0.0
+	int2_all_Volume = 0.0
 	int2_plane_tetraendron = 0.0
 	int2_coord = 0.0
 	int2_all_Cell = -100

@@ -6221,25 +6221,6 @@
 	
 	call Int2_Set_Interpolate()
 	call Int2_Initial()
-	call Int2_Print_point_plane()
-	call Int2_Print_center()
-	call Int2_Print_setka_2()
-	call Int2_Print_sosed()
-	call Int2_Print_my()
-	call Int2_Print_tetraedron(1195701)
-	call Int2_Print_tetraedron(1195978)
-	call Int2_Print_tetraedron(1195703)
-	call Int2_Print_tetraedron(1195700)
-	call Int2_Print_tetraedron(1195980)
-	call Int2_Print_tetraedron(165849)
-	call Int2_Print_tetraedron(165850)
-	call Int2_Print_tetraedron(166285)
-	call Int2_Print_tetraedron(1005785)
-	call Int2_Print_tetraedron(1006035)
-	call Int2_Print_tetraedron(1006037)
-	call Int2_Print_tetraedron(1007840)
-	call Int2_Print_tetraedron(1004228)
-	call Int2_Print_tetraedron(165851)
 	call Int2_Set_interpol_matrix()
 	
 	!n1 = size(int2_Cell_B(:, 1, 1))
@@ -6272,7 +6253,9 @@
 	!call Int2_Get_par(10.0_8, 10.0_8, 10.0_8, i, F)
 	
 	print*, "M_K"
-	call M_K_start()
+	!call M_K_start()
+	!call Int2_Print_tetraedron(109)
+	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8)
 	
 	pause
 	!call Set_Interpolate_main()

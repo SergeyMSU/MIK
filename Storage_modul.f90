@@ -50,6 +50,20 @@
 	real(8), parameter :: par_B_inf = 13.9666_8
 	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
+	
+	! Параметры для Монте-Карло
+	integer(4), parameter :: par_n_potok = 1  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_zone = 7  !  Количество радиусов (но есть ещё внешняя зона)
+	integer(4), parameter :: par_m_zone = 6  !  Количество лучей по углу (от 0 до 180)
+	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
+	real(8), parameter :: par_Rmax = 120.0  !  Радиус сферы, с которой запускаем частицы
+	real(8), parameter :: par_Rleft = -240.0 + 0.01  !  Задняя стенка
+	real(8), parameter :: par_Rup = 300.0 - 0.01  !  Верхняя стенка
+	integer(4), parameter :: MK_N1 = 10   ! Число исходных частиц первого типа (с полусферы)
+	integer(4), parameter :: MK_N2 = 0  
+	integer(4), parameter :: MK_N3 = 0   
+	integer(4), parameter :: MK_N4 = 0   
+	
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри
     
@@ -165,6 +179,7 @@
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
+	real(8), allocatable :: gl_Cell_par_MK(:,:,:)           ! Набор параметров (9, сортов,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
     character, allocatable :: gl_Cell_type(:)           ! Тип каждой ячейки А, Б, С
     integer(4), allocatable :: gl_Cell_number(:, :)     ! (3, :) номер каждой ячейки внутри своего типа
     
@@ -270,6 +285,7 @@
     
     allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
     allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+	allocate(gl_Cell_par_MK(9, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     
     ! Посчитаем число узлов в сетке
     par_n_points = par_n_END * par_l_phi * (par_m_A + par_m_BC) + par_m_K * (par_n_TS + par_m_O) * par_l_phi + par_l_phi * (par_n_END - par_n_TS + 1) * par_m_O - &
@@ -334,6 +350,7 @@
     gl_RAY_D = -1
     gl_RAY_E = -1
     
+	gl_Cell_par_MK = 0.0
     gl_Cell_dist = 0.0
     gl_Cell_center = 0.0
     gl_Gran_POTOK = 0.0

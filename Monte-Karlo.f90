@@ -9,12 +9,13 @@ module Monte_Karlo
 	
 	implicit none
 	
-	integer(4), parameter :: par_stek = 1000000  ! Глубина стека (заранее выделяется память под него)
-	integer(4), parameter :: par_n_potok = 1  ! Число потоков (у каждого потока свой стек)
-	integer(4), parameter :: par_n_zone = 7  !  Количество радиусов (но есть ещё внешняя зона)
-	integer(4), parameter :: par_m_zone = 6  !  Количество лучей по углу (от 0 до 180)
-	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
-	real(8), parameter :: par_Rmax = 200.0  !  Радиус сферы, с которой запускаем частицы
+	integer(4), parameter :: par_stek = 10000  ! Глубина стека (заранее выделяется память под него)
+	
+	
+	real(8) :: sqv_1, sqv_2, sqv_3, sqv_4, sqv   ! Потоки частиц через 
+	real(8) :: MK_mu1, MK_mu2, MK_mu3, MK_mu4, MK_muall
+	integer(4) :: MK_N
+	
 	
 	real(8) :: MK_R_zone(par_n_zone)   ! Радиусы зон
 	real(8) :: MK_al_zone(par_m_zone)   ! Лучи зон
@@ -26,7 +27,6 @@ module Monte_Karlo
 	
 	
 	
-	integer(4), parameter :: par_num_1 = 1   ! Число исходных частиц первого типа (с полусферы)
 	
 	real(8), allocatable :: M_K_particle(:, :, :)   ! Частицы (8, par_stek, число потоков)
 	! (три координаты, три скорости, вес, радиус перегелия)
@@ -39,25 +39,32 @@ module Monte_Karlo
 	integer(4), allocatable :: stek(:)   ! (: число потоков) Переменная чтения и записи в стек
 	! Где стоит переменная, там что-то лежит, чтобы записать, нужно увеличить значение на 1
 	
+	real(8), allocatable :: M_K_Moment(:, :, :)  ! (9, par_n_sort, :) То, что накапливаем в ячейках (по каждому сорту отдельно)
+	!(rho, u, v, w, T, Iu, Iv, Iw, IT)
+	
+	
 	contains
 	
 	
 	subroutine M_K_start()
 	! Variables
-	integer(4) :: potok, num, i, cell, to_i, to_j
+	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
 	logical :: bb
-	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel
+	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no
+	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
 	
 	call M_K_Set()    ! Создали массивы
 	call Get_sensor() ! Считали датчики случайных чисел
+	call M_K_init()   ! Инициализируем веса и т.д.
 	
+	print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4, MK_muall
 	
 	! Запускаем каждый поток в параллельном цикле
 	do potok = 1, par_n_potok    ! Локальные:  num, mu_, Wt_, Wp_, Wr_, X_, bb, i, ksi, Vx, Vy, Vz, cell
 		
 		! Запускаем частицы первого типа
-		do num = 1, par_num_1
+		do num = 1, MK_N1
 			continue
 			call MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
 			
@@ -76,7 +83,7 @@ module Monte_Karlo
 				if(i /= par_n_zone + 1 .or. bb == .True.) then
 					! Добавляем частицу в стек
 					stek(potok) = stek(potok) + 1
-					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) /)
+					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) * MK_mu1 /)
 					M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 					M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 					call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -92,20 +99,74 @@ module Monte_Karlo
 		
 	end do
 	
+	! Бежим по всем тетраэдрам и нормируем моменты
+	do i = 1, size(M_K_Moment(1, 1, :))
+		
+		if(int2_all_Volume(i) <= 0.00000001) CYCLE
+		no = MK_N * int2_all_Volume(i)
+		
+		MK_Mu(:, :, i) = sqv * MK_Mu(:, :, i) / no
+
+		do j = 1, par_n_sort
+			if(M_K_Moment(1, j, i) > 0.0000001) then
+				M_K_Moment(2:4, j, i) = M_K_Moment(2:4, j, i)/M_K_Moment(1, j, i)  ! Скорости
+				M_K_Moment(5, j, i) = (2.0/3.0) * ( M_K_Moment(5, j, i)/M_K_Moment(1, j, i) - &
+					kvv(M_K_Moment(2, j, i), M_K_Moment(3, j, i), M_K_Moment(4, j, i)) )  ! Temp
+			end if
+		end do
+		
+		M_K_Moment(6:9, :, i) = M_K_Moment(6:9, :, i) * par_n_p_LISM
+	end do
 	
-	!i = 3
-	!
-	!
-	!
-	!M_K_particle(:, 1, 1) = (/ 35.0, 20.0, 3.0, -3.0, 0.01, 0.333, 1.0 /)
-	!stek(1) = 1
-	!call Int2_Get_tetraedron( M_K_particle(1, 1, 1), M_K_particle(2, 1, 1), M_K_particle(3, 1, 1), i)
-	!M_K_particle_2(1, 1, 1) = i
-	!
-	!call M_K_Fly(1)
-	!
+	! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
+	int2_Moment = 0.0
+	allocate(vol_sr(size(int2_Moment(1, 1, :))))
+	vol_sr = 0.0
+	
+	do i = 1, size(M_K_Moment(1, 1, :))        ! Бежим по тетраэрам
+		if(int2_all_Volume(i) <= 0.00000001) CYCLE
+		do j = 1, 4
+			pp = int2_all_tetraendron_point(j, i)
+			vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
+			int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i) * int2_all_Volume(i)
+		end do
+	end do
+	
+	do i = 1, size(int2_Moment(1, 1, :))
+		if(vol_sr(i) <= 0.0000001) CYCLE
+		int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
+	end do
+	
+	deallocate(vol_sr)
+	! ******************************************************************************************************************
 	
 	end subroutine M_K_start
+	
+	subroutine M_K_init()
+	! Variables
+	real(8) :: Y
+	
+	
+	Y = dabs(par_Velosity_inf)
+	sqv_1 = (par_Rmax) * (0.5 * (par_Rmax) * par_pi_8 * Y * &
+		(erf(Y) * (1.0 + 1.0 / (2.0 * (Y**2))) + 1.0 + exp(-(Y**2)) / (Y * par_sqrtpi)))  ! Запуск с полусферы
+	sqv_2 = par_sqrtpi * (par_Rup) * dabs(par_Rleft) ! Верхняя стенка
+	sqv_3 = par_pi_8 * (par_Rup**2) * exp(-(par_Velosity_inf**2)) * &
+	(1.0 + exp(par_Velosity_inf**2) * par_sqrtpi * par_Velosity_inf * (1.0 + erf(par_Velosity_inf))) / (2.0 * par_sqrtpi)
+	sqv_4 = (par_sqrtpi / 2.0) * ((par_Rmax**2) - (par_Rup**2)) * &
+		exp(-(par_Velosity_inf**2)) * (par_sqrtpi * par_Velosity_inf * erfc(par_Velosity_inf) * exp(par_Velosity_inf**2) - 1.0) ! Передняя стенка (выше полусферы)
+	sqv = sqv_1 + sqv_2 + sqv_3 + sqv_4
+	
+	MK_N = MK_N1 + MK_N2 + MK_N3 + MK_N4  
+	MK_mu1 = (sqv_1/ sqv) * (1.0 * MK_N / MK_N1)
+	MK_mu2 = (sqv_2/ sqv) * (1.0 * MK_N / MK_N2)
+	MK_mu3 = (sqv_3/ sqv) * (1.0 * MK_N / MK_N3)
+	MK_mu4 = (sqv_4/ sqv) * (1.0 * MK_N / MK_N4)
+	MK_muall = MK_mu1 + MK_mu2 + MK_mu3 + MK_mu4
+	! Body of M_K_init
+	
+	
+	end subroutine M_K_init
 	
 
 	
@@ -130,6 +191,7 @@ module Monte_Karlo
 	
 	real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
 	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
+	real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
 	real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
 	real(8) :: v1, v2, v3, r_peregel
 	
@@ -192,6 +254,11 @@ module Monte_Karlo
 		
 			! Найдём время до перезарядки и веса частиц  ****************************************************************************************
 			u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
+			u1 =  vx - particle(4)
+			u2 =  vy - particle(5)
+			u3 =  vz - particle(6)
+			skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
+			
 			if (u / cp > 7.0) then
 				uz = MK_Velosity_1(u, cp);
 				nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
@@ -221,7 +288,33 @@ module Monte_Karlo
 			from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
 			from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
 			
-			! Накапливаем моменты и т.д.
+			! Накапливаем моменты и т.д. _____________________________________________________________
+			M_K_Moment(1, particle_2(2), cell) = M_K_Moment(1, particle_2(2), cell) + t_ex * mu + t2 * mu2
+			M_K_Moment(2:4, particle_2(2), cell) = M_K_Moment(2:4, particle_2(2), cell) + (t_ex * mu + t2 * mu2) * particle(4:6)
+			M_K_Moment(5, particle_2(2), cell) = M_K_Moment(5, particle_2(2), cell) + &
+				(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
+			
+			if (u / cp > 7.0) then
+				uz_M = MK_Velosity_2(u, cp)/ (uz * (cp**2) * cp * par_pi_8 * par_sqrtpi)
+				uz_E = MK_Velosity_3(u, cp)
+				
+				M_K_Moment(6, particle_2(2), cell) = M_K_Moment(6, particle_2(2), cell) - mu_ex * uz_M * u1 / u
+				M_K_Moment(7, particle_2(2), cell) = M_K_Moment(7, particle_2(2), cell) - mu_ex * uz_M * u2 / u
+				M_K_Moment(8, particle_2(2), cell) = M_K_Moment(8, particle_2(2), cell) - mu_ex * uz_M * u3 / u
+				M_K_Moment(9, particle_2(2), cell) = M_K_Moment(9, particle_2(2), cell) + &
+					mu_ex * (-0.25 * (3.0 * cp**2 + 2.0 * u**2) * (uz_E / uz) - uz_M * skalar / u)
+			else
+				k1 = MK_int_1(u, cp)
+				k2 = MK_int_2(u, cp)
+				k3 = MK_int_3(u, cp)
+				M_K_Moment(6, particle_2(2), cell) = M_K_Moment(6, particle_2(2), cell) + mu_ex * (k2/k1) * u1 / u
+				M_K_Moment(7, particle_2(2), cell) = M_K_Moment(7, particle_2(2), cell) + mu_ex * (k2/k1) * u2 / u
+				M_K_Moment(8, particle_2(2), cell) = M_K_Moment(8, particle_2(2), cell) + mu_ex * (k2/k1) * u3 / u
+				M_K_Moment(9, particle_2(2), cell) = M_K_Moment(9, particle_2(2), cell) + &
+					mu_ex * (-0.5 * k3/k1 + k2/k1 * skalar / u)
+			end if
+			
+			!_________________________________________________________________________________________
 			
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
@@ -341,11 +434,14 @@ module Monte_Karlo
 		allocate(sensor(3, 2, par_n_potok))
 		allocate(stek(par_n_potok))
 		allocate(MK_Mu(par_n_zone + 1, par_m_zone + 1, par_n_sort))
+		allocate(M_K_Moment(9, par_n_sort, size(int2_all_tetraendron(1, :))))
+		
 	
 		MK_Mu = 100.0
 		M_K_particle = 0.0
 		M_K_particle_2 = 0
 		stek = 0
+		M_K_Moment = 0.0
 		sensor = 1
 		
 		! Задаём радиусы зон
