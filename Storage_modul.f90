@@ -53,17 +53,21 @@
 	
 	! Параметры для Монте-Карло
 	integer(4), parameter :: par_n_potok = 32  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_parallel = 10  ! Для распараллеливания цикла (т.е. каждый поток будет в среднем обрабатывать
+	! такое число итераций
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
 	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
 	integer(4), parameter :: par_n_moment = 9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 120.0  !  Радиус сферы, с которой запускаем частицы
-	real(8), parameter :: par_Rleft = -300.0 + 0.01  !  Задняя стенка
+	real(8), parameter :: par_Rleft = -400.0 + 0.01  !  Задняя стенка
 	real(8), parameter :: par_Rup = 250.0 - 0.01  !  Верхняя стенка
-	integer(4), parameter :: MK_N1 = 200   ! Число исходных частиц первого типа (с полусферы)
-	integer(4), parameter :: MK_N2 = 50  
-	integer(4), parameter :: MK_N3 = 10   
-	integer(4), parameter :: MK_N4 = 100  
+	
+	! Число частиц у каждого потока!
+	integer(4), parameter :: MK_N1 = 2 * 2000/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
+	integer(4), parameter :: MK_N2 = 2 * 500/par_n_parallel  
+	integer(4), parameter :: MK_N3 = 2 * 100/par_n_parallel     ! (вылет сзади)
+	integer(4), parameter :: MK_N4 = 2 * 1000/par_n_parallel   ! (вылет спереди с цилиндра)
 	
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри

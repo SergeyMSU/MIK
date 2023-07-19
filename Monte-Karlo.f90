@@ -10,7 +10,7 @@ module Monte_Karlo
 	
 	implicit none
 	
-	integer(4), parameter :: par_stek = 10000  ! Глубина стека (заранее выделяется память под него)
+	integer(4), parameter :: par_stek = 5000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
 	
 	
@@ -52,7 +52,7 @@ module Monte_Karlo
 	
 	USE OMP_LIB
 	! Variables
-	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp
+	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
 	logical :: bb
 	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no, ksi1, ksi2, ksi3, ksi4, ksi5
@@ -72,18 +72,25 @@ module Monte_Karlo
 
 	!$OpenMP call omp_set_num_threads(min(32, par_n_potok))
 	!$OpenMP start_time = omp_get_wtime()
+	step = 1
 	
 	!$omp parallel
 	
-	!$omp do private(num, mu_, Wt_, Wp_, Wr_, X_, bb, i, Vx, Vy, Vz, cell, sin_, x, phi, &
+	!$omp do private(potok, num, mu_, Wt_, Wp_, Wr_, X_, bb, i, Vx, Vy, Vz, cell, sin_, x, phi, &
 	!$OpenMP y, z, ksi, r_peregel, no, to_i, to_j, ksi1, ksi2, ksi3, ksi4, ksi5, ll, rr, Vphi, Vr)
-	do potok = 1, par_n_potok 
-		print*, "start potok = ", potok
+	do iter = 1, par_n_potok * par_n_parallel
+	
+		potok = omp_get_thread_num() + 1
+		
+		!$omp critical
+		print*, "start potok = ", potok, " iter = ", iter, "   step = ", step, "from = ", par_n_potok * par_n_parallel
+		step = step + 1
+		!$omp end critical
 		
 		cell = 3
 		! Запускаем частицы первого типа (с полусферы)
 		do num = 1, MK_N1
-			if( mod(num, 100) == 0) then
+			if( mod(num, 100000) == 0) then
 				print*, "num = ", num, "  from ", MK_N1, "  potok = ", potok
 				!print*, sensor(:, 1, potok), sensor(:, 2, potok)
 			end if
@@ -185,7 +192,7 @@ module Monte_Karlo
 			call M_K_Fly(potok)
 		end do
 		
-		! Запускаем частицы третьего типа (вылет сзади)
+		! Запускаем частицы третьего типа (вылет спереди с цилиндра)
 		do num = 1, MK_N4
 			call MK_Velosity_initial(potok, Vx, Vy, Vz)
 			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
@@ -195,10 +202,10 @@ module Monte_Karlo
 			y = rr * cos(phi)
 			z = rr * sin(phi)
 			
-			call Int2_Get_tetraedron(-0.001_8, y, z, cell)
+			call Int2_Get_tetraedron(-0.02_8, y, z, cell)
 			
 			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ -0.001_8, y, z, Vx, Vy, Vz,  MK_mu4 /)
+			M_K_particle(1:7, stek(potok), potok) = (/ -0.02_8, y, z, Vx, Vy, Vz,  MK_mu4 /)
 			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -206,6 +213,9 @@ module Monte_Karlo
 			M_K_particle(8, stek(potok), potok) = r_peregel
 			M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 			M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+
+			call M_K_Fly(potok)
+			
 		end do
 		
 		
@@ -219,7 +229,10 @@ module Monte_Karlo
 	!$OpenMP end_time = omp_get_wtime()
 	print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 	
-	M_K_Moment(:, :, :, 1) = SUM(M_K_Moment(:, :, :, :), dim = 4)
+	do i = 2, par_n_potok
+		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
+	end do
+	
 	
 	! Бежим по всем тетраэдрам и нормируем моменты
 	do i = 1, size(M_K_Moment(1, 1, :, 1))
@@ -321,7 +334,7 @@ module Monte_Karlo
 	MK_mu3 = (sqv_3/ sqv) * (1.0 * MK_N / MK_N3)
 	MK_mu4 = (sqv_4/ sqv) * (1.0 * MK_N / MK_N4)
 	! Body of M_K_init
-	MK_N = MK_N * par_n_potok
+	MK_N = MK_N * par_n_potok * par_n_parallel
 	
 	
 	end subroutine M_K_init
@@ -673,7 +686,7 @@ module Monte_Karlo
 		
 		do j = 1, par_m_zone + 1
 			do i = 1, par_n_zone
-				MK_Mu(i, j, :) = 0.6 !(MK_R_zone(i)/par_Rmax)**(1.3_8)
+				MK_Mu(i, j, :) = 1.0 !(MK_R_zone(i)/par_Rmax)**(1.3_8)
 			end do
 		end do
 		
