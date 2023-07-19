@@ -32,6 +32,11 @@
 	
 	contains 
 	
+	real(8) pure function kvv(x, y, z)
+	    real(8), intent (in) :: x, y, z
+	    kvv = x**2 + y**2 + z**2
+    end function kvv
+	
 	!@cuf attributes(host, device) & 
     real(8) pure function polar_angle(x, y)
     use GEO_PARAM
@@ -6253,11 +6258,12 @@
 	!call Int2_Get_par(10.0_8, 10.0_8, 10.0_8, i, F)
 	
 	print*, "M_K"
-	!call M_K_start()
+	call M_K_start()
 	!call Int2_Print_tetraedron(109)
-	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8)
+	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+	call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 	
-	pause
+	!pause
 	!call Set_Interpolate_main()
 	!call Save_interpolate_bin(186)
 	

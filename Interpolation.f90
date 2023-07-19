@@ -23,6 +23,7 @@
 	
 	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)
+	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
 	! в какой зоне лежит данный узел
 	
     !real(8), allocatable :: int2_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
@@ -51,9 +52,8 @@
 	!real(8), allocatable :: int2_gran_normal(:, :)  ! (3 точки, :)
 	real(8), allocatable :: int2_plane_tetraendron(:, :, :)  ! (4 числа задают плоскость, 4 грани, : тетраэдров)
 	! A x + B y + C z + D = 0  при этом ABC - внешняя нормаль к тетраэдру (если > 0, то точка вне тетраэдра)
-	integer(4), allocatable :: int2_all_Volume(:)  ! Объём тетраэдров
+	real(8), allocatable :: int2_all_Volume(:)  ! Объём тетраэдров
 	
-	real(8), allocatable :: int2_Moment(:, :, :)  ! (9, par_n_sort, :)
 	
 	contains
 	
@@ -1645,10 +1645,16 @@
 	! Вычислим объёмы тетраэдров ******************************************************************
 	N1 = size(int2_all_tetraendron(1, :))
 	do i = 1, N1
-		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
-		if(int2_all_tetraendron_point(2, i) == 0) CYCLE
-		if(int2_all_tetraendron_point(3, i) == 0) CYCLE
-		if(int2_all_tetraendron_point(4, i) == 0) CYCLE
+		
+		if(int2_all_tetraendron_point(1, i) == 0 .or. int2_all_tetraendron_point(2, i) == 0 .or. &
+			int2_all_tetraendron_point(3, i) == 0 .or. int2_all_tetraendron_point(4, i) == 0) then
+			int2_all_tetraendron_point(1, i) = 0.0
+			int2_all_tetraendron_point(2, i) = 0.0
+			int2_all_tetraendron_point(3, i) = 0.0
+			int2_all_tetraendron_point(4, i) = 0.0
+			int2_all_Volume(i) = 0.0
+			CYCLE
+		end if
 		
 		a1 = int2_coord(:, int2_all_tetraendron_point(1, i))
 		a2 = int2_coord(:, int2_all_tetraendron_point(2, i))
@@ -1796,6 +1802,7 @@
 			r(2) = r(2) + 0.000001
 			mk = 1
 			rk = 1
+			print*, "shevelim tochky"
 			GO TO 11
 		end if
 		num = -1
@@ -1988,7 +1995,7 @@
 	
 	end subroutine Int2_Set_interpol_matrix
 	
-	subroutine Int2_Get_par_fast(x, y, z, num, PAR)
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT)
 	! Найти тетраедр, которому принадлежит точка и получить значения параметров
 	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
 	! предполагается, что матрицы лежат в памяти
@@ -1997,6 +2004,7 @@
 	real(8), intent(in) :: x, y, z
 	real(8), intent(out) :: PAR(9)     ! Выходные параметры
 	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
 	
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
@@ -2019,6 +2027,11 @@
 	
 	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+	
+	if(present(PAR_MOMENT)) then
+		PAR_MOMENT = vec(1, 1) * int2_Moment(:, :, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment(:, :, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Moment(:, :, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment(:, :, int2_all_tetraendron_point(4, num) )
+	end if
 	
 	
 	end subroutine Int2_Get_par_fast
@@ -2177,13 +2190,19 @@
 	
 	end subroutine Int_2_Cut_tetr
 	
-	subroutine Int_2_Print_par_2D(A, B, C, D)  ! Печатает 2Д сетку с линиями в Техплот
+	subroutine Int_2_Print_par_2D(A, B, C, D, nn)  ! Печатает 2Д сетку с линиями в Техплот
 	
 		real(8), intent(in) :: A, B, C, D
+		integer(4), intent(in) :: nn
 		integer :: i, n, j, num
-		real(8) :: Mach, PAR(9), PAR_MK(9), a1(3), a2(3), b1(3), b2(3), b3(3), S
+		real(8) :: Mach, PAR(9), PAR_MK(par_n_moment, par_n_sort), a1(3), a2(3), b1(3), b2(3), b3(3), S
+		real(8) :: PAR_MK_SUM(par_n_moment)
 		real(8), allocatable :: CUT(:, :, :)
 		logical :: bb
+		character(len=5) :: name
+
+		write(unit=name, fmt='(i5.5)') nn
+		
 		
 		allocate(CUT(3, 4, 500000))
 		
@@ -2226,16 +2245,22 @@
 		end do
 			
 
-		open(1, file = 'print_par_2D_interpolate.txt')
+		open(1, file = name // '_print_par_2D_interpolate.txt')
 		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
-		write(1,*) "'bx', 'by', 'bz', 'Q'"
+		write(1,*) "'bx', 'by', 'bz', 'Q', 'n_H', 'u_H',"
+		write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', MK9"
+		write(1,*) ",n_H1', u_H1', 'v_H1', 'w_H1', 'T_H1', 'MK16', 'MK17', 'MK18', MK19"
+		write(1,*) ",n_H2', u_H2', 'v_H2', 'w_H2', 'T_H2', 'MK26', 'MK27', 'MK28', MK29"
+		write(1,*) ",n_H3', u_H3', 'v_H3', 'w_H3', 'T_H3', 'MK36', 'MK37', 'MK38', MK39"
+		write(1,*) ",n_H4', u_H4', 'v_H4', 'w_H4', 'T_H4', 'MK46', 'MK47', 'MK48', MK49"
 		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
 
 		do i = 1, (n - 1)
 			do j = 1, 4
-				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR)
+				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK)
+				call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
 				if(num < 1) num = 3
-				write(1,*) CUT(:, j, i), PAR
+				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(:, 1), PAR_MK(:, 2), PAR_MK(:, 3), PAR_MK(:, 4)
 			end do
 		end do
 
@@ -2248,6 +2273,34 @@
 
 
 	end subroutine Int_2_Print_par_2D
+	
+	subroutine Int2_sum_moment(PAR_MK, PAR_MK_SUM)
+	
+		real(8), intent(in) :: PAR_MK(par_n_moment, par_n_sort)
+		real(8), intent(out) :: PAR_MK_SUM(par_n_moment)
+		
+		integer(4) :: i
+		
+		PAR_MK_SUM = 0.0
+	
+		PAR_MK_SUM(1) = SUM(PAR_MK(1, :))
+		
+		PAR_MK_SUM(6:9) = SUM(PAR_MK(6:9, :), dim = 2)
+	
+		do i = 1, par_n_sort
+			PAR_MK_SUM(2:4) = PAR_MK_SUM(2:4) + PAR_MK(2:4, i) * PAR_MK(1, i)
+			PAR_MK_SUM(5) = PAR_MK_SUM(5) + ( PAR_MK(5, i) / (2.0/3.0) + &
+				kvv(PAR_MK(2, i), PAR_MK(3, i), PAR_MK(4, i)) ) * PAR_MK(1, i)
+			
+		end do
+		
+		if(PAR_MK_SUM(1) > 0.0000001) then
+			PAR_MK_SUM(2:4) = PAR_MK_SUM(2:4) / PAR_MK_SUM(1)
+			PAR_MK_SUM(5) = (2.0/3.0) * (PAR_MK_SUM(5)/PAR_MK_SUM(1) - kvv(PAR_MK_SUM(2), PAR_MK_SUM(3), PAR_MK_SUM(4)))
+		end if
+		
+	
+	end subroutine Int2_sum_moment
 	
 	subroutine Int2_Print_my()
 		implicit none
@@ -2704,7 +2757,7 @@
 	
 	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Cell_par2( 1, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
-	allocate(int2_Moment(9, par_n_sort, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+	allocate(int2_Moment(par_n_moment, par_n_sort, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
 	
 	int2_Moment = 0.0
 	int2_all_Volume = 0.0

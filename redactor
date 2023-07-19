@@ -1,0 +1,14 @@
+#!/bin/bash
+# This is a comment
+sed -i -e 's/!$inter//g'  MIK.f90
+sed -i -e 's/!$inter//g'  Interpolation.f90
+sed -i -e 's/!$OpenMP//g'  MIK.f90
+sed -i -e 's/!$OpenMP//g'  Monte-Karlo.f90
+rm cuf_Solvers.cuf
+rm cuf_kernel.cuf
+mv cuf_Solvers.f90 cuf_Solvers.cuf
+mv cuf_kernel.f90 cuf_kernel.cuf
+#LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/nvidia/hpc_sdk/Linux_x86_64/20.11/compilers/lib/
+#export LD_LIBRARY_PATH
+
+
