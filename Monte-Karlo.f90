@@ -68,6 +68,26 @@ module Monte_Karlo
 	end_time = 0.0
 	start_time = 0.0
 	
+	! ТЕСТ
+	!mu_ = 0.0
+	!Wr_ = 0.0
+	!sensor(1, 2, 1) = 1
+	!sensor(2, 2, 1) = 1
+	!sensor(3, 2, 1) = 1
+	!sensor(1, 1, 1) = 1
+	!sensor(2, 1, 1) = 1
+	!sensor(3, 1, 1) = 1
+	!
+	!call M_K_Change_Velosity4(1, -1.0_8, 0.1_8, 0.2_8, 0.1_8, 0.3_8, -0.23_8, Wr_, Wt_, Wp_, mu_,&
+	!	1.0_8, 0.25_8, 2, 0.24_8, 0.01_8, -0.01_8, bb)
+	!
+	!print*,  mu_(1:3)
+	!print*,  "____"
+	!print*, Wr_(1:3)
+	!
+	!
+	!return
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ТЕСТ
 	! Запускаем каждый поток в параллельном цикле
 
 	!$OpenMP call omp_set_num_threads(min(32, par_n_potok))
@@ -100,7 +120,6 @@ module Monte_Karlo
 
 			
 			call MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
-			
 			
 			
 			do i = 1, par_n_zone + 1
@@ -465,7 +484,8 @@ module Monte_Karlo
 			mu2 = mu - mu_ex  ! вес оставшегося неперезаряженного атома
 			
 			if(mu2 <= 0.0) then
-				pause "Eror oiuyyuiojhu987uio9i"
+				print*, mu2, mu, mu_ex, kappa
+				STOP "Eror oiuyyuiojhu987uio9i"
 			end if
 			
 
@@ -692,6 +712,8 @@ module Monte_Karlo
 		MK_R_zone(4) = 25.0
 		MK_R_zone(5) = 60.0
 		MK_R_zone(6) = 130.0
+
+		
 		
 		
 		! Задаём лучи зон
@@ -751,6 +773,8 @@ module Monte_Karlo
 		gamma_(ii) = 1.0 / ( (r / MK_R_zone(ii))**2 - 1.0)
 	end do
 
+	
+
 	! Разыграем Wr
 	
 	do ii = 1, I_
@@ -764,8 +788,10 @@ module Monte_Karlo
 		end if
 		
 		
+		
 		pp1 = MK_for_Wr_1(0.0_8, gam2, Ur) - MK_for_Wr_1(0.0_8, gam1, Ur)
 		pp2 = MK_for_Wr_2(0.0_8, gam2, Ur, Uthe) - MK_for_Wr_2(0.0_8, gam1, Ur, Uthe)
+		
 		
 		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
 
@@ -867,9 +893,10 @@ module Monte_Karlo
 
 	! Розыгрыш основного атома
 	p4 = 0.5 * par_sqrtpi * X / (1.0 + 0.5 * par_sqrtpi * X)
+	
 
-	if (I_ > 1) then
-		gg = gamma_(I_ - 1)
+	if (I_ > 0) then
+		gg = gamma_(I_)
 	else
 		gg = 0.0
 	end if
@@ -906,6 +933,7 @@ module Monte_Karlo
 		uuu = sqrt(kvv(u1, u2, u3))
 		yy = sqrt(kvv(y1, y2, y3))
 		h = ((uuu * MK_sigma2(uuu, cp)) / (MK_sigma2(X, cp) * (X + yy)))
+		
 		if (h >= ksi6) EXIT
 	end do
 
@@ -1400,9 +1428,9 @@ end function MK_geo_zones
 		real(8) :: x, ksi
 		
 		do while(.True.)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
 			x = 2.0 * ksi * par_pi_8
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
 			if(exp(2.0 * c * cos(x)) > ksi * exp(2.0 * dabs(c)) ) EXIT
 		end do
 

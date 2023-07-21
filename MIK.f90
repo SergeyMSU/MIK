@@ -1369,6 +1369,9 @@
     implicit none
 
     integer :: n, Ngran, iter
+	
+	if(allocated(gl_all_Gran_inner)) deallocate(gl_all_Gran_inner)
+	if(allocated(gl_all_Cell_inner)) deallocate(gl_all_Cell_inner)
 
     n = 0
     Ngran = size(gl_all_Gran(1,:))
@@ -6111,6 +6114,7 @@
 	name_posle = 999
 	
 	call Play_iter_algoritm()
+	STOP
 	
 	! НИЖЕ СТАРЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (потом можно будет удалить)
 	   
@@ -6124,19 +6128,19 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    !call Read_setka_bin(name_do)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+    call Read_setka_bin(name_do)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
 	   !
     !
-    !call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
-    !call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
-    !call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
-    !                                   ! предыдущей функции)
+    call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+    call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+    call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                       ! предыдущей функции)
     
     
     !call Print_All_Points()
     !call Print_A_Ray(1,3)
     !call Print_Point_Plane()
-    !call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+    call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
     !call Print_Cell(1, 2, 1, "C")
     !call Print_all_Cell()
 	
@@ -6161,8 +6165,8 @@
 
     !print*, "Size inner gran and cell = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
-    !call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-    !call Find_TVD_sosed()
+    call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
+    call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
@@ -6263,9 +6267,9 @@
 	!pause
 	
 	
-	!call Int2_Set_Interpolate()
-	!call Int2_Initial()
-	!call Int2_Set_interpol_matrix()
+	call Int2_Set_Interpolate()
+	call Int2_Initial()
+	call Int2_Set_interpol_matrix()
 	
 	!n1 = size(int2_Cell_B(:, 1, 1))
 	!n2 = size(int2_Cell_B(1, :, 1))
@@ -6296,10 +6300,10 @@
 	!print*, "PAR"
 	!call Int2_Get_par(10.0_8, 10.0_8, 10.0_8, i, F)
 	
-	!print*, "M_K"
-	!call M_K_start()
+	print*, "M_K"
+	call M_K_start()
 	!call Int2_Print_tetraedron(109)
-	!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 	!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 	
 	!pause
@@ -6448,7 +6452,14 @@
 			
 			do i = 1, 10
 	        	call Surf_Set_surf(0.003_8)
-	        end do
+			end do
+			
+            call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+            call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+            call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                               ! предыдущей функции)
+            call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
 			call Int2_Read_bin(name)
