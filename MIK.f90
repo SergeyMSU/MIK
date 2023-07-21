@@ -6054,8 +6054,39 @@
     ! ****************************************************************************************************************************************************
     ! Основная программа
 
+	subroutine Download_setka(num)
+	! Правильная загрузка сетки из файла (при этом все нужные функции вызываются)
+	use STORAGE
+    use GEO_PARAM
+	integer(4), intent(in) :: num
+	
+	call Read_setka_bin(num)            ! Считываем сетку с файла 
+    call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+    call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+    call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                       ! предыдущей функции)
+	call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+	call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
+    call Find_TVD_sosed()
+	
+	
+	end subroutine Download_setka
     
-    
+	subroutine PRINT_ALL()
+	! Печатает текущую сетку (разные файлы)
+	call Print_par_2D()
+	call Print_surface_2D()
+    call Print_Setka_2D()
+	call Print_Setka_y_2D()
+	call Print_TS_3D()
+	call Print_Contact_3D()
+	call Print_surface_y_2D()
+	call Print_par_y_2D()
+	
+	
+	! Body of PRINT_ALL
+	
+	end subroutine PRINT_ALL
     
     program MIK
     use STORAGE
@@ -6078,6 +6109,10 @@
 	
 	name_do = 186
 	name_posle = 999
+	
+	call Play_iter_algoritm()
+	
+	! НИЖЕ СТАРЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (потом можно будет удалить)
 	   
     !name_do = 224
     !name_posle = 225
@@ -6089,28 +6124,32 @@
     !call Set_STORAGE()                 ! Выделяем память под все массимы рограммы
     !call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
     
-    call Read_setka_bin(name_do)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
-	
-    
-    call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
-    call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
-    call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
-                                       ! предыдущей функции)
+    !call Read_setka_bin(name_do)            ! Либо считываем сетку с файла (при этом всё равно вызывается предыдущие функции под капотом)
+	   !
+    !
+    !call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+    !call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+    !call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+    !                                   ! предыдущей функции)
     
     
     !call Print_All_Points()
     !call Print_A_Ray(1,3)
     !call Print_Point_Plane()
-    call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+    !call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
     !call Print_Cell(1, 2, 1, "C")
     !call Print_all_Cell()
-    call Print_par_2D()
-	call Print_surface_2D()
-    call Print_Setka_2D()
-	call Print_Setka_y_2D()
-	call Print_TS_3D()
-	call Print_Contact_3D()
-	call Print_surface_y_2D()
+	
+	
+ !   call Print_par_2D()
+	!call Print_surface_2D()
+ !   call Print_Setka_2D()
+	!call Print_Setka_y_2D()
+	!call Print_TS_3D()
+	!call Print_Contact_3D()
+	!call Print_surface_y_2D()
+	
+	
     !call Print_cell_and_neighbour(1,2,1)
     !call Print_gran()
     !call Print_all_surface("C")
@@ -6120,10 +6159,10 @@
     !call Start_GD_2(100000)
     !call Initial_conditions()
 
-    print*, "Size inner gran and cell = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
+    !print*, "Size inner gran and cell = " , size(gl_all_Gran_inner), size(gl_all_Cell_inner)
     
-    call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-    call Find_TVD_sosed()
+    !call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
+    !call Find_TVD_sosed()
 
     ! Перенормировка сортов для более быстрого счёта. Перенормируем первый и второй сорта. Делаем это ВЕЗДЕ
     !gl_Cell_par_MF(2:4, 1, :) = gl_Cell_par_MF(2:4, 1, :) / (par_chi/par_chi_real)
@@ -6224,9 +6263,9 @@
 	!pause
 	
 	
-	call Int2_Set_Interpolate()
-	call Int2_Initial()
-	call Int2_Set_interpol_matrix()
+	!call Int2_Set_Interpolate()
+	!call Int2_Initial()
+	!call Int2_Set_interpol_matrix()
 	
 	!n1 = size(int2_Cell_B(:, 1, 1))
 	!n2 = size(int2_Cell_B(1, :, 1))
@@ -6257,11 +6296,11 @@
 	!print*, "PAR"
 	!call Int2_Get_par(10.0_8, 10.0_8, 10.0_8, i, F)
 	
-	print*, "M_K"
-	call M_K_start()
+	!print*, "M_K"
+	!call M_K_start()
 	!call Int2_Print_tetraedron(109)
-	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
-	call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+	!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+	!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 	
 	!pause
 	!call Set_Interpolate_main()
@@ -6307,15 +6346,15 @@
     !call Print_all_surface("B")
     !call Print_all_surface("T")
 	
-    call Print_par_2D()
-	call Print_par_y_2D()
-	call Print_surface_y_2D()
-    call Save_setka_bin(name_posle)
-    ! Variables
-    call Print_Contact_3D()
-	call Print_TS_3D()
-	call Print_Setka_3D_part()
-	call Save_param(name_posle)
+ !   call Print_par_2D()
+	!call Print_par_y_2D()
+	!call Print_surface_y_2D()
+ !   call Save_setka_bin(name_posle)
+ !   ! Variables
+ !   call Print_Contact_3D()
+	!call Print_TS_3D()
+	!call Print_Setka_3D_part()
+	!call Save_param(name_posle)
 	!pause
 	
 	end program MIK
@@ -6328,33 +6367,116 @@
 	    use Interpolate2
 	    use Surface_setting
 	    use Monte_Karlo
-	    integer(4) :: step
+	    integer(4) :: step, name, name2
 		
-		step = 1  ! Выбираем шаг, который делаем
+		name = 224  ! Имя основной сетки
+		name2 = 1  ! Имя мини-сетки для М-К
+		step = 2  ! Выбираем шаг, который делаем
+		
+		
 	
 	    ! Описание алгоритма
         ! 1) Считаем МГД на подробной сетке + создаём файл интерполяции №1 + создаём файл поверхностей
         ! 2) Строим грубую сетку, двигаем поверхности разрывов на основе подробной сетки
 		!	 интерполируем значения в центрах ячеек + создаём файл интерполяции №2 для этой сетки
-		! 3) Считаем Монте-Карло на грубой сетке (файл интерполяции №2) + обновляем файл интерполяции №2
+		! + Считаем Монте-Карло на грубой сетке (файл интерполяции №2) + обновляем файл интерполяции №2
 	    !	 далее переходим к шагу 1) и используем файл интерполяции №2 в МГД 
 		
-		print*, "Vypolnyaetsya shag nomer ", step
+		print*, "********************************************************************************************"
+        print*, "Vypolnyaetsya shag nomer ", step
+		print*, "********************************************************************************************"
 		
-		if(step == 1) then
+		if(step == 1) then !----------------------------------------------------------------------------------------
+			! ЗАГРУЗКА СЕТКИ
+			call Download_setka(name)
+			
 			! РАСЧЁТЫ
 			
 			! СОХРАНЕНИЕ
-			call Surf_Save_bin(224)   ! Сохранение поверхностей разрыва
+			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
 			
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 	        call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			call Int2_Save_bin()			 ! Сохранение полной сетки интерполяции
-	        
-			
-		end if
+			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
 		
+		else if(step == 2) then  !----------------------------------------------------------------------------------------
+			! СОЗДАЁМ СЕТКУ
+			! задаём параметры мини-сетки
+			par_l_phi = 40
+			par_m_A = 30! 30      ! Количество лучей A в плоскости
+            par_m_BC = 13! 18      ! Количество лучей B/C в плоскости
+            par_m_O = 7! 17      ! Количество лучей O в плоскости
+            par_m_K = 7! 7      ! Количество лучей K в плоскости
+            ! Количество точек по лучам A
+            par_n_TS =  27! 26                    ! Количество точек до TS (TS включается)
+            par_n_HP =  37! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
+            par_n_BS =  57! 60! 5                 ! Количество точек BS (BS включается)
+            par_n_END = 65! 72! 6                ! Количество точек до конца сетки (конец включается)
+            par_n_IA =  12! 12                   ! Количество точек, которые входят во внутреннюю область
+	        par_n_IB =  14! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
+			
+			call Set_STORAGE()                 ! Выделяем память под все массимы программы
+            call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
+    
+            call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+            call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+            call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                               ! предыдущей функции)
+            call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+			
+			! Считываем файл поверхностей разрыва и двигаем сетку
+			
+			call Surf_Read_setka_bin(name)
+			
+	        print*, "Nachinaem dvizhenie setki"
+	        do i = 1, 100
+	        	call Surf_Set_surf(20.0_8)
+	        end do
+	        
+	        do i = 1, 25
+	        	call Surf_Set_surf(1.0_8)
+	        end do
+	        
+	        do i = 1, 6
+	        	call Surf_Set_surf(0.2_8)
+	        end do
+	        
+	        do i = 1, 10
+	        	call Surf_Set_surf(0.03_8)
+			end do
+			
+			do i = 1, 10
+	        	call Surf_Set_surf(0.003_8)
+	        end do
+			print*, "Dvizhenie setki zaversheno" 
+			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
+			call Int2_Read_bin(name)
+			call Int2_Re_interpol()
+			call Int2_Dell_interpolate()
+			! Печатаем сетку (для просмотра)
+			call PRINT_ALL()
+			
+			! Делаем файл интерполяции № 2 из мини-сетки
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+		    call Int2_Initial()			     ! Создание сетки интерполяции
+		    call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			
+			! СЧИТАЕМ Монте-Карло на мини-сетке
+			print*, "START MK"
+			call M_K_start()
+			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+			call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+			
+			! Сохраняем интерполяционный файл - мини - сетки
+			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
+            
+			
+		end if !----------------------------------------------------------------------------------------
+		
+		print*, "********************************************************************************************"
+        print*, "Programma uspeshno zavershena!"
+		print*, "********************************************************************************************"
 	
 	end subroutine Play_iter_algoritm
 	

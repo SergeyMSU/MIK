@@ -60,14 +60,14 @@
 	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
 	integer(4), parameter :: par_n_moment = 9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 220.0  !  Радиус сферы, с которой запускаем частицы
-	real(8), parameter :: par_Rleft = -451.0 !-400.0 + 0.01  !  Задняя стенка
+	real(8), parameter :: par_Rleft = -220.0 !-400.0 + 0.01  !  Задняя стенка
 	real(8), parameter :: par_Rup = 250.0 - 0.01  !  Верхняя стенка
 	
 	! Число частиц у каждого потока!
-	integer(4), parameter :: MK_N1 = 2000/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
-	integer(4), parameter :: MK_N2 = 500/par_n_parallel  
+	integer(4), parameter :: MK_N1 = 200/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
+	integer(4), parameter :: MK_N2 = 50/par_n_parallel  
 	integer(4), parameter :: MK_N3 = 0/par_n_parallel     ! (вылет сзади)
-	integer(4), parameter :: MK_N4 = 300/par_n_parallel   ! (вылет спереди с цилиндра)
+	integer(4), parameter :: MK_N4 = 30/par_n_parallel   ! (вылет спереди с цилиндра)
 	
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри

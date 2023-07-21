@@ -113,6 +113,11 @@ module Monte_Karlo
 				
 				call Int2_Get_tetraedron( x, y, z, cell)
 				call dekard_skorost(x, y, z, Wr_(i), Wp_(i), Wt_(i), Vx, Vy, Vz)
+			
+				if(cell < 1) then
+					STOP "Error 0lhy976yihko  "
+				end if
+				
 				
 				if(i /= par_n_zone + 1 .or. bb == .True.) then
 					! Добавляем частицу в стек
@@ -152,6 +157,11 @@ module Monte_Karlo
 			
 			call Int2_Get_tetraedron( x, y, z, cell)
 			
+			if(cell < 1) then
+				STOP "Error 0lhy976yihkoqwewqdqwd  "
+			end if
+			
+			
 			stek(potok) = stek(potok) + 1
 			M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, cos(phi) * Vr - sin(phi) * Vphi,&
 				sin(phi) * Vr + cos(phi) * Vphi,  MK_mu2 /)
@@ -178,6 +188,9 @@ module Monte_Karlo
 			z = rr * sin(phi)
 			
 			call Int2_Get_tetraedron(par_Rleft, y, z, cell)
+			if(cell < 1) then
+				STOP "Error 0lhy976yihkodfresdfre  "
+			end if
 			
 			stek(potok) = stek(potok) + 1
 			M_K_particle(1:7, stek(potok), potok) = (/ par_Rleft, y, z, Vx, Vy, Vz,  MK_mu3 /)
@@ -203,6 +216,9 @@ module Monte_Karlo
 			z = rr * sin(phi)
 			
 			call Int2_Get_tetraedron(-0.02_8, y, z, cell)
+			if(cell < 1) then
+				STOP "Error 0lhy976yihko133131312  "
+			end if
 			
 			stek(potok) = stek(potok) + 1
 			M_K_particle(1:7, stek(potok), potok) = (/ -0.02_8, y, z, Vx, Vy, Vz,  MK_mu4 /)

@@ -144,7 +144,7 @@ module Surface_setting
     inquire(file="Surf_Save" // name // ".bin", exist=exists)
     
     if (exists == .False.) then
-		pause "net faila!!!"
+		pause "net faila!!!  8idjgeye0-0987fhjdkeye "
         STOP "net faila!!!"
     end if
     
