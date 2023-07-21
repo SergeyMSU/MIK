@@ -57,6 +57,14 @@
 	
 	contains
 	
+	subroutine Int2_Save_bin()
+	! Variables
+	
+	! Body of Int2_Save_bin
+	
+	
+	end subroutine Int2_Save_bin
+	
 	subroutine Int2_Initial()
 	
 	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj, s1, s2, ss1, ss2, l
@@ -1669,10 +1677,21 @@
         b3(3) = b1(1) * b2(2) - b1(2) * b2(1)
 		S = norm2(b3)
 		b3 = b3/S
+		S = S/2.0
 		
 		di = dabs(DOT_PRODUCT(a4, b3) - DOT_PRODUCT(b3, a1))
 		
 		int2_all_Volume(i) = S * di/3.0
+		
+		!if(int2_all_Volume(i) > 2.0) then
+		!	print*, a1
+		!	print*, a2
+		!	print*, a3
+		!	print*, a4
+		!	print*, int2_all_Volume(i)
+		!	continue
+		!end if
+		
 		
 	end do
 	
@@ -1806,6 +1825,7 @@
 			GO TO 11
 		end if
 		num = -1
+		print*, "num = -1  oiuygvnmoiuhb"
 		return
 	end if
 	
@@ -2230,11 +2250,11 @@
 				S = norm2(b3)
 				if(S < 0.000001) CYCLE
 				
-				b1 = (CUT(:, 1, n) + CUT(:, 2, n) + CUT(:, 3, n) + CUT(:, 4, n))/4.0
-				do j = 1, 4
-					b2 = b1 - CUT(:, j, n)
-					CUT(:, j, n) = CUT(:, j, n) + b2 * 0.0001 / norm2(b2)
-				end do
+				!b1 = (CUT(:, 1, n) + CUT(:, 2, n) + CUT(:, 3, n) + CUT(:, 4, n))/4.0
+				!do j = 1, 4
+				!	b2 = b1 - CUT(:, j, n)
+				!	CUT(:, j, n) = CUT(:, j, n) + b2 * 0.0001 / norm2(b2)
+				!end do
 				
 				
 				n = n + 1

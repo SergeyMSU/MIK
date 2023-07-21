@@ -36,6 +36,7 @@ module Surface_setting
 	contains
 	
 	subroutine Surf_Save_bin(num)
+	! Сохраняет положения поверхностей основной сетки (которая находится в модуле Storage)
     use STORAGE
     use GEO_PARAM
     implicit none

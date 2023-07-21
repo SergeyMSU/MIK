@@ -328,6 +328,8 @@ module Monte_Karlo
 		exp(-(par_Velosity_inf**2)) * (par_sqrtpi * par_Velosity_inf * erfc(par_Velosity_inf) * exp(par_Velosity_inf**2) - 1.0) ! ѕередн€€ стенка (выше полусферы)
 	sqv = sqv_1 + sqv_2 + sqv_3 + sqv_4
 	
+	
+	
 	MK_N = MK_N1 + MK_N2 + MK_N3 + MK_N4  
 	MK_mu1 = (sqv_1/ sqv) * (1.0 * MK_N / MK_N1)
 	MK_mu2 = (sqv_2/ sqv) * (1.0 * MK_N / MK_N2)
@@ -358,7 +360,6 @@ module Monte_Karlo
 	logical :: bb, bb2
 	
 	real(8) :: time ! ќценочное врем€ до вылета частицы из €чейки
-	real(8) :: time2 ! ¬рем€ до перезар€дки
 	
 	real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! ѕараметры плазмы в €чейке
 	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
@@ -601,9 +602,9 @@ module Monte_Karlo
 				EXIT loop1  ! частица долетела до кра€ области
 			end if
 			
-			if(particle(1) < par_Rleft - 0.001) then
-				EXIT loop1  ! частица долетела до кра€ области
-			end if
+			!if(particle(1) < par_Rleft - 0.001) then
+			!	EXIT loop1  ! частица долетела до кра€ области
+			!end if
 			
 			if( sqrt(particle(2)**2 + particle(3)**2) > par_Rup + 0.001) then
 				EXIT loop1  ! частица долетела до кра€ области
@@ -669,12 +670,12 @@ module Monte_Karlo
 		
 		! «адаЄм радиусы зон
 		!MK_R_zone(1) = 1.0
-		MK_R_zone(1) = 2.15
+		MK_R_zone(1) = 2.0
 		MK_R_zone(2) = 4.6
 		MK_R_zone(3) = 10.0
-		MK_R_zone(4) = 21.0
-		MK_R_zone(5) = 46.0
-		MK_R_zone(6) = 99.0
+		MK_R_zone(4) = 25.0
+		MK_R_zone(5) = 60.0
+		MK_R_zone(6) = 130.0
 		
 		
 		! «адаЄм лучи зон
