@@ -1880,7 +1880,7 @@
     implicit none
     real(8), intent(in) :: plasma(9)
     real(8), intent(in) :: fluid(5,4)
-    real(8), intent(out) :: sourse(5,5)
+    real(8), intent(out) :: sourse(5,5)  ! (масса, три импульса и энергия)
     integer(4), intent(in) :: zone
     
     integer(4) :: i, kk(4)

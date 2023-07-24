@@ -15,6 +15,7 @@
 	USE GEO_PARAM
 	USE STORAGE
 	USE My_func
+	USE Solvers
 	
 	
 	logical :: int2_work             ! Определена ли интерполяционная сетка (выделена ли память и т.д.)
@@ -24,7 +25,7 @@
 	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)
 	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
-	! в какой зоне лежит данный узел
+	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, :)
 	
     !real(8), allocatable :: int2_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
 	
@@ -1814,7 +1815,7 @@
 			r(2) = r(2) + 0.000001
 			mk = 1
 			rk = 1
-			print*, "shevelim tochky"
+			!print*, "shevelim tochky"
 			GO TO 11
 		end if
 		num = -1
@@ -1888,7 +1889,7 @@
 			r(2) = r(2) + 0.000001
 			mk = 1
 			rk = 1
-			print*, "shevelim tochky"
+			!print*, "shevelim tochky"
 			GO TO 11
 		end if
 		num = -1
@@ -2090,7 +2091,10 @@
 	write(1) int2_all_Volume
 	
 	
-	write(1) 0
+	write(1) 1
+	write(1) size(int2_Moment_k(:, 1)), size(int2_Moment_k(1, :))
+	write(1) int2_Moment_k
+	
     write(1) 0
     write(1) 0
     write(1) 0
@@ -2220,11 +2224,51 @@
 	allocate( int2_all_Volume(n1) )
 	read(1) int2_all_Volume
 	
+	read(1) n
+	if(n == 1) then
+		read(1) n1, n2
+		allocate( int2_Moment_k(n1, n2) )
+		read(1) int2_Moment_k
+	end if
+	
+	
+	if( allocated(int2_Moment_k) == .False.) then
+		allocate(int2_Moment_k(5, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+		int2_Moment_k = 1.0
+	end if
+	
+	
 	
 	close(1)
 	
 	end subroutine Int2_Read_bin
 	
+	subroutine Int2_culc_k()
+	! Посчитаем коэффициенты отношения источников мультифлюида к Монте-Карло
+	integer(4) :: i, j
+	real(8) :: sourse(5,5), ss
+	
+	! Бежим по точкам
+	do i = 1, size(int2_Moment(1, 1, :))
+		call Calc_sourse_MF(int2_Cell_par(:, i), int2_Moment(1:5, 1:4, i), sourse, 1)
+		
+		!! Считаем коэффициенты (для трёх импульсов и энергии)
+		do j = 2, 5
+			if( dabs(sourse(j, 1)) > 0.00001) then
+				ss = sum(int2_Moment(4 + j, :, i))
+				int2_Moment_k(j, i) = ss/sourse(j, 1)
+				if(int2_Moment_k(j, i) < 0.05 .or. int2_Moment_k(j, i) > 10.0) int2_Moment_k(j, i) = 1.0
+			end if
+		end do
+		
+		
+		
+	end do
+	
+	
+	! Body of Int2_culc_k
+	
+	end subroutine Int2_culc_k
 	
 	subroutine Int2_Set_interpol_matrix()
 	! Заполняем интерполяционные матрицы для всех ячееек и записываем в память
@@ -2274,7 +2318,7 @@
 	
 	end subroutine Int2_Set_interpol_matrix
 	
-	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT)
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
 	! Найти тетраедр, которому принадлежит точка и получить значения параметров
 	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
 	! предполагается, что матрицы лежат в памяти
@@ -2284,6 +2328,7 @@
 	real(8), intent(out) :: PAR(9)     ! Выходные параметры
 	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
+	real(8), intent(out), optional :: PAR_k(5)
 	
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
@@ -2310,6 +2355,11 @@
 	if(present(PAR_MOMENT)) then
 		PAR_MOMENT = vec(1, 1) * int2_Moment(:, :, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment(:, :, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Moment(:, :, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment(:, :, int2_all_tetraendron_point(4, num) )
+	end if
+	
+	if(present(PAR_k)) then
+		PAR_k = vec(1, 1) * int2_Moment_k(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment_k(:, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Moment_k(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment_k(:, int2_all_tetraendron_point(4, num) )
 	end if
 	
 	
@@ -2474,7 +2524,7 @@
 		real(8), intent(in) :: A, B, C, D
 		integer(4), intent(in) :: nn
 		integer :: i, n, j, num
-		real(8) :: Mach, PAR(9), PAR_MK(par_n_moment, par_n_sort), a1(3), a2(3), b1(3), b2(3), b3(3), S
+		real(8) :: Mach, PAR(9), PAR_MK(par_n_moment, par_n_sort), a1(3), a2(3), b1(3), b2(3), b3(3), S, PAR_K(5)
 		real(8) :: PAR_MK_SUM(par_n_moment)
 		real(8), allocatable :: CUT(:, :, :)
 		logical :: bb
@@ -2527,19 +2577,20 @@
 		open(1, file = name // '_print_par_2D_interpolate.txt')
 		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
 		write(1,*) "'bx', 'by', 'bz', 'Q', 'n_H', 'u_H',"
-		write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', MK9"
-		write(1,*) ",n_H1', u_H1', 'v_H1', 'w_H1', 'T_H1', 'MK16', 'MK17', 'MK18', MK19"
-		write(1,*) ",n_H2', u_H2', 'v_H2', 'w_H2', 'T_H2', 'MK26', 'MK27', 'MK28', MK29"
-		write(1,*) ",n_H3', u_H3', 'v_H3', 'w_H3', 'T_H3', 'MK36', 'MK37', 'MK38', MK39"
-		write(1,*) ",n_H4', u_H4', 'v_H4', 'w_H4', 'T_H4', 'MK46', 'MK47', 'MK48', MK49"
+		write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', 'MK9'"
+		write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
+		write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
+		write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
+		write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
+		write(1,*) ",'k2', k3', 'k4', 'k5'"
 		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
 
 		do i = 1, (n - 1)
 			do j = 1, 4
-				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK)
+				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK, PAR_K)
 				call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
 				if(num < 1) num = 3
-				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(:, 1), PAR_MK(:, 2), PAR_MK(:, 3), PAR_MK(:, 4)
+				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(:, 1), PAR_MK(:, 2), PAR_MK(:, 3), PAR_MK(:, 4), PAR_K(2:5)
 			end do
 		end do
 
@@ -3070,8 +3121,11 @@
 	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Cell_par2( 1, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Moment(par_n_moment, par_n_sort, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+	allocate(int2_Moment_k(5, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+	
 	
 	int2_Moment = 0.0
+	int2_Moment_k = 1.0
 	int2_all_Volume = 0.0
 	int2_plane_tetraendron = 0.0
 	int2_coord = 0.0

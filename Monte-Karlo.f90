@@ -12,7 +12,8 @@ module Monte_Karlo
 	
 	integer(4), parameter :: par_stek = 5000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
-	
+	logical, parameter :: MK_Mu_stat = .True.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
+	real(8), parameter :: MK_Mu_mult = 100.0_8  ! На что домножаем веса для избежания потери точности
 	
 	real(8) :: sqv_1, sqv_2, sqv_3, sqv_4, sqv   ! Потоки частиц через 
 	real(8) :: MK_mu1, MK_mu2, MK_mu3, MK_mu4
@@ -23,6 +24,8 @@ module Monte_Karlo
 	real(8) :: MK_al_zone(par_m_zone)   ! Лучи зон
 	real(8) :: MK_SINKR(par_m_zone + 1)   ! Критические синусы для каждой зоны по углу
 	real(8), allocatable :: MK_Mu(:, :, :)   ! Веса зон (par_n_zone + 1, par_m_zone + 1, сортов)
+	real(8), allocatable :: MK_Mu_statistic(:, :, :)   ! Веса зон (par_n_zone + 1, par_m_zone + 1, сортов)
+	! Для накапливания весов зон
 	
 	real(8) :: MK_gam_zone(par_n_zone)   ! Параметр гамма для зон
 	real(8) :: MK_A0_, MK_A1_   ! Параметры для начального запуска
@@ -33,6 +36,8 @@ module Monte_Karlo
 	real(8), allocatable :: M_K_particle(:, :, :)   ! Частицы (8, par_stek, число потоков)
 	! (три координаты, три скорости, вес, радиус перегелия)
 	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы (4, par_stek, число потоков)
+	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
+	logical(4), allocatable :: M_K_particle_3(:, :, :, :)  ! Частицы (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
 	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
 	
 	integer(4), allocatable :: sensor(:, :, :)  !(3, 2, : par_n_potok число потоков)  ! датчики случайных чисел 
@@ -52,7 +57,7 @@ module Monte_Karlo
 	
 	USE OMP_LIB
 	! Variables
-	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step
+	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step, k
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
 	logical :: bb
 	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no, ksi1, ksi2, ksi3, ksi4, ksi5
@@ -141,7 +146,7 @@ module Monte_Karlo
 				if(i /= par_n_zone + 1 .or. bb == .True.) then
 					! Добавляем частицу в стек
 					stek(potok) = stek(potok) + 1
-					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) * MK_mu1 /)
+					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) * MK_mu1 * MK_Mu_mult /)
 					M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 					M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 					call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -149,6 +154,7 @@ module Monte_Karlo
 					M_K_particle(8, stek(potok), potok) = r_peregel
 					M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 					M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+			
 				end if
 			end do
 
@@ -183,7 +189,7 @@ module Monte_Karlo
 			
 			stek(potok) = stek(potok) + 1
 			M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, cos(phi) * Vr - sin(phi) * Vphi,&
-				sin(phi) * Vr + cos(phi) * Vphi,  MK_mu2 /)
+				sin(phi) * Vr + cos(phi) * Vphi,  MK_mu2 * MK_Mu_mult /)
 			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -212,7 +218,7 @@ module Monte_Karlo
 			end if
 			
 			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ par_Rleft, y, z, Vx, Vy, Vz,  MK_mu3 /)
+			M_K_particle(1:7, stek(potok), potok) = (/ par_Rleft, y, z, Vx, Vy, Vz,  MK_mu3 * MK_Mu_mult /)
 			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -240,7 +246,7 @@ module Monte_Karlo
 			end if
 			
 			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ -0.02_8, y, z, Vx, Vy, Vz,  MK_mu4 /)
+			M_K_particle(1:7, stek(potok), potok) = (/ -0.02_8, y, z, Vx, Vy, Vz,  MK_mu4 * MK_Mu_mult /)
 			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -264,6 +270,9 @@ module Monte_Karlo
 	!$OpenMP end_time = omp_get_wtime()
 	print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 	
+	no = MK_Mu_mult * MK_N
+	M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
+	
 	do i = 2, par_n_potok
 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
 	end do
@@ -281,7 +290,8 @@ module Monte_Karlo
 			continue
 		end if
 		
-		no = MK_N * int2_all_Volume(i)
+		!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
+		no = int2_all_Volume(i)
 		
 		if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
 				print*, "NaN lj098inbh5dgfdfghed"
@@ -345,6 +355,21 @@ module Monte_Karlo
 	
 	deallocate(vol_sr)
 	! ******************************************************************************************************************
+	! Собираем статистику по весам
+	if(MK_Mu_stat) then
+		open(1, file = "MK_Mu_statistic_.txt")
+		
+		do k = 1, par_n_sort
+			do j = 1, par_m_zone + 1
+				do i = 1, par_n_zone + 1
+					write(1, *) i, j, k, MK_Mu_statistic(i, j, k) * &
+						(par_Rmax/MK_R_zone( min(i, par_n_zone) ))**2 * (par_m_zone + 1)/ MK_N
+				end do
+			end do
+		end do
+		
+		close(1)
+	end if
 	
 	end subroutine M_K_start
 	
@@ -385,6 +410,7 @@ module Monte_Karlo
 	
 	real(8) :: particle(8)
 	integer(4):: particle_2(4), i
+	logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
 	
 	integer(4) :: num  ! Номер частицы, верхняя в стеке
 	integer(4) :: cell ! Номер ячейки, в которой находится частица
@@ -428,6 +454,7 @@ module Monte_Karlo
 		! Берём все параметры частицы
 		particle = M_K_particle(:, num, n_potok)
 		particle_2 = M_K_particle_2(:, num, n_potok)
+		if(MK_Mu_stat) particle_3 = M_K_particle_3(:, :, num, n_potok)
 		!print*, "stek(n_potok) = ", stek(n_potok)
 		!print*, particle
 		!print*, "______"
@@ -502,6 +529,20 @@ module Monte_Karlo
 			
 			from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
 			from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
+			
+			!print*, from_i, from_j, r_ex, polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )
+			!pause
+			
+			if(MK_Mu_stat .and. particle_3(from_i, from_j) == .False.) then
+				particle_3(from_i, from_j) = .True.
+				
+				!$omp critical
+				MK_Mu_statistic(from_i, from_j, particle_2(2)) = MK_Mu_statistic(from_i, from_j, particle_2(2)) + &
+					mu/max(0.3 * MK_SINKR(from_j), sin(polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )))
+				!$omp end critical
+			end if
+			
+			
 			
 			! Накапливаем моменты и т.д. ______________________________________________________________________________________________________________________________
 			if(MK_is_NaN == .True. .and. ieee_is_nan(t_ex * mu + t2 * mu2)) then
@@ -587,6 +628,15 @@ module Monte_Karlo
 
 				M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
 				
+				if(MK_Mu_stat == .True.) then
+					if(particle_2(2) == area2) then
+						M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
+					else 
+						M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
+					end if
+				end if
+				
+				! (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
 				
 			end do
 			
@@ -686,11 +736,20 @@ module Monte_Karlo
 	
 	subroutine M_K_Set()
 	
-		integer(4) :: i, j
+		integer(4) :: i, j, n, k
 		real(8) :: Yr
+		logical :: exists
 		
 		allocate(M_K_particle(8, par_stek, par_n_potok))
 		allocate(M_K_particle_2(4, par_stek, par_n_potok))
+		
+		if(MK_Mu_stat) then
+			allocate(M_K_particle_3(par_n_zone + 1, par_m_zone + 1, par_stek, par_n_potok))
+			allocate(MK_Mu_statistic(par_n_zone + 1, par_m_zone + 1, par_n_sort))
+			M_K_particle_3 = .False.
+			MK_Mu_statistic = 0.0
+		end if
+		
 		allocate(sensor(3, 2, par_n_potok))
 		allocate(stek(par_n_potok))
 		allocate(MK_Mu(par_n_zone + 1, par_m_zone + 1, par_n_sort))
@@ -718,7 +777,7 @@ module Monte_Karlo
 		
 		! Задаём лучи зон
 		do i = 1, par_m_zone
-			MK_al_zone(7) = i * par_pi_8/(par_m_zone + 1)
+			MK_al_zone(i) = i * par_pi_8/(par_m_zone + 1)
 		end do
 		
 		! Задаём критические веса
@@ -728,6 +787,24 @@ module Monte_Karlo
 				MK_Mu(i, j, :) = 1.0 !(MK_R_zone(i)/par_Rmax)**(1.3_8)
 			end do
 		end do
+		
+		inquire(file="MK_Mu_statistic.txt", exist=exists)
+		if (exists == .False.) then
+			pause "net faila!!!  cvbdfgertmkopl"
+			STOP "net faila!!!"
+		end if
+		open(2, file = "MK_Mu_statistic.txt", status = 'old')
+		
+		do k = 1, par_n_sort
+			do j = 1, par_m_zone + 1
+				do i = 1, par_n_zone + 1
+					read(2, *) n, n, n, MK_Mu(i, j, k)
+				end do
+			end do
+		end do
+		
+		close(2)
+		
 		
 		
 		MK_SINKR(1) = sin(MK_al_zone(1))
@@ -1286,7 +1363,7 @@ module Monte_Karlo
 		real(8) :: mu, ksi
 		
 		mu = min( MK_Mu(to_i, to_j, area) * 0.3 * MK_SINKR(to_j) * (r_per/par_Rmax)**2, &
-					MK_Mu(from_i, from_j, area) * 0.3 * MK_SINKR(from_j) * (r/par_Rmax)**2)
+					MK_Mu(from_i, from_j, area) * 0.3 * MK_SINKR(from_j) * (r/par_Rmax)**2) 
 		
 		if (mu3 >= mu) then
 			bb2 = .True.
