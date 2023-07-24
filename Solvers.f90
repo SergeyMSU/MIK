@@ -1555,21 +1555,49 @@
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
+	  
+	  real(8), intent(in) :: qqq1(5),qqq2(5)
+	  real(8), intent(out) :: qqq(5)
+	  real(8) :: FR(5),FL(5)
+      real(8) ::  FW(5),UL(5),UZ(5),UR(5)
+      real(8) ::  UZL(5),UZR(5)
+      real(8) ::  UZZL(5),UZZR(5)
+      real(8) ::  dq(5)
+
+      real(8) ::  vL(3),vR(3),bL(3),bR(3)
+      real(8) ::  vzL(3),vzR(3),bzL(3),bzR(3)
+      real(8) ::  vzzL(3),vzzR(3),bzzL(3),bzzR(3)
+      real(8) ::  aco(3,3),qv(3),qb(3)
+      real(8) ::  x0, x1, x2, x3, x4, x5, x6, x7, x8, x9
+	
+	  integer(4) :: n_disco
+	  
+	  n_disco = 1
+	  x0 = 0.0
+	  x1 = 1.0
+	  x2 = 2.0
+	  x3 = 3.0
+	  x4 = 4.0
+	  x5 = 5.0
+	  x6 = 6.0
+	  x7 = 7.0
+	  x8 = 8.0
+	  x9 = 9.0
       
-      dimension qqq(5),qqq1(5),qqq2(5)
-      dimension FR(5),FL(5)
-      dimension FW(5),UL(5),UZ(5),UR(5)
-      dimension UZL(5),UZR(5)
-      dimension UZZL(5),UZZR(5)
-      dimension dq(5)
+      !dimension qqq(5),qqq1(5),qqq2(5)
+      !dimension FR(5),FL(5)
+      !dimension FW(5),UL(5),UZ(5),UR(5)
+      !dimension UZL(5),UZR(5)
+      !dimension UZZL(5),UZZR(5)
+      !dimension dq(5)
+      !
+      !dimension vL(3),vR(3),bL(3),bR(3)
+      !dimension vzL(3),vzR(3),bzL(3),bzR(3)
+      !dimension vzzL(3),vzzR(3),bzzL(3),bzzR(3)
+      !dimension aco(3,3),qv(3),qb(3)
 
-      dimension vL(3),vR(3),bL(3),bR(3)
-      dimension vzL(3),vzR(3),bzL(3),bzR(3)
-      dimension vzzL(3),vzzR(3),bzzL(3),bzzR(3)
-      dimension aco(3,3),qv(3),qb(3)
-
-      data x0,x1,x2,x3,x4,x5,x6,x7,x8,x9/0.,1.,2.,3.,4.,5.,6.,7.,8.,9./
-      data n_disco /1/  ! ¬ыбор нахождени€ скорости крайних характеристик
+      !data x0,x1,x2,x3,x4,x5,x6,x7,x8,x9/0.,1.,2.,3.,4.,5.,6.,7.,8.,9./
+      !data n_disco /1/  ! ¬ыбор нахождени€ скорости крайних характеристик
 
 !c-------  n_state=0   - one speed LAX
 !c-------  n_state=1   - two speed LAX (HLL,(Harten-Lax-van-Leer))

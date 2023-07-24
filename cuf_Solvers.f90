@@ -3363,3 +3363,577 @@
 	
 	
 	end subroutine CUF_MGD_cells_MF_inner
+	
+	attributes(global) subroutine CUF_MGD_grans_MK(now)
+	! Подвижная сетка, МГД + мультифлюид
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
+		gl_Gran_scheme => dev_gl_Gran_scheme, gl_zone_Cell => dev_gl_zone_Cell, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD
+	use GEO_PARAM
+	implicit none
+	integer, intent(in) :: now
+	
+	integer(4) :: gr  ! Глобальный номер текущей грани
+	
+    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, ss1, ss2
+    real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
+    real(8) :: dist, dsl, dsc, dsp, distant(3)
+    real(8) :: POTOK(9), ttest(3)
+    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc
+    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	real(8) :: df1, df2, dff1, dff2, rast(3)
+	real(8) :: qqq11(9), qqq22(9), qq, qqq1_TVD(9), qqq2_TVD(9)
+	
+	logical :: null_bn
+	
+	now2 = mod(now, 2) + 1
+	
+	time = 100000.0
+	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	!if(gr == 1) then
+	!	print*, "Hellow from potok (1, 1) ", dev_Ngran
+	!end if
+	
+	TT = time_step
+	
+	
+	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+	if (gr > dev_Ngran) return
+	
+	metod = 2
+	if(gl_Gran_info(gr) == 2) return
+	
+	POTOK = 0.0
+	s1 = gl_Gran_neighbour(1, gr)
+	s2 = gl_Gran_neighbour(2, gr)
+	qqq1 = gl_Cell_par(:, s1)
+	null_bn = .False.
+	
+	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+	dist = norm2(distant)
+	
+	! Попробуем снести плотность пропорционально квадрату
+            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
+			!if(gl_zone_Cell(s1) == 1) then
+                rad1 = norm2(gl_Cell_center2(:, s1, now))
+                rad2 = norm2(gl_Gran_center2(:, gr, now))
+                qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+                qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+                qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+                ! Скорости сносим в сферической С.К.
+                call spherical_skorost(gl_Cell_center2(1, s1, now), gl_Cell_center2(2, s1, now), gl_Cell_center2(3, s1, now), &  
+                    qqq1(2), qqq1(3), qqq1(4), aa, bb, cc)
+                call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &  
+                    aa, bb, cc, qqq1(2), qqq1(3), qqq1(4))
+
+            end if
+
+            if (s2 >= 1) then
+                !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
+                qqq2 = gl_Cell_par(:, s2)
+                !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))   
+				
+				distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				dist = min( dist, norm2(distant))
+
+                ! Попробуем снести плотность пропорционально квадрату
+                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
+				!if(gl_zone_Cell(s1) == 1) then
+                    rad1 = norm2(gl_Cell_center2(:, s2, now))                              
+                    rad2 = norm2(gl_Gran_center2(:, gr, now))
+                    qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+                    qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+                    qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+                    call spherical_skorost(gl_Cell_center2(1, s2, now), gl_Cell_center2(2, s2, now), gl_Cell_center2(3, s2, now), &
+                        qqq2(2), qqq2(3), qqq2(4), aa, bb, cc)
+                    call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &
+                        aa, bb, cc, qqq2(2), qqq2(3), qqq2(4))
+
+				end if
+				
+
+            else  ! В случае граничных ячеек - граничные условия
+                !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
+                if(s2 == -1) then  ! Набегающий поток
+                    !dist = gl_Cell_dist(s1)
+					
+					qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+				else if(s2 == -3) then
+					!dist = gl_Cell_dist(s1)
+					
+					if (gl_Cell_center2(2, s1, now) > 0.0_8) then
+                        qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					else
+						qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, qqq1(6), qqq1(7), qqq1(8), 100.0_8/)
+					end if
+					
+					!qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					qqq2 = (/1.0_8, qqq1(2), qqq1(3), qqq1(4), 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
+					if(qqq2(3) < 0.0) qqq2(3) = 0.0
+					
+                else  ! Здесь нужны мягкие условия
+                    !dist = gl_Cell_dist(s1)
+                    qqq2 = qqq1
+                    !qqq2(5) = 1.0_8
+                    if(qqq2(2) > 0.2 * par_Velosity_inf) then
+                        qqq2(2) = 0.2 * par_Velosity_inf ! Отсос жидкости
+					end if
+					
+					!if(qqq2(6) > 0.0) then
+     !                   qqq2(6) = -0.1 ! Отсос магнитного поля
+     !               end if
+
+                end if
+	end if
+	
+	! Делаем ТВД
+	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
+		if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
+			ss1 = gl_Gran_neighbour_TVD(1, gr)
+			ss2 = gl_Gran_neighbour_TVD(2, gr)
+			if (ss1 /= 0 .and. ss2 /= 0) then
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+				df1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+				df2 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff1 = norm2(rast)
+				rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss1, now)
+				dff2 = norm2(rast)
+				qqq11 = gl_Cell_par(:, ss1)
+				qqq22 = gl_Cell_par(:, ss2)
+				
+				do i = 1, 9
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+				
+				qqq1 = qqq1_TVD
+				qqq2 = qqq2_TVD
+			end if
+		end if
+	end if
+	
+	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
+	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	end if
+	
+            
+            ! Нужно вычислить скорость движения грани
+            wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
+			
+	
+			
+			metod = gl_Gran_scheme(gr)
+			
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
+			
+            if (.False.) then !(gl_Gran_type(gr) == 1) then
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
+			else
+				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
+			end if
+	
+	
+	
+            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
+            gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
+			
+			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
+	
+	! ----------------------------------------------------------- копируем до этого момента ----------------------
+	
+	!if (time_step2 > time) then 
+		! Не смотри шаг по времени в хвосте из-за плохих ячеек
+		if (.True.) then !(gl_Cell_center2(1, s1, now) > -150.0) then
+			time =  atomicmin(time_step2, time)   ! Атомарная операция взятия минимального значения
+		end if
+	!end if
+	
+	
+	end subroutine  CUF_MGD_grans_MK
+	
+	
+	
+	attributes(global) subroutine CUF_MGD_cells_MK(now)
+	! Подвижная сетка, МГД + источники Монте-Карло
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
+		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
+		gl_zone_Cell => dev_gl_zone_Cell, gl_Cell_par_MK => dev_gl_Cell_par_MK
+	use GEO_PARAM
+	implicit none
+	integer, intent(in) :: now
+	
+	integer(4) :: gr
+	
+    integer(4) :: st, s1, s2, i, j, k, zone, now2, ijk
+    real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
+    real(8) :: fluid1(5, 4), MK_kk(5)
+    real(8) :: dist, dsl, dsc, dsp
+    real(8) :: POTOK(9), ttest(3)
+    real(8) :: time, Volume, U8, rad1, rad2, aa, bb, cc, Volume2, sks
+    real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	logical :: l_1
+	
+	now2 = mod(now, 2) + 1
+	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	time = time_step
+	
+	if (gr > dev_Ncell) return
+	
+	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+	
+	if(gl_Cell_info(gr) == 0) return
+            l_1 = .TRUE.
+            if (norm2(gl_Cell_center2(:, gr, now)) <= par_R0 + (par_R_character - par_R0) * (3.0_8/par_n_TS)**par_kk1) l_1 = .FALSE. 
+			!if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE.    ! Не считаем внутри сферы
+            POTOK = 0.0
+			sks = 0.0
+            SOURSE = 0.0
+            Volume = gl_Cell_Volume2(gr, now)
+            Volume2 = gl_Cell_Volume2(gr, now2)
+			
+			
+	
+			!Volume2 = Volume
+	
+            qqq = gl_Cell_par(:, gr)
+            fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+            ! Просуммируем потоки через грани
+            do i = 1, 6
+                j = gl_Cell_gran(i, gr)
+                if (j == 0) CYCLE
+				if (j < 0) write(*, *) "ERROR 3876tfghjuyghejk"
+                if (gl_Gran_neighbour(1, j) == gr) then
+                    POTOK = POTOK + gl_Gran_POTOK(1:9, j)
+					sks = sks + gl_Gran_POTOK(10, j)
+                else
+                    POTOK = POTOK - gl_Gran_POTOK(1:9, j)
+					sks = sks - gl_Gran_POTOK(10, j)
+                end if
+            end do
+
+
+            ! Определяем зону в которой находимся
+            if(qqq(9)/qqq(1) < 50.0) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
+				!if(gl_zone_Cell(gr) == 1) then
+                    zone = 1
+                else
+                    zone = 2
+                end if
+            else
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.1) then
+                    zone = 4
+                else
+                    zone = 3
+                end if
+			end if
+	
+			if(zone == 1 .or. zone == 2) then ! Перенормировка
+				qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
+				qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+			end if
+	
+
+            call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
+			 
+			
+			if(zone == 1 .or. zone == 2) then ! Перенормировка обратно
+				qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
+				qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+				SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
+			end if
+		
+			
+			! Домножаем на коэффицент 
+			do i = 2, 5
+				SOURSE(i, 1) = SOURSE(i, 1) * MK_kk(i)
+			end do
+
+            if (l_1 == .TRUE.) then
+                ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2
+                Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
+                if (ro3 <= 0.0_8) then
+                    write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
+					write(*, *) qqq(1), Q3
+					!write(*, *) Volume , Volume2
+					ro3 = 0.15
+				end if
+				
+				
+				
+                u3 = (qqq(1) * qqq(2)* Volume / Volume2 - time * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume2 + time * SOURSE(2, 1)) / ro3
+                v3 = (qqq(1) * qqq(3)* Volume / Volume2 - time * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume2 + time * SOURSE(3, 1)) / ro3
+                w3 = (qqq(1) * qqq(4)* Volume / Volume2 - time * (POTOK(4) + (qqq(8)/cpi4) * sks) / Volume2 + time * SOURSE(4, 1)) / ro3
+                
+				bx3 = qqq(6) * Volume / Volume2 - time * (POTOK(6) + qqq(2) * sks) / Volume2
+				by3 = qqq(7) * Volume / Volume2 - time * (POTOK(7) + qqq(3) * sks) / Volume2
+				bz3 = qqq(8) * Volume / Volume2 - time * (POTOK(8) + qqq(4) * sks) / Volume2
+				
+                p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (qqq(6)**2 + qqq(7)**2 + qqq(8)**2) / 25.13274122871834590768 )* Volume / Volume2 &
+                    - time * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume2 + time * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
+				
+				
+                if (p3 <= 0.0_8) then
+                    !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
+                    p3 = 0.000001
+                    !pause
+                end if
+
+                gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
+
+            end if
+
+	end subroutine CUF_MGD_cells_MK
+	
+	
+	attributes(global) subroutine CUF_MGD_grans_MK_inner()
+	! Подвижная сетка, МГД + мультифлюид
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
+		gl_all_Gran_inner => dev_gl_all_Gran_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center, &
+		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
+		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume
+	use GEO_PARAM
+	implicit none
+	
+	integer(4) :: gr  ! Глобальный номер текущей грани
+	
+    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter
+    real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
+    real(8) :: dist, dsl, dsc, dsp, distant(3)
+    real(8) :: POTOK(9), ttest(3)
+    real(8) :: POTOK_MF(5)
+    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc
+    real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	
+	logical :: null_bn
+	
+	
+	time = 100000.0
+	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+	if (iter > size(gl_all_Gran_inner)) return
+	
+	gr = gl_all_Gran_inner(iter)
+        !if(gl_Gran_info(gr) == 0) CYCLE
+        POTOK = 0.0
+        s1 = gl_Gran_neighbour(1, gr)
+        s2 = gl_Gran_neighbour(2, gr)
+        qqq1 = gl_Cell_par(:, s1)
+		
+		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+		dist = norm2(distant)
+
+        ! Попробуем снести плотность пропорционально квадрату
+        if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
+            rad1 = norm2(gl_Cell_center(:, s1))
+            rad2 = norm2(gl_Gran_center(:, gr))
+            qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+            qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+            qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+            ! Скорости сносим в сферической С.К.
+            call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+                qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+            call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+
+        end if
+
+        if (s2 >= 1) then
+            !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
+            qqq2 = gl_Cell_par(:, s2)
+            !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+			
+			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+			dist = min( dist, norm2(distant))
+
+            ! Попробуем снести плотность пропорционально квадрату
+            if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then
+                rad1 = norm2(gl_Cell_center(:, s2))
+                rad2 = norm2(gl_Gran_center(:, gr))
+                qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+                qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+                qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+                call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+                    qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+                call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                    aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
+
+			else
+				write(*,*), "YTGVBNYTGBJYGBNJUYHBNJUHGBNMIUHKIJ"
+			end if
+	end if
+
+
+
+        call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+        gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
+		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
+
+
+	
+	! ----------------------------------------------------------- копируем до этого момента ----------------------
+	
+	if (dev_time_step_inner > time) then 
+		time =  atomicmin(dev_time_step_inner, time)   ! Атомарная операция взятия минимального значения
+	end if
+	
+	
+	end subroutine  CUF_MGD_grans_MK_inner
+	
+	
+	attributes(global) subroutine CUF_MGD_cells_MK_inner()
+	! Подвижная сетка, МГД + мультифлюид
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
+		Calc_sourse_MF => dev_Calc_sourse_MF, gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
+		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
+		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Cell_par_MK => dev_gl_Cell_par_MK
+	use GEO_PARAM
+	implicit none
+	
+	integer(4) :: gr
+	
+    integer(4) :: st, s1, s2, i, j, k, zone, iter
+    real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
+    real(8) :: fluid1(5, 4), MK_kk(5)
+    real(8) :: dist, dsl, dsc, dsp
+    real(8) :: POTOK(9), ttest(3)
+    real(8) :: POTOK_MF(5)
+    real(8) :: Volume, TT, U8, rad1, rad2, aa, bb, Volume2, sks
+    real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	logical :: l_1
+	
+	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	if (iter > size(gl_all_Cell_inner)) return
+	
+	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+	
+	gr = gl_all_Cell_inner(iter)
+            !if(gl_Cell_info(gr) == 2) CYCLE
+            l_1 = .TRUE.
+            if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE.    ! Не считаем в первых двух ячейках
+            POTOK = 0.0
+			sks = 0.0
+            SOURSE = 0.0
+            Volume = gl_Cell_Volume(gr)
+            qqq = gl_Cell_par(:, gr)
+            fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+            ! Просуммируем потоки через грани
+            do i = 1, 6
+                j = gl_Cell_gran(i, gr)
+                if (j == 0) CYCLE
+                if (gl_Gran_neighbour(1, j) == gr) then
+                    POTOK = POTOK + gl_Gran_POTOK(1:9, j)
+					sks = sks + gl_Gran_POTOK(10, j)
+                else
+                    POTOK = POTOK - gl_Gran_POTOK(1:9, j)
+					sks = sks - gl_Gran_POTOK(10, j)
+                end if
+            end do
+
+
+            ! Определяем зону в которой находимся
+
+            zone = 1
+
+			qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
+			qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+            
+			call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
+			
+			qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
+			qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+			SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
+
+            if (l_1 == .TRUE.) then
+                ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume
+                Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume
+                if (ro3 <= 0.0_8) then
+                    write(*, *) "Ro < 0  1490 "
+                end if
+                u3 = (qqq(1) * qqq(2) - dev_time_step_inner * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(2, 1)) / ro3
+                v3 = (qqq(1) * qqq(3) - dev_time_step_inner * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(3, 1)) / ro3
+                w3 = (qqq(1) * qqq(4) - dev_time_step_inner * (POTOK(4) + (qqq(8)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(4, 1)) / ro3
+                
+				bx3 = qqq(6) - dev_time_step_inner * (POTOK(6) + qqq(2) * sks) / Volume
+				by3 = qqq(7) - dev_time_step_inner * (POTOK(7) + qqq(3) * sks) / Volume
+				bz3 = qqq(8) - dev_time_step_inner * (POTOK(8) + qqq(4) * sks) / Volume
+				
+				p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 + (qqq(6)**2 + qqq(7)**2 + qqq(8)**2) / 25.13274122871834590768 ) &
+                    - dev_time_step_inner * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + dev_time_step_inner * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) - (bx3**2 + by3**2 + bz3**2) / 25.13274122871834590768 ) * (ggg - 1.0)
+				
+				
+				!p3 = ((  ( qqq(5) / (ggg - 1.0) + 0.5 * qqq(1) * norm2(qqq(2:4))**2 ) &
+                !    - dev_time_step_inner * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + dev_time_step_inner * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
+				
+				
+
+                if (p3 <= 0.0_8) then
+                    !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
+                    p3 = 0.000001
+                    !pause
+                end if
+
+                gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
+				
+				!if(gr == 5) then
+				!write(*,*) ro3, u3, v3, w3
+				!write(*,*) POTOK(1), Volume, qqq(1), dev_time_step_inner
+				!write(*,*) "____________"
+				!	
+				!end if
+
+            end if
+	
+	end subroutine CUF_MGD_cells_MK_inner

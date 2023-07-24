@@ -144,8 +144,8 @@
 	
 	! Описание модулей
 	
+	include "Solvers.f90"
     include "Interpolation.f90"
-    include "Solvers.f90"
     include "Help_func.f90"
     include "Move_func.f90"
 	include "TVD.f90"
@@ -6074,6 +6074,43 @@
 	
 	
 	end subroutine Download_setka
+	
+	subroutine Get_MK_to_MHD()
+	! Получим результаты работы Монте-Карло для использования их в МГД расчётах
+	use Interpolate2
+	integer(4) :: i, num, s1
+	real(8) :: x, y, z
+	real(8) :: PAR(9)     ! Выходные параметры
+	real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
+	real(8) :: PAR_k(5)
+	
+	num = 3
+	gl_Cell_par_MK(1:5, :, :) = 0.0
+	gl_Cell_par_MK(6:10, :, :) = 1.0
+	
+	do i = 1, size(gl_Cell_center(1, :))
+		x = gl_Cell_center(1, i)
+		y = gl_Cell_center(2, i)
+		z = gl_Cell_center(3, i)
+		call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
+		if(num < 1) then
+			num = 3
+			call Int2_Get_tetraedron_inner(x, y, z, num)
+			if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
+			s1 = int2_all_tetraendron_point(1, num)
+			gl_Cell_par_MK(1:5, 1:4, i) = int2_Moment(1:5, :, s1)
+		    gl_Cell_par_MK(6:10, 1, i) = int2_Moment_k(:, s1)
+		end if
+		
+		gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :)  ! Если сортов - 4
+		gl_Cell_par_MK(6:10, 1, i) = PAR_k(:)
+		
+	end do
+	
+	
+	! Body of Get_MK_to_MHD
+	
+	end subroutine Get_MK_to_MHD
     
 	subroutine PRINT_ALL()
 	! Печатает текущую сетку (разные файлы)
@@ -6375,7 +6412,7 @@
 		
 		name = 224  ! Имя основной сетки
 		name2 = 1  ! Имя мини-сетки для М-К
-		step = 3  ! Выбираем шаг, который делаем
+		step = 1  ! Выбираем шаг, который делаем
 		
 		
 	
@@ -6394,17 +6431,33 @@
 			! ЗАГРУЗКА СЕТКИ
 			call Download_setka(name)  ! Загрузка основной сетки
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
-			! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
+			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
+			! Перенормируем параметры плазмы в гелиосфере
+			do i = 1, size(gl_Cell_par(1, :))
+				if(gl_zone_Cell(i) <= 2) then
+					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) / (par_chi/par_chi_real)
+				    gl_Cell_par(1, i) = gl_Cell_par(1, i) * (par_chi/par_chi_real)**2
+				end if
+			end do
 			
-			! РАСЧЁТЫ
+			!@cuf call CUDA_info()
+			!@cuf call CUDA_START_MGD_move_MK() ! РАСЧЁТЫ
 			
+			! Перенормируем параметры плазмы обратно
+			do i = 1, size(gl_Cell_par(1, :))
+				if(gl_zone_Cell(i) <= 2) then
+					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) * (par_chi/par_chi_real)
+				    gl_Cell_par(1, i) = gl_Cell_par(1, i) / (par_chi/par_chi_real)**2
+				end if
+			end do
 			! СОХРАНЕНИЕ
-			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
+			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
+			call Save_setka_bin(name + 1)
 			
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 	        call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
 			! СОЗДАЁМ СЕТКУ

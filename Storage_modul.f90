@@ -185,7 +185,7 @@
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
-	real(8), allocatable :: gl_Cell_par_MK(:,:,:)           ! Набор параметров (9, сортов,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
+	real(8), allocatable :: gl_Cell_par_MK(:,:,:)           ! Набор параметров (10, сортов,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
     character, allocatable :: gl_Cell_type(:)           ! Тип каждой ячейки А, Б, С
     integer(4), allocatable :: gl_Cell_number(:, :)     ! (3, :) номер каждой ячейки внутри своего типа
     
@@ -291,7 +291,7 @@
     
     allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
     allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-	allocate(gl_Cell_par_MK(9, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+	allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
     
     ! Посчитаем число узлов в сетке
     par_n_points = par_n_END * par_l_phi * (par_m_A + par_m_BC) + par_m_K * (par_n_TS + par_m_O) * par_l_phi + par_l_phi * (par_n_END - par_n_TS + 1) * par_m_O - &
