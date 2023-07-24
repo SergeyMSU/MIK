@@ -8,43 +8,45 @@
 	
 	module Solvers
 	
-	interface
+	!interface
+	!
+	!!@cuf attributes(host, device) &
+	!subroutine chlld(n_state, al, be, ge, &
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq, n_disc)
+	!
+	!implicit real*8 (a-h,o-z)
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+	!  integer, intent(in), optional :: n_disc
+ !     dimension qqq(8), qqq1(8),qqq2(8)
+	!  
+	!							 end subroutine chlld
+	!		
+	!!@cuf attributes(host, device) &
+	!subroutine chlld_Q(n_state, al, be, ge, &
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq, null_bn1, n_disc)
+ !     implicit real*8 (a-h,o-z)
+ !     
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+	!  logical, intent(in), optional :: null_bn1
+	!  integer, intent(in), optional :: n_disc
+ !     
+ !     dimension qqq(9),qqq1(9),qqq2(9)
+	!  
+	!  end subroutine chlld_Q
+ !
+ !   end interface
 	
-	!@cuf attributes(host, device) &
-	subroutine chlld(n_state, al, be, ge, &
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq, n_disc)
+	contains
+
 	
-	implicit real*8 (a-h,o-z)
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-	  integer, intent(in), optional :: n_disc
-      dimension qqq(8), qqq1(8),qqq2(8)
-	  
-								 end subroutine chlld
-			
-	!@cuf attributes(host, device) &
-	subroutine chlld_Q(n_state, al, be, ge, &
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc)
-      implicit real*8 (a-h,o-z)
-      
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-	  logical, intent(in), optional :: null_bn1
-	  integer, intent(in), optional :: n_disc
-      
-      dimension qqq(9),qqq1(9),qqq2(9)
-	  
-	  end subroutine chlld_Q
-
-    end interface
-
-	end module Solvers
     
 
        ! Моя версия с добавлением Q (сделана из версии Д.Б.)
@@ -193,8 +195,9 @@
          aco(1,3)=(aiy*ge-aiz*be)/d
          aco(2,3)=(aiz*al-aix*ge)/d
          aco(3,3)=(aix*be-aiy*al)/d
-         endif
+		 endif
 
+		 
           do i = 1, 3
           vL(i)=aco(1,i)*u1+aco(2,i)*v1+aco(3,i)*w1
           vR(i)=aco(1,i)*u2+aco(2,i)*v2+aco(3,i)*w2
@@ -239,7 +242,8 @@
         if(n_disco.eq.0)then
         SL=dmin1( (vL(1)-cfL),(vR(1)-cfR) )
         SR=dmax1( (vL(1)+cfL),(vR(1)+cfR) )
-        endif
+		endif
+		
 
         if(n_disco.eq.2)then
         SL_1=dmin1( (vL(1)-cfL),(vC1-cfC) )
@@ -332,7 +336,8 @@
 
        do ik=1,9
        UZ(ik)=(SR*UR(ik)-SL*UL(ik)+FL(ik)-FR(ik))/(SR-SL)
-       enddo
+	   enddo
+	   
 
 !c-------- choise for Bn [=UZ(6)] through fan:
        if(null_bn == .True.) UZ(6) = x0                           ! Это было закоменчено
@@ -389,7 +394,8 @@
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
            return
-        endif
+		endif
+		
 !c----
         if(n_state.eq.2)then
 
@@ -487,12 +493,15 @@
              qqq(1)=FR(1)+SR*(rzR-r2) -wv*UZR(1)
              qqq(9)=FR(9)+SR*(qzR-q2) -wv*UZR(9)
              qqq(5)=FR(5)+SR*(ezR-e2) -wv*UZR(5)
-             do ik=2,4
-         qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
-             do ik=6,8
-         qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
+    !         do ik=2,4
+    !            qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
+			 !enddo
+			 qv(1:3)=FR(2:4)+SR*(UZR(2:4)-UR(2:4))-wv*UZR(2:4)
+			 
+    !         do ik=6,8
+    !            qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
+			 !enddo
+			 qb(1:3)=FR(6:8)+SR*(UZR(6:8)-UR(6:8))-wv*UZR(6:8)
            endif
 
            if(SR.lt.wv)then
@@ -525,9 +534,14 @@
 
 !c-----
 
+	    !return
+			 
+		qqq(2:4)=aco(1:3,1)*qv(1)+aco(1:3,2)*qv(2)+aco(1:3,3)*qv(3)
+        qqq(6:8)=aco(1:3,1)*qb(1)+aco(1:3,2)*qb(2)+aco(1:3,3)*qb(3)
+			 
         do i = 1,3
-        qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
-        qqq(i+5)=aco(i,1)*qb(1)+aco(i,2)*qb(2)+aco(i,3)*qb(3)
+        !qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
+        !qqq(i+5)=aco(i,1)*qb(1)+aco(i,2)*qb(2)+aco(i,3)*qb(3)
         qqq(i+5)=spi4*qqq(i+5)
         enddo
 
@@ -536,8 +550,10 @@
         !enddo
 
            return
-        endif
+		endif
 !c----
+		!return !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		
         if(n_state.eq.3)then
 
         ptz=(suR*r2*ptL-suL*r1*ptR+r1*r2*suR*suL*(vR(1)-vL(1))) &
@@ -1230,12 +1246,16 @@
            if(SM.le.wv.and.SR.ge.wv)then
              qqq(1)=FR(1)+SR*(rzR-r2) -wv*UZR(1)
              qqq(5)=FR(5)+SR*(ezR-e2) -wv*UZR(5)
-             do ik=2,4
-         qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
-             do ik=6,8
-         qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
+    !         do ik=2,4
+    !     qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
+			 !enddo
+			 qv(1:3)=FR(2:4)+SR*(UZR(2:4)-UR(2:4))-wv*UZR(2:4)
+			 
+    !         do ik=6,8
+    !     qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
+			 !enddo
+			 qb(1:3)=FR(6:8)+SR*(UZR(6:8)-UR(6:8))-wv*UZR(6:8)
+			 
            endif
 
            if(SR.lt.wv)then
@@ -1276,7 +1296,7 @@
         !enddo
 
            return
-        endif
+		endif
 !c----
         if(n_state.eq.3)then
 
@@ -1473,9 +1493,11 @@
           qqq(ik)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
               ik=5
           qqq(ik)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             do ik=2,4
-         qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
+    !         do ik=2,4
+    !     qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
+			 !enddo
+			 qv(1:3)=FR(2:4)+SR*(UZR(2:4)-UR(2:4))-wv*UZR(2:4)
+			 
              do ik=6,8
          qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
              enddo
@@ -1556,7 +1578,7 @@
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
 	  
-	  real(8), intent(in) :: qqq1(5),qqq2(5)
+	  real(8), intent(in) :: qqq1(5), qqq2(5)
 	  real(8), intent(out) :: qqq(5)
 	  real(8) :: FR(5),FL(5)
       real(8) ::  FW(5),UL(5),UZ(5),UR(5)
@@ -1567,10 +1589,10 @@
       real(8) ::  vL(3),vR(3),bL(3),bR(3)
       real(8) ::  vzL(3),vzR(3),bzL(3),bzR(3)
       real(8) ::  vzzL(3),vzzR(3),bzzL(3),bzzR(3)
-      real(8) ::  aco(3,3),qv(3),qb(3)
+      real(8) ::  aco(3,3), qv(3), qb(3)
       real(8) ::  x0, x1, x2, x3, x4, x5, x6, x7, x8, x9
 	
-	  integer(4) :: n_disco
+	  integer(4) :: n_disco, i
 	  
 	  n_disco = 1
 	  x0 = 0.0
@@ -1691,25 +1713,25 @@
                 vC1=(vL(1)+vR(1))/x2
 
         if(n_disco.eq.1)then
-        SL=dmin1( (vL(1)-cfL),(vC1-cfC) )
-        SR=dmax1( (vR(1)+cfR),(vC1+cfC) )
+        SL=min( (vL(1)-cfL),(vC1-cfC) )
+        SR=max( (vR(1)+cfR),(vC1+cfC) )
         endif
 
-!c       SL=dmin1( (vL(1)-cfL),(vR(1)-cfR),(vC1-cfC) )
-!c       SR=dmax1( (vL(1)+cfL),(vR(1)+cfR),(vC1+cfC) )
+!c       SL=min( (vL(1)-cfL),(vR(1)-cfR),(vC1-cfC) )
+!c       SR=max( (vL(1)+cfL),(vR(1)+cfR),(vC1+cfC) )
 
         if(n_disco.eq.0)then
-        SL=dmin1( (vL(1)-cfL),(vR(1)-cfR) )
-        SR=dmax1( (vL(1)+cfL),(vR(1)+cfR) )
+        SL=min( (vL(1)-cfL),(vR(1)-cfR) )
+        SR=max( (vL(1)+cfL),(vR(1)+cfR) )
         endif
 
         if(n_disco.eq.2)then
-        SL_1=dmin1( (vL(1)-cfL),(vC1-cfC) )
-        SR_1=dmax1( (vR(1)+cfR),(vC1+cfC) )
-        SL_2=dmin1( (vL(1)-cfL),(vR(1)-cfR) )
-        SR_2=dmax1( (vL(1)+cfL),(vR(1)+cfR) )
-              oo = 0.75d0
-              oo1= 1.d0-oo
+        SL_1=min( (vL(1)-cfL),(vC1-cfC) )
+        SR_1=max( (vR(1)+cfR),(vC1+cfC) )
+        SL_2=min( (vL(1)-cfL),(vR(1)-cfR) )
+        SR_2=max( (vL(1)+cfL),(vR(1)+cfR) )
+              oo = 0.75_8
+              oo1= 1.0_8-oo
           SL= oo*SL_1 + oo1*SL_2
           SR= oo*SR_1 + oo1*SR_2
         endif
@@ -1813,8 +1835,8 @@
            return
         endif
 !c----
-        if(n_state.eq.2)then
-
+        if(n_state == 2)then
+        
            suRm=suR/(SR-SM)
            suLm=suL/(SL-SM)
            rzR=r2*suRm
@@ -1824,21 +1846,21 @@
            ptzR=ptR+r2*suR*(SM-vR(1))
            ptzL=ptL+r1*suL*(SM-vL(1))
            ptz=(ptzR+ptzL)/x2
-
+        
            vzR(2)=UZ(3)/UZ(1)
            vzR(3)=UZ(4)/UZ(1)
            vzL(2)=vzR(2)
            vzL(3)=vzR(3)
-
+        
            vzR(2)=vR(2)
            vzR(3)=vR(3)
            vzL(2)=vL(2)
            vzL(3)=vL(3)
-
-
+        
+        
            ezR=e2*suRm+(ptz*SM-ptR*vR(1))/(SR-SM)
            ezL=e1*suLm+(ptz*SM-ptL*vL(1))/(SL-SM)
-
+        
            
            vzR(2)=vR(2)
            vzR(3)=vR(3)
@@ -1853,7 +1875,7 @@
              UZL(ik+1)=vzL(ik)*rzL
              UZR(ik+1)=vzR(ik)*rzR
              enddo
-
+        
            if(SL.gt.wv)then
              qqq(1)=FL(1)-wv*UL(1)
              qqq(5)=FL(5)-wv*UL(5)
@@ -1861,36 +1883,42 @@
                  qv(ik-1)=FL(ik)-wv*UL(ik)
              enddo
            endif
-
+        
            if(SL.le.wv.and.SM.ge.wv)then
              qqq(1)=FL(1)+SL*(rzL-r1) -wv*UZL(1)
              qqq(5)=FL(5)+SL*(ezL-e1) -wv*UZL(5)
              do ik=2,4
          qv(ik-1)=FL(ik)+SL*(UZL(ik)-UL(ik))-wv*UZL(ik)
              enddo
-           endif
-
-           if(SM.le.wv.and.SR.ge.wv)then
+           else if(SM .le. wv .and. SR .ge. wv)then
              qqq(1)=FR(1)+SR*(rzR-r2) -wv*UZR(1)
              qqq(5)=FR(5)+SR*(ezR-e2) -wv*UZR(5)
-             do ik=2,4
-         qv(ik-1)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
-             enddo
+    !         do ik=1,3
+    !            qv(ik)= FR(ik + 1) + SR * (UZR(ik + 1) - UR(ik + 1)) - wv * UZR(ik + 1)
+			 !enddo
+			 qv(1:3) = FR(2:4) + SR * (UZR(2:4) - UR(2:4)) - wv * UZR(2:4)
            endif
-
+        
            if(SR.lt.wv)then
              qqq(1)=FR(1)-wv*UR(1)
              qqq(5)=FR(5)-wv*UR(5)
              do ik=2,4
-                 qv(ik-1)=FR(ik)-wv*UR(ik)
-             enddo
-           endif
-
-        do i = 1,3
-        qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
-        enddo
+                 qv(ik - 1)=FR(ik)-wv*UR(ik)
+			 enddo
+			 
+			 
+		   endif
         
-           return
+		   
+		!do i = 1,3
+  !      qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
+		!enddo
+		   
+		   do i = 2,4
+            qqq(i)=aco(i - 1,1)*qv(1)+aco(i - 1,2)*qv(2)+aco(i - 1,3)*qv(3)
+		    enddo
+		
+		   return
         endif
 
       return
@@ -1955,4 +1983,6 @@
     end do
     
     
-    end subroutine Calc_sourse_MF
+	end subroutine Calc_sourse_MF
+	
+	end module Solvers

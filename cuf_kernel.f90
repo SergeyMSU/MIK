@@ -145,20 +145,20 @@ module MY_CUDA
  !     dimension qqq(9),qqq1(9),qqq2(9)
 	! end subroutine chlld_Q
 	 
-	 attributes(device) subroutine chlld_gd(n_state, al, be, ge, &  
-                                 w, qqq1, qqq2, &
-                                 dsl, dsp, dsc, &
-                                 qqq)
-      implicit real*8 (a-h,o-z)
-      
-      real(8), intent(out) :: dsl, dsp, dsc
-      real(8), intent(in) :: al, be, ge, w
-      integer(4), intent(in) :: n_state
-	  
-	  real(8), intent(in) :: qqq1(5),qqq2(5)
-	  real(8), intent(out) :: qqq(5)
-	  
-	end subroutine chlld_gd
+	! attributes(device) subroutine chlld_gd(n_state, al, be, ge, &  
+ !                                w, qqq1, qqq2, &
+ !                                dsl, dsp, dsc, &
+ !                                qqq)
+ !     implicit real*8 (a-h,o-z)
+ !     
+ !     real(8), intent(out) :: dsl, dsp, dsc
+ !     real(8), intent(in) :: al, be, ge, w
+ !     integer(4), intent(in) :: n_state
+	!  
+	!  real(8), intent(in) :: qqq1(5),qqq2(5)
+	!  real(8), intent(out) :: qqq(5)
+	!  
+	!end subroutine chlld_gd
 	
 	!attributes(device) subroutine chlld(n_state, al, be, ge, &
  !                                w, qqq1, qqq2, &
@@ -937,6 +937,8 @@ module MY_CUDA
 	type(dim3) :: grid, tBlock
 	type(cudaEvent) :: startEvent, stopEvent
 	
+	print*, "Start CUDA_START_MGD_move_MK"
+	
 	call Set_CUDA()
 	call Send_data_to_Cuda()
 	call Alloc_CUDA_move()
@@ -965,9 +967,9 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  100  ! ---------------------------------------------------------------------------------------------------
+	do step = 1,  100000  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 10) == 0) then
+		if (mod(step, 100) == 0) then
 			local1 = time_step2
 			print*, "Step = ", step , "  step_time = ", local1
 		end if
@@ -997,7 +999,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.True.) then  ! Есть ли вообще движение сетки
+	if(.False.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -1188,9 +1190,9 @@ module MY_CUDA
     dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 1000) == 1) then
-		do ijk = 1, 300  ! Несколько раз просчитываем внутреннюю область
-			if (mod(ijk, 10) == 0) then
+	if (.True. .and. mod(step, 2000) == 1) then
+		do ijk = 1, 2000  ! Несколько раз просчитываем внутреннюю область
+			if (mod(ijk, 1000) == 0) then
 				print*, "Inner Step = ", ijk
 			end if
 			dev_time_step_inner = 1000000.0
@@ -1246,7 +1248,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 5000) == 0) then
+	if (mod(step, 200000) == 0) then
 		print*, "Renew TVD ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
@@ -1272,9 +1274,11 @@ module MY_CUDA
 	call Send_data_to_Host()
 	call Print_surface_2D()
     call Print_Setka_2D()
+	print*, "A-1"
     call Print_par_2D()
 	call Print_par_y_2D()
 	call Print_Setka_y_2D()
+	print*, "A-2"
 	call Print_TS_3D()
 	call Print_Contact_3D
 	call Print_surface_y_2D()
@@ -1483,17 +1487,17 @@ module MY_CUDA
                 0.0_8, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
             gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square(gr)
-
+            
             call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.8 * dist/max(dabs(dsl), dabs(dsp)) )
             gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square(gr)
-
+            
             call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
             gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square(gr)
-
+            
             call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
                 0.0_8, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
@@ -1625,17 +1629,17 @@ module MY_CUDA
         0.0_8, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
     time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
     gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square(gr)
-
+    
     call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
         0.0_8, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
     time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
     gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square(gr)
-
+    
     call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
         0.0_8, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
     time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )
     gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square(gr)
-
+    
     call chlld_gd(1, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
         0.0_8, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
     time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )

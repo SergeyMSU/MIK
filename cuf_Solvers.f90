@@ -359,14 +359,14 @@
 				!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				!vel(1) = 0.0
 				
-				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
+				vel = par_nat_HP * 0.0000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 				
 				!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 				!vel(1) = 0.0
 		
-				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
+				vel = par_nat_HP * 0.0000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
 			end if
 	
 	
@@ -575,7 +575,7 @@
 		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.000007 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		vel = par_nat_HP * 0.000002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
 		
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -583,7 +583,7 @@
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.000007 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
+		vel = par_nat_HP * 0.000002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -2823,7 +2823,7 @@
                 wc, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square2(gr, now)
-
+            
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
@@ -2833,7 +2833,7 @@
                 wc, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
             gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square2(gr, now)
-
+            
             call chlld_gd(2, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
             time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp)) + dabs(wc)) )
@@ -3191,18 +3191,18 @@
             0.0_8, fluid1(:, 1), fluid2(:, 1), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 1, gr) = POTOK_MF * gl_Gran_square(gr)
-
+        
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 2), fluid2(:, 2), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 2, gr) = POTOK_MF * gl_Gran_square(gr)
-
-
+        
+        
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 3), fluid2(:, 3), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
         gl_Gran_POTOK_MF(:, 3, gr) = POTOK_MF * gl_Gran_square(gr)
-
+        
         call chlld_gd(2, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, fluid1(:, 4), fluid2(:, 4), dsl, dsp, dsc, POTOK_MF)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )
@@ -3434,9 +3434,9 @@
                     qqq1(2), qqq1(3), qqq1(4), aa, bb, cc)
                 call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &  
                     aa, bb, cc, qqq1(2), qqq1(3), qqq1(4))
-
+ 
             end if
-
+ 
             if (s2 >= 1) then
                 !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
                 qqq2 = gl_Cell_par(:, s2)
@@ -3444,7 +3444,7 @@
 				
 				distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
 				dist = min( dist, norm2(distant))
-
+ 
                 ! Попробуем снести плотность пропорционально квадрату
                 if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
 				!if(gl_zone_Cell(s1) == 1) then
@@ -3457,10 +3457,10 @@
                         qqq2(2), qqq2(3), qqq2(4), aa, bb, cc)
                     call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &
                         aa, bb, cc, qqq2(2), qqq2(3), qqq2(4))
-
+ 
 				end if
 				
-
+ 
             else  ! В случае граничных ячеек - граничные условия
                 !if (norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int) CYCLE
                 if(s2 == -1) then  ! Набегающий поток
@@ -3491,7 +3491,7 @@
 					!if(qqq2(6) > 0.0) then
      !                   qqq2(6) = -0.1 ! Отсос магнитного поля
      !               end if
-
+ 
                 end if
 	end if
 	
@@ -3623,7 +3623,8 @@
 	
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
-            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+            !MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+			MK_kk = 1.0
             ! Просуммируем потоки через грани
             do i = 1, 6
                 j = gl_Cell_gran(i, gr)
@@ -3637,8 +3638,8 @@
 					sks = sks - gl_Gran_POTOK(10, j)
                 end if
             end do
-
-
+ 
+ 
             ! Определяем зону в которой находимся
             if(qqq(9)/qqq(1) < 50.0) then
                 if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
@@ -3660,7 +3661,7 @@
 				qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
 			end if
 	
-
+ 
             call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
 			 
 			
@@ -3675,7 +3676,7 @@
 			do i = 2, 5
 				SOURSE(i, 1) = SOURSE(i, 1) * MK_kk(i)
 			end do
-
+ 
             if (l_1 == .TRUE.) then
                 ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2
                 Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
@@ -3705,11 +3706,11 @@
                     p3 = 0.000001
                     !pause
                 end if
-
+ 
                 gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
-
+ 
             end if
-
+ 
 	end subroutine CUF_MGD_cells_MK
 	
 	
@@ -3760,7 +3761,7 @@
 		
 		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
 		dist = norm2(distant)
-
+ 
         ! Попробуем снести плотность пропорционально квадрату
         if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
             rad1 = norm2(gl_Cell_center(:, s1))
@@ -3773,9 +3774,9 @@
                 qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
             call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
                 aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
-
+ 
         end if
-
+ 
         if (s2 >= 1) then
             !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
             qqq2 = gl_Cell_par(:, s2)
@@ -3783,7 +3784,7 @@
 			
 			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
 			dist = min( dist, norm2(distant))
-
+ 
             ! Попробуем снести плотность пропорционально квадрату
             if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then
                 rad1 = norm2(gl_Cell_center(:, s2))
@@ -3795,21 +3796,21 @@
                     qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
                 call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
                     aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
-
+ 
 			else
 				write(*,*), "YTGVBNYTGBJYGBNJUYHBNJUHGBNMIUHKIJ"
 			end if
 	end if
-
-
-
+ 
+ 
+ 
         call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
             0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
         gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
 		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
-
-
+ 
+ 
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
 	
@@ -3868,7 +3869,8 @@
             Volume = gl_Cell_Volume(gr)
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
-            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+            !MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+			MK_kk = 1.0
             ! Просуммируем потоки через грани
             do i = 1, 6
                 j = gl_Cell_gran(i, gr)
@@ -3881,12 +3883,12 @@
 					sks = sks - gl_Gran_POTOK(10, j)
                 end if
             end do
-
-
+ 
+ 
             ! Определяем зону в которой находимся
-
+ 
             zone = 1
-
+ 
 			qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
 			qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
             
@@ -3895,7 +3897,7 @@
 			qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
 			qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
 			SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
-
+ 
             if (l_1 == .TRUE.) then
                 ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume
                 Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume
@@ -3918,13 +3920,13 @@
                 !    - dev_time_step_inner * ( POTOK(5) + (DOT_PRODUCT(qqq(2:4), qqq(6:8))/cpi4) * sks)/ Volume + dev_time_step_inner * SOURSE(5, 1)) - 0.5 * ro3 * (u3**2 + v3**2 + w3**2) ) * (ggg - 1.0)
 				
 				
-
+ 
                 if (p3 <= 0.0_8) then
                     !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
                     p3 = 0.000001
                     !pause
                 end if
-
+ 
                 gl_Cell_par(:, gr) = (/ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3/)
 				
 				!if(gr == 5) then
@@ -3933,7 +3935,7 @@
 				!write(*,*) "____________"
 				!	
 				!end if
-
+ 
             end if
 	
 	end subroutine CUF_MGD_cells_MK_inner

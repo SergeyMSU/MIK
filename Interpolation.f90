@@ -3170,6 +3170,7 @@
 	deallocate(int2_Cell_par)
 	deallocate(int2_Cell_par2)
 	deallocate(int2_Moment)
+	deallocate(int2_Moment_k)
 	
 	! Body of Int2_Dell_interpolate
 	

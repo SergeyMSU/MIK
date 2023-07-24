@@ -29,7 +29,7 @@
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = lock_move * 0.3 * 0.004_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = lock_move * 0.30_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1 * 0.4_8! 0.3      ! Коэффициент запаздывания скорости ударной волны
@@ -42,7 +42,7 @@
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
     real(8), parameter :: par_Kn = 49.9018   !0.4326569808         ! в перезарядке
     
-    real(8), parameter :: par_chi_real = 1.0_8      ! С каким хи считаем реально
+    real(8), parameter :: par_chi_real = 41.6479_8! 1.0_8      ! С каким хи считаем реально
     real(8), parameter :: par_chi = 41.6479_8      ! С каким хи надо было бы считать
     real(8), parameter :: par_Velosity_inf = -2.54279_8
 	real(8), parameter :: par_Mach_alf = 12.8816_8
@@ -357,6 +357,8 @@
     gl_RAY_E = -1
     
 	gl_Cell_par_MK = 0.0
+	gl_Cell_par_MK(1, :, :) = 0.000001
+	
     gl_Cell_dist = 0.0
     gl_Cell_center = 0.0
     gl_Gran_POTOK = 0.0
