@@ -6876,8 +6876,8 @@
 
 	
 	
-	!call Play_iter_algoritm()
-	!STOP
+	call Play_iter_algoritm()
+	STOP
 	
 	! НИЖЕ СТАРЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (потом можно будет удалить)
 	   
@@ -7033,6 +7033,8 @@
 	call Int2_Set_Interpolate()
 	call Int2_Initial()
 	call Int2_Set_interpol_matrix()
+	call Int2_Print_setka_2()
+	call Int2_Print_sosed()
 	
 	!n1 = size(int2_Cell_B(:, 1, 1))
 	!n2 = size(int2_Cell_B(1, :, 1))
@@ -7067,7 +7069,7 @@
 	!call M_K_start()
 	!call Int2_Print_tetraedron(109)
 	call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
-	!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+	call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 	
 	!pause
 	!call Set_Interpolate_main()
@@ -7138,6 +7140,7 @@
 		
 		name = 224  ! Имя основной сетки
 		name2 = 1  ! Имя мини-сетки для М-К
+		name3 = 100  ! Имя сетки интерполяции для М-К
 		step = 2  ! Выбираем шаг, который делаем
 		
 		
@@ -7153,7 +7156,18 @@
         print*, "Vypolnyaetsya shag nomer ", step
 		print*, "********************************************************************************************"
 		
-		if(step == 1) then !----------------------------------------------------------------------------------------
+		if(step == 0) then
+			print*, "Download"
+			call Download_setka(name)  ! Загрузка основной сетки
+			! СОХРАНЕНИЕ
+			print*, "Save"
+			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
+			
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+	        call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			call Int2_Save_bin(name3)			 ! Сохранение полной сетки интерполяции
+		else if(step == 1) then !----------------------------------------------------------------------------------------
 			! ЗАГРУЗКА СЕТКИ
 			print*, "Download"
 			call Download_setka(name)  ! Загрузка основной сетки
@@ -7252,7 +7266,7 @@
 			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
-			call Int2_Read_bin(name)
+			call Int2_Read_bin(name3)
 			call Int2_Re_interpol()
 			call Int2_Dell_interpolate()
 			print*, "End Interpolatiya" 
@@ -7263,6 +7277,9 @@
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 		    call Int2_Initial()			     ! Создание сетки интерполяции
 		    call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			
+			call Int2_Print_setka_2()
+		    call Int2_Print_sosed()
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"

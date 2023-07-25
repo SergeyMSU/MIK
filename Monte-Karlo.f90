@@ -12,7 +12,7 @@ module Monte_Karlo
 	
 	integer(4), parameter :: par_stek = 5000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
-	logical, parameter :: MK_Mu_stat = .True.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
+	logical, parameter :: MK_Mu_stat = .False.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
 	real(8), parameter :: MK_Mu_mult = 100.0_8  ! На что домножаем веса для избежания потери точности
 	
 	real(8) :: sqv_1, sqv_2, sqv_3, sqv_4, sqv   ! Потоки частиц через 
@@ -182,6 +182,7 @@ module Monte_Karlo
 			call Int2_Get_tetraedron( x, y, z, cell)
 			
 			if(cell < 1) then
+				print*, x, y, z, cell
 				STOP "Error 0lhy976yihkoqwewqdqwd  "
 			end if
 			
@@ -229,7 +230,7 @@ module Monte_Karlo
 			call M_K_Fly(potok)
 		end do
 		
-		! Запускаем частицы третьего типа (вылет спереди с цилиндра)
+		! Запускаем частицы четвёрного типа (вылет спереди с части плоскости)
 		do num = 1, MK_N4
 			call MK_Velosity_initial(potok, Vx, Vy, Vz)
 			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
@@ -239,13 +240,13 @@ module Monte_Karlo
 			y = rr * cos(phi)
 			z = rr * sin(phi)
 			
-			call Int2_Get_tetraedron(-0.02_8, y, z, cell)
+			call Int2_Get_tetraedron(-0.001_8, y, z, cell)
 			if(cell < 1) then
 				STOP "Error 0lhy976yihko133131312  "
 			end if
 			
 			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ -0.02_8, y, z, Vx, Vy, Vz,  MK_mu4 * MK_Mu_mult /)
+			M_K_particle(1:7, stek(potok), potok) = (/ -0.001_8, y, z, Vx, Vy, Vz,  MK_mu4 * MK_Mu_mult /)
 			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
 			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
 			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
@@ -321,8 +322,7 @@ module Monte_Karlo
 			pp = int2_all_tetraendron_point(j, i)
 			if(pp == 0) CYCLE loop2
 			
-			if(int2_coord(1, pp) < par_Rleft .or. sqrt(int2_coord(2, pp)**2 + int2_coord(3, pp)**2) > par_Rup &
-				.or. (int2_coord(1, pp) > 0.0 .and. norm2(int2_coord(:, pp)) > par_Rmax)) then
+			if((int2_coord(1, pp) > 0.0 .and. norm2(int2_coord(:, pp)) > par_Rmax)) then
 				M_K_Moment(:, :, i, 1) = 0.0
 				M_K_Moment(1, 4, i, 1) = 1.0
 				M_K_Moment(5, 4, i, 1) = 1.0
@@ -374,8 +374,13 @@ module Monte_Karlo
 	
 	subroutine M_K_init()
 	! Variables
-	real(8) :: Y
+	real(8) :: Y, betta
 	
+	! Инициализация некоторых параметров
+	betta = 2.0 * par_pi_8/(par_l_phi - 2)
+	par_Rleft = par_R_LEFT + 0.0001
+	par_Rup = 298.0! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
+	print*, "par_Rup = ", par_Rup
 	
 	Y = dabs(par_Velosity_inf)
 	sqv_1 = (par_Rmax) * (0.5 * (par_Rmax) * par_pi_8 * Y * &
@@ -658,9 +663,6 @@ module Monte_Karlo
 			
 11			continue 
 			
-			!if(particle(1) < -9.6) then
-			!	continue
-			!end if
 			
 			
 			
@@ -687,13 +689,6 @@ module Monte_Karlo
 				EXIT loop1  ! частица долетела до края области
 			end if
 			
-			!if(particle(1) < par_Rleft - 0.001) then
-			!	EXIT loop1  ! частица долетела до края области
-			!end if
-			
-			if( sqrt(particle(2)**2 + particle(3)**2) > par_Rup + 0.001) then
-				EXIT loop1  ! частица долетела до края области
-			end if
 		
 			
 		

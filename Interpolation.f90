@@ -234,6 +234,33 @@
 		end do
 	end do
 	
+	! Добавим ряд точек на границе полусферы
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_END, par_n_END
+				int2_Point_A(i + 5, j + 1, k) = N + 1
+				aa = gl_Cell_center(:, gl_Cell_A(i - 1, j, k))
+				
+				if(aa(1) >= 0.0) then
+					di = norm2(aa)
+					int2_coord(:, N + 1) = aa/di * par_R_END
+				else
+					di = sqrt(aa(2)**2 + aa(3)**2)
+					aa(2) = aa(2)/di * par_R_END
+					aa(3) = aa(3)/di * par_R_END
+					int2_coord(:, N + 1) = aa
+				end if
+				
+				
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(i - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(i - 1, j, k))
+				N = N + 1
+			end do
+		end do
+	end do
+	
+	
 	!B
 	N1 = size(gl_Cell_B(:, 1, 1))
 	N2 = size(gl_Cell_B(1, :, 1))
@@ -255,6 +282,21 @@
 		end do
 	end do
 	
+	! Добавим ряд точек на границе 
+	
+	do k = 1, N3
+		do j = 1, N2
+			do i = N1 + 1, N1 + 1
+				int2_Point_B(i + 3, j + 1, k) = N + 1
+				aa = gl_Cell_center(:, gl_Cell_B(i - 1, j, k))
+				int2_coord(:, N + 1) = (/par_R_LEFT, aa(2), aa(3)/)
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(i - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(i - 1, j, k))
+				N = N + 1 
+			end do
+		end do
+	end do
+	
 	!C
 	N1 = size(gl_Cell_C(:, 1, 1))
 	N2 = size(gl_Cell_C(1, :, 1))
@@ -273,6 +315,41 @@
 			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 			N = N + 1 
+		end do
+	end do
+	
+	! Добавим два ряда на границе
+	do k = 1, N3
+		do j = 1, N2
+			do i = par_n_END - par_n_TS + 1, par_n_END - par_n_TS + 1
+				int2_Point_C(i + 2, j, k) = N + 1
+				aa = gl_Cell_center(:, gl_Cell_C(i - 1, j, k))
+				di = sqrt(aa(2)**2 + aa(3)**2)
+				aa(2) = aa(2)/di * par_R_END
+				aa(3) = aa(3)/di * par_R_END
+				int2_coord(:, N + 1) = aa
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(i - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(i - 1, j, k))
+				N = N + 1 
+			end do
+		end do
+	end do
+	
+	N1 = size(int2_Point_C(:, 1, 1))
+	N2 = size(int2_Point_C(1, :, 1))
+	N3 = size(int2_Point_C(1, 1, :))
+	
+	do k = 1, N3
+		do j = N2, N2
+			do i = 1, N1
+				int2_Point_C(i, j, k) = N + 1
+				aa = int2_coord(:, int2_Point_C(i, j - 1, k))
+				aa(1) = par_R_LEFT
+				int2_coord(:, N + 1) = aa
+				int2_Cell_par(:, N + 1) = int2_Cell_par(:, int2_Point_C(i, j - 1, k))
+				int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_C(i, j - 1, k))
+				N = N + 1 
+			end do
 		end do
 	end do
 	
@@ -425,6 +502,7 @@
 				
 				int2_Cell_center(:, N) = 0.0
 				do m = 1, 8
+					ijk = int2_all_Cell(m, N)
 					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
 				end do
 				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
@@ -2581,10 +2659,10 @@
 		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
 		write(1,*) "'bx', 'by', 'bz', 'Q', 'n_H', 'u_H',"
 		write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', 'MK9'"
-		write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
-		write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
-		write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
-		write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
+		write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'p_T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
+		write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'p_T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
+		write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'p_T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
+		write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'p_T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
 		write(1,*) ",'k2', k3', 'k4', 'k5'"
 		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
 
@@ -3092,23 +3170,23 @@
 	implicit none
 	integer :: n
 	! Выделения памяти и начальная инициализация
-	allocate(int2_Point_A( size(gl_Cell_A(:, 1, 1)) + 5, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :)) ))
-	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3, size(gl_Cell_B(1, :, 1)) + 1, size(gl_Cell_B(1, 1, :)) ))
-	allocate( int2_Point_C( size(gl_Cell_C(:, 1, 1)) + 2, size(gl_Cell_C(1, :, 1)), size(gl_Cell_C(1, 1, :)) ) )
+	allocate(int2_Point_A( size(gl_Cell_A(:, 1, 1)) + 5 + 1, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :)) ))
+	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3 + 1, size(gl_Cell_B(1, :, 1)) + 1, size(gl_Cell_B(1, 1, :)) ))
+	allocate( int2_Point_C( size(gl_Cell_C(:, 1, 1)) + 2 + 1, size(gl_Cell_C(1, :, 1)) + 1, size(gl_Cell_C(1, 1, :)) ) )
 	
-	n = size(gl_Cell_A(:, 1, 1)) + 2
+	n = size(gl_Cell_A(:, 1, 1)) + 2 + 1
 	n = n * (size(gl_Cell_A(1, :, 1)) + 1) * size(gl_Cell_A(1, 1, :))
-	n = n + (size(gl_Cell_B(:, 1, 1)) + 1) * size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(1, 1, :))
-	n = n + (size(gl_Cell_C(:, 1, 1)) + 1) * (size(gl_Cell_C(1, :, 1)) - 1) * size(gl_Cell_C(1, 1, :))
+	n = n + (size(gl_Cell_B(:, 1, 1)) + 1 + 1) * size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(1, 1, :))
+	n = n + (size(gl_Cell_C(:, 1, 1)) + 1 + 1) * (size(gl_Cell_C(1, :, 1)) - 1 + 1) * size(gl_Cell_C(1, 1, :))
 	n = n + size(int2_Point_A(1, 1, :))
 	
 	allocate(int2_all_Cell(8, n ))  ! Добавили ячейку около тройной точки
 	allocate(int2_coord(3, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
 	allocate(int2_Cell_center(3, n))
 	
-	allocate(int2_Cell_A(size(gl_Cell_A(:, 1, 1)) + 4, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :))))
-	allocate(int2_Cell_B(size(gl_Cell_B(:, 1, 1)) + 2, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :))))
-	allocate(int2_Cell_C(size(gl_Cell_C(:, 1, 1)) + 2, size(gl_Cell_C(1, :, 1)) - 1, size(gl_Cell_C(1, 1, :))))
+	allocate(int2_Cell_A(size(gl_Cell_A(:, 1, 1)) + 4 + 1, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :))))
+	allocate(int2_Cell_B(size(gl_Cell_B(:, 1, 1)) + 2 + 1, size(gl_Cell_B(1, :, 1)), size(gl_Cell_B(1, 1, :))))
+	allocate(int2_Cell_C(size(gl_Cell_C(:, 1, 1)) + 2 + 1, size(gl_Cell_C(1, :, 1)) - 1 + 1, size(gl_Cell_C(1, 1, :))))
 	
 	allocate(int2_all_neighbours(6, size(int2_all_Cell(1, :)) ))
 	
