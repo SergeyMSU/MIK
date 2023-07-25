@@ -2245,8 +2245,14 @@
 	
 	subroutine Int2_culc_k()
 	! Посчитаем коэффициенты отношения источников мультифлюида к Монте-Карло
+	! Также меняет температуру атомов на давление
 	integer(4) :: i, j
 	real(8) :: sourse(5,5), ss
+	
+	! Делаем из температуры давление
+	do i = 1, size(int2_Moment(1, 1, :))
+		int2_Moment(5, 1:4, i) = 0.5 * int2_Moment(5, 1:4, i) * int2_Moment(1, 1:4, i)
+	end do
 	
 	! Бежим по точкам
 	do i = 1, size(int2_Moment(1, 1, :))
@@ -2260,9 +2266,6 @@
 				if(int2_Moment_k(j, i) < 0.05 .or. int2_Moment_k(j, i) > 10.0) int2_Moment_k(j, i) = 1.0
 			end if
 		end do
-		
-		
-		
 	end do
 	
 	

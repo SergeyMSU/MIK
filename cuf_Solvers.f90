@@ -3550,7 +3550,7 @@
 	
 	
 	
-            time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
+            time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
             gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
@@ -3623,8 +3623,12 @@
 	
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
-            !MK_kk = gl_Cell_par_MK(6:10, 1, gr)
-			MK_kk = 1.0
+            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+			if(gl_Cell_center2(1, gr, now) < -150.0) then
+				MK_kk = 1.0
+			end if
+	
+			!MK_kk = 1.0
             ! Просуммируем потоки через грани
             do i = 1, 6
                 j = gl_Cell_gran(i, gr)
@@ -3869,8 +3873,8 @@
             Volume = gl_Cell_Volume(gr)
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
-            !MK_kk = gl_Cell_par_MK(6:10, 1, gr)
-			MK_kk = 1.0
+            MK_kk = gl_Cell_par_MK(6:10, 1, gr)
+			!MK_kk = 1.0
             ! Просуммируем потоки через грани
             do i = 1, 6
                 j = gl_Cell_gran(i, gr)
@@ -3902,7 +3906,7 @@
                 ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume
                 Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume
                 if (ro3 <= 0.0_8) then
-                    write(*, *) "Ro < 0  1490 "
+                    write(*, *) "Ro < 0  3242341234 "
                 end if
                 u3 = (qqq(1) * qqq(2) - dev_time_step_inner * (POTOK(2) + (qqq(6)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(2, 1)) / ro3
                 v3 = (qqq(1) * qqq(3) - dev_time_step_inner * (POTOK(3) + (qqq(7)/cpi4) * sks) / Volume + dev_time_step_inner * SOURSE(3, 1)) / ro3

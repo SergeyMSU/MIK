@@ -7170,7 +7170,7 @@
 			!@cuf call CUDA_info()
 			print*, "Start"
 			!@cuf call CUDA_START_MGD_move_MK() ! РАСЧЁТЫ
-			call Start_MGD_move_MK()
+			!call Start_MGD_move_MK()
 			
 			! Перенормируем параметры плазмы обратно
 			do i = 1, size(gl_Cell_par(1, :))
