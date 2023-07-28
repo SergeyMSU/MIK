@@ -929,8 +929,8 @@ module MY_CUDA
     use GEO_PARAM
 	use MY_CUDA
 	implicit none
-    integer :: step, now, now2, step2, i, alla2(100), Num
-	integer(4):: ierrSync, ierrAsync, nx, ny, ijk, istat
+    integer :: step, now, now2, step2, i, alla2(100), Num, all_step
+	integer(4):: ierrSync, ierrAsync, nx, ny, ijk, istat, potok_in_block
 	integer(4), device :: dev_now, dev_now2
 	real :: time_work
 	real(8) :: local1
@@ -938,6 +938,7 @@ module MY_CUDA
 	type(cudaEvent) :: startEvent, stopEvent
 	
 	print*, "Start CUDA_START_MGD_move_MK"
+	
 	
 	call Set_CUDA()
 	call Send_data_to_Cuda()
@@ -948,6 +949,7 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 0: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 0: ', cudaGetErrorString(cudaGetLastError())
 	
+	potok_in_block = 256
 	tBlock = dim3(32, 8, 1)
 	
 	now = 2
@@ -967,11 +969,12 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	do step = 1,  60000  ! ---------------------------------------------------------------------------------------------------
+	all_step = 13 * 40000
+	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
-		if (mod(step, 100) == 0) then
+		if (mod(step, 250) == 0) then
 			local1 = time_step2
-			print*, "Step = ", step , "  step_time = ", local1
+			print*, "Step = ", step , "  step_time = ", local1, " all step = ", all_step
 		end if
 		
 		
@@ -999,23 +1002,23 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.False.) then  ! Есть ли вообще движение сетки
+	if(.True.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
 	! Вычисляем движения узлов на каждой поверхности (из задачи о распаде разрыва) 
 	! *** аналог функции Calc_move на хосте ***
 	Num = size(gl_TS)
-	call Cuda_Calc_move_TS<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	call Cuda_Calc_move_TS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 1: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 1: ', cudaGetErrorString(cudaGetLastError())
 	
 	Num = size(gl_Contact)
-	call Cuda_Calc_move_HP<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	call Cuda_Calc_move_HP<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
 	
 	
 	Num = size(gl_BS)
-	call Cuda_Calc_move_BS<<<ceiling(real(Num)/256), 256>>>(dev_now)
+	call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
 	
@@ -1148,13 +1151,13 @@ module MY_CUDA
 	! *** аналог функции calc_all_Gran_move на хосте ***
 	
 	Num = size(gl_all_Gran(1,:))
-	call Cuda_calc_all_Gran_move_1 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по граням
+	call Cuda_calc_all_Gran_move_1 <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> (dev_now2)  ! цикл по граням
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 14: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 14: ', cudaGetErrorString(cudaGetLastError())
 	
 	Num = size(gl_all_Cell(1,:))
-	call Cuda_calc_all_Gran_move_2 <<< ceiling(real(Num)/256), 256>>> (dev_now2)  ! цикл по ячейкам
+	call Cuda_calc_all_Gran_move_2 <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> (dev_now2)  ! цикл по ячейкам
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 15: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 15: ', cudaGetErrorString(cudaGetLastError())
@@ -1164,14 +1167,14 @@ module MY_CUDA
 	! Теперь нужен цикл по граням для решения задачи о распаде произвольного разрыва на них
 	
 	Num = size(gl_all_Gran(1, :))
-	call CUF_MGD_grans_MK <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по граням
+	call CUF_MGD_grans_MK <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> (dev_now)  ! цикл по граням
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 16: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 16: ', cudaGetErrorString(cudaGetLastError())
 
 	
 	Num = size(gl_all_Cell(1, :))
-	call CUF_MGD_cells_MK <<< ceiling(real(Num)/256), 256>>> (dev_now)  ! цикл по ячейкам
+	call CUF_MGD_cells_MK <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> (dev_now)  ! цикл по ячейкам
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 17: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 17: ', cudaGetErrorString(cudaGetLastError())
@@ -1190,8 +1193,8 @@ module MY_CUDA
     dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 5000) == 1) then
-		do ijk = 1, 3000  ! Несколько раз просчитываем внутреннюю область
+	if (.True. .and. mod(step, 30000) == 1) then
+		do ijk = 1, 4000  ! Несколько раз просчитываем внутреннюю область
 			if (mod(ijk, 1000) == 0) then
 				print*, "Inner Step = ", ijk
 			end if
@@ -1201,13 +1204,13 @@ module MY_CUDA
 				write(*,*) 'Error ASync start 18: ', cudaGetErrorString(cudaGetLastError())
 		
 			Num = size(gl_all_Gran_inner(:))
-			call CUF_MGD_grans_MK_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по граням
+			call CUF_MGD_grans_MK_inner <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> ()  ! цикл по граням
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 				write (*,*) 'Error Sinc start 19: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 				write(*,*) 'Error ASync start 19: ', cudaGetErrorString(cudaGetLastError())
  
 			Num = size(gl_all_Cell_inner(:))
-			call CUF_MGD_cells_MK_inner <<< ceiling(real(Num)/256), 256>>> ()  ! цикл по ячейкам
+			call CUF_MGD_cells_MK_inner <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> ()  ! цикл по ячейкам
 			ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 				write (*,*) 'Error Sinc start 20: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 				write(*,*) 'Error ASync start 20: ', cudaGetErrorString(cudaGetLastError())
@@ -1222,7 +1225,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 20000) == 0 .or. step == 1000 .or. step == 10000 .or. step == 2000 .or. step == 5000) then
+	if (mod(step, 20000) == 0 .or. step == 1000) then
 		print*, "PECHAT ", step
 		par_al1 = dev_par_al1
 		par_kk13 = dev_par_kk13
@@ -1238,7 +1241,6 @@ module MY_CUDA
 		call Print_TS_3D()
 		call Print_Setka_y_2D()
 		call Print_surface_y_2D()
-		call Print_Cell(gl_Cell_number(1, 207606), gl_Cell_number(2, 207606), gl_Cell_number(3, 207606), gl_Cell_type(207606))
 	end if
 	
 	if (mod(step, 100000) == 0) then
@@ -1248,7 +1250,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 200000) == 0) then
+	if (mod(step, 2500) == 0) then
 		print*, "Renew TVD ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()

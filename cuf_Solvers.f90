@@ -359,14 +359,14 @@
 				!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				!vel(1) = 0.0
 				
-				vel = par_nat_HP * 0.0000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
+				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 				
 				!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 				!vel(1) = 0.0
 		
-				vel = par_nat_HP * 0.0000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
+				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.0000003
 			end if
 	
 	
@@ -575,7 +575,7 @@
 		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.000002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
 		
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -583,7 +583,7 @@
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.000002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time
+		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.000002
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -1991,7 +1991,7 @@
     qqq2 = gl_Cell_par(1:8, s2)
 	
 	k1 = 1.0
-	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.14
+	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
 	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
@@ -3484,8 +3484,8 @@
                     !dist = gl_Cell_dist(s1)
                     qqq2 = qqq1
                     !qqq2(5) = 1.0_8
-                    if(qqq2(2) > 0.2 * par_Velosity_inf) then
-                        qqq2(2) = 0.2 * par_Velosity_inf ! Отсос жидкости
+                    if(qqq2(2) > -0.01) then
+                        qqq2(2) = 0.5 * par_Velosity_inf ! Отсос жидкости
 					end if
 					
 					!if(qqq2(6) > 0.0) then
@@ -3624,9 +3624,9 @@
             qqq = gl_Cell_par(:, gr)
             fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
             MK_kk = gl_Cell_par_MK(6:10, 1, gr)
-			if(gl_Cell_center2(1, gr, now) < -150.0) then
-				MK_kk = 1.0
-			end if
+			!if(gl_Cell_center2(1, gr, now) < -150.0) then
+			!	MK_kk = 1.0
+			!end if
 	
 			!MK_kk = 1.0
             ! Просуммируем потоки через грани
@@ -3685,10 +3685,11 @@
                 ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2
                 Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
                 if (ro3 <= 0.0_8) then
-                    write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
-					write(*, *) qqq(1), Q3
+					write(*, *) "Ro < 0  3688"
+                    !write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
+					!write(*, *) qqq(1), Q3
 					!write(*, *) Volume , Volume2
-					ro3 = 0.15
+					ro3 = 0.01
 				end if
 				
 				
@@ -3707,6 +3708,7 @@
 				
                 if (p3 <= 0.0_8) then
                     !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
+					write(*, *) "p < 0  3688"
                     p3 = 0.000001
                     !pause
                 end if
