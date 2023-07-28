@@ -300,8 +300,6 @@
                 ! до TS
                 if (i <= par_n_TS) then  ! До расстояния = par_R_character
                     r =  par_R0 + (par_R_character - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
-                    !print *, r
-                    !pause
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = par_R_character + (i - par_n_TS) * 0.3 * par_R_character/(par_n_HP - par_n_TS)
                 else if (i <= par_n_BS) then  ! До расстояния = par_R_character * 2
@@ -3901,7 +3899,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 10000  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 10  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
@@ -3918,14 +3916,14 @@
         !TT = 0.0
         ! Вычисляем новые скорости управляющих узлов
 		
-        !call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
+        call Calc_move(now)   ! Записали скорости каждого узла в этот узел для последующего движения
 		
         
         ! Двигаем все узлы сетки в соответствии с расчитанными скоростями в предыдущей функции
-        !call Move_all(now, TT) 
+        call Move_all(now, TT) 
 		
-        !call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
-		!CYCLE
+        call calc_all_Gran_move(now2)   ! Расчитываются новые объёмы\площади\нормали и т.д.
+		CYCLE
 		
         ! Теперь по основным граням
         ngran = size(gl_all_Gran(1, :))
@@ -6811,7 +6809,11 @@
 		y = gl_Cell_center(2, i)
 		z = gl_Cell_center(3, i)
 		call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
+		gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :)  ! Если сортов - 4
+		gl_Cell_par_MK(6:10, 1, i) = PAR_k(:)
+		
 		if(num < 1) then
+			print*, "mini-problem with interpolation", x, y, z
 			num = 3
 			call Int2_Get_tetraedron_inner(x, y, z, num)
 			if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
@@ -6820,8 +6822,7 @@
 		    gl_Cell_par_MK(6:10, 1, i) = int2_Moment_k(:, s1)
 		end if
 		
-		gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :)  ! Если сортов - 4
-		gl_Cell_par_MK(6:10, 1, i) = PAR_k(:)
+		
 		
 		do j = 1, 4
 		    if(gl_Cell_par_MK(1, j, i) < 0.000001) then
@@ -7138,10 +7139,11 @@
 	    use Monte_Karlo
 	    integer(4) :: step, name, name2
 		
-		name = 237  ! Имя основной сетки  начало с 224
+		name = 239 ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
 		name2 = 1  ! Имя мини-сетки для М-К
-		name3 = 100  ! Имя сетки интерполяции для М-К
+		name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1  ! Выбираем шаг, который делаем
+		
 		
 		
 	
@@ -7156,7 +7158,53 @@
         print*, "Vypolnyaetsya shag nomer ", step
 		print*, "********************************************************************************************"
 		
-		if(step == 0) then
+		if(step == -1) then  ! Перестройка сетки (когда поменили структуру)
+			call Download_setka(name)  ! Загрузка основной сетки
+			call Surf_Read_setka_bin(name)
+			
+			par_triple_point_2 = 7.0 * par_pi_8/40.0
+			
+	        print*, "Nachinaem dvizhenie setki"
+	        do i = 1, 120
+	        	call Surf_Set_surf(20.0_8)
+	        end do
+	        
+	        do i = 1, 35
+	        	call Surf_Set_surf(1.0_8)
+	        end do
+	        
+	        do i = 1, 10
+	        	call Surf_Set_surf(0.2_8)
+	        end do
+	        
+	        do i = 1, 15
+	        	call Surf_Set_surf(0.03_8)
+			end do
+			
+			do i = 1, 20
+	        	call Surf_Set_surf(0.003_8)
+			end do
+			
+            call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+            call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+            call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                               ! предыдущей функции)
+            call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+
+			call Int2_Read_bin(name)  ! Загрузка файла интерполяции
+			call Int2_Re_interpol()
+			call Int2_Dell_interpolate()
+			
+			
+			! Печатаем сетку (для просмотра)
+			call PRINT_ALL()
+			call Save_setka_bin(name + 1)
+			
+			
+			print*, "Dvizhenie setki zaversheno" 
+			
+			
+		else if(step == 0) then  ! Интерполяция
 			print*, "Download"
 			call Download_setka(name)  ! Загрузка основной сетки
 			! СОХРАНЕНИЕ
@@ -7166,14 +7214,16 @@
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 	        call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			call Int2_Save_bin(name3)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
 		else if(step == 1) then !----------------------------------------------------------------------------------------
 			! ЗАГРУЗКА СЕТКИ
 			print*, "Download"
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 			
+			
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
+			
 			! Перенормируем параметры плазмы в гелиосфере
 			do i = 1, size(gl_Cell_par(1, :))
 				if(gl_zone_Cell(i) <= 2) then
@@ -7195,9 +7245,9 @@
 				end if
 			end do
 			
+			
 			! Печатаем сетку (для просмотра)
 			call PRINT_ALL()
-			
 			! СОХРАНЕНИЕ
 			print*, "Save"
 			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
@@ -7239,23 +7289,23 @@
 			call Surf_Read_setka_bin(name)
 			
 	        print*, "Nachinaem dvizhenie setki"
-	        do i = 1, 100
+	        do i = 1, 120
 	        	call Surf_Set_surf(20.0_8)
 	        end do
 	        
-	        do i = 1, 25
+	        do i = 1, 35
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 6
+	        do i = 1, 10
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 10
+	        do i = 1, 15
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
-			do i = 1, 10
+			do i = 1, 20
 	        	call Surf_Set_surf(0.003_8)
 			end do
 			

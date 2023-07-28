@@ -54,7 +54,7 @@
 	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc)
+                                 qqq, null_bn1, n_disc, p_correct_)
       ! Q - маяк, показывающий в какой области мы находимся
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
@@ -68,9 +68,10 @@
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
-	  logical, intent(in), optional :: null_bn1
+	  logical, intent(in), optional :: null_bn1, p_correct_
 	  integer, intent(in), optional :: n_disc
 	  
+	  real(8) :: phi_p_correct, ksi, p_correct
 	  logical :: null_bn
       
       dimension qqq(9),qqq1(9),qqq2(9)
@@ -101,6 +102,13 @@
     null_bn = null_bn1 ! функции PRESENT
 	end if
 	
+	if(.not. present(p_correct_)) then
+		p_correct = .False.
+	else
+		p_correct = p_correct_
+	end if
+	
+	phi_p_correct = 1.0
 	null_bn = .False.
 	
 	if(.not. present(n_disc)) then
@@ -230,6 +238,23 @@
                 qm=dsqrt(b2o+cC*(cC-x2*aC))
                 cfC=(qp+qm)/x2
                 vC1=(vL(1)+vR(1))/x2
+				
+				
+				! Korolkov
+				if(p_correct == .True.) then
+				    caxL = sqrt(bL(1)**2 / r1)
+				    caxR = sqrt(bR(1)**2 / r2)
+				    caL = sqrt( (bx1**2 + by1**2 + bz1**2)/r1 )
+				    caR = sqrt( (bx2**2 + by2**2 + bz2**2)/r2 )
+				    uuL = u1**2 + v1**2 + w1**2
+				    uuR = u2**2 + v2**2 + w2**2
+				    cuL = sqrt( 0.5 * ( (caL**2 + uuL) + sqrt((caL**2 + uuL)**2 - 4.0 * uuL * caxL**2) ) )
+				    cuR = sqrt( 0.5 * ( (caR**2 + uuR) + sqrt((caR**2 + uuR)**2 - 4.0 * uuR * caxR**2) ) )
+				    cfmax = max(cfL, cfR)
+				    ksi = min(1.0_8, max(cuL, cuR)/cfmax)
+				    phi_p_correct = ksi * (2.0 - ksi)
+				end if
+				
 
         if(n_disco.eq.1)then
         SL=dmin1( (vL(1)-cfL),(vC1-cfC) )
@@ -272,7 +297,7 @@
 
             dsl=SL
             dsc=SM
-            dsp= dmax1( (vR(1)+cR),(vL(1)+cL) )! SR	
+            dsp= SR !dmax1( (vR(1)+cR),(vL(1)+cL) )! SR	
 
 !            if(id_bn.eq.-1)then
 !c                   dsc=(vR(1)+vL(1))/2.d0
@@ -407,9 +432,14 @@
            qzL=q1*suLm
            vzR(1)=SM
            vzL(1)=SM
-           ptzR=ptR+r2*suR*(SM-vR(1))
-           ptzL=ptL+r1*suL*(SM-vL(1))
-           ptz=(ptzR+ptzL)/x2
+		   
+           !ptzR=ptR+r2*suR*(SM-vR(1))
+           !ptzL=ptL+r1*suL*(SM-vL(1))
+           !ptz=(ptzR+ptzL)/x2
+		   
+		   ptz=(suR*r2*ptL - suL*r1*ptR + phi_p_correct * r1*r2*suR*suL*(vR(1)-vL(1))) &
+           /(suR*r2-suL*r1)
+		   
            bzR(1)=UZ(6)!bR(1)
            bzL(1)=UZ(6)!bL(1)
 
@@ -556,7 +586,7 @@
 		
         if(n_state.eq.3)then
 
-        ptz=(suR*r2*ptL-suL*r1*ptR+r1*r2*suR*suL*(vR(1)-vL(1))) &
+        ptz=(suR*r2*ptL - suL*r1*ptR + phi_p_correct * r1*r2*suR*suL*(vR(1)-vL(1))) &
            /(suR*r2-suL*r1)
 
         vzL(1)=SM

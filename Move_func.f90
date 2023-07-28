@@ -623,9 +623,9 @@
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
     real(8), intent(in) :: Time
     integer, intent(in) :: now
-    real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), KORD(3), dist, ddt
+    real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), ER2(3), KORD(3), dist, ddt
     integer :: yzel, N1, N2, N3, i, j, k, yzel2
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13
+    real(8) :: the, the2, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13
     
     now2 = mod(now, 2) + 1   
 	
@@ -1259,6 +1259,7 @@
             
             ! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
+            the2 = par_pi_8/2.0 + (j) * par_triple_point_2/(N2)
             phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
@@ -1297,9 +1298,10 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, ER)
+			ER2(1) = cos(the2); ER2(2) = sin(the2) * cos(phi); ER2(3) = sin(the2) * sin(phi)
+            proect = DOT_PRODUCT(vel * Time, ER2)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-            R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
+            R_HP = norm2(KORD + proect * ER2 - (R_TS * ER))  ! Новое расстояние до HP от края TS
 			
 			
                 
@@ -1310,6 +1312,7 @@
                 yzel = gl_RAY_B(i, j, k)
                 ! Вычисляем координаты точки на луче
 
+				
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
                     r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
@@ -1317,8 +1320,15 @@
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
                 !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
-                else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
-                    r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+				else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
+                    !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+					
+					r1 = par_R_inner + (R_TS - par_R_inner)
+                    r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+					gl_x2(yzel, now2) = r1 * cos(the) + r * cos(the2)
+					gl_y2(yzel, now2) = r1 * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
+					gl_z2(yzel, now2) = r1 * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
+					CYCLE
 				end if
 				
 				if (i == par_n_TS - 1) then

@@ -28,6 +28,7 @@ module MY_CUDA
 	integer(4), constant :: dev_par_n_BS
 	integer(4), constant ::	dev_par_n_END
 	real(8), constant ::	dev_par_triple_point
+	real(8), constant ::	dev_par_triple_point_2
 	integer(4), constant ::	dev_par_m_BC
 	integer(4), constant :: dev_par_n_IA
 	integer(4), constant :: dev_par_n_IB
@@ -401,6 +402,7 @@ module MY_CUDA
 		 dev_par_n_HP = par_n_HP
 		 dev_par_n_END = par_n_END
 		 dev_par_triple_point = par_triple_point
+		 dev_par_triple_point_2 = par_triple_point_2
 		 dev_par_m_BC = par_m_BC
 		 dev_par_n_IA = par_n_IA
 		 dev_par_n_IB = par_n_IB
@@ -969,7 +971,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 13 * 40000
+	all_step = 4 * 40000 !13 * 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then

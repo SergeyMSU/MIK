@@ -865,7 +865,7 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12
+		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12, par_triple_point_2 => dev_par_triple_point_2
 	use GEO_PARAM
 	use cudafor
 	
@@ -873,10 +873,10 @@
     integer, intent(in) :: now
 	
 	real(8), device :: Time
-    real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
+    real(8), device :: vel(3), ER(3), ER2(3), KORD(3), ER3(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r
+    real(8), device :: the, phi, r, r1, the2
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -897,6 +897,7 @@
 	
 	! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
+			the2 = par_pi_8/2.0 + (j) * par_triple_point_2/(N2)
             phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
@@ -917,8 +918,8 @@
 			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
             proect = DOT_PRODUCT(vel * Time, ER)  !  Находим проекцию перемещения на радиус вектор луча
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = KORD + proect * ER
-            R_TS = norm2(ER2)  ! Новое расстояние до TS
+			ER3 = KORD + proect * ER
+            R_TS = norm2(ER3)  ! Новое расстояние до TS
             
             ! HP
             yzel = gl_RAY_B(par_n_HP, j, k)
@@ -936,10 +937,11 @@
             gl_Vy(yzel) = 0.0
             gl_Vz(yzel) = 0.0
             
-            proect = DOT_PRODUCT(vel * Time, ER)
+			ER2(1) = cos(the2); ER2(2) = sin(the2) * cos(phi); ER2(3) = sin(the2) * sin(phi)
+            proect = DOT_PRODUCT(vel * Time, ER2)
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
-			ER2 = KORD + proect * ER
-            R_HP = norm2(ER2)  ! Новое расстояние до HP
+			ER3 = KORD + proect * ER2 - R_TS * ER
+            R_HP = norm2(ER3)  ! Новое расстояние до HP
 			
                 
             do i = 1, N1
@@ -957,7 +959,14 @@
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
                 !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
-                    r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+                    !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+					
+					r1 = par_R_inner + (R_TS - par_R_inner)
+                    r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+					gl_x2(yzel, now2) = r1 * cos(the) + r * cos(the2)
+					gl_y2(yzel, now2) = r1 * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
+					gl_z2(yzel, now2) = r1 * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
+					return
 				end if
 				
 				if (i == par_n_TS - 1) then
@@ -3488,6 +3497,8 @@
                         qqq2(2) = 0.5 * par_Velosity_inf ! Отсос жидкости
 					end if
 					
+					!qqq2(5) = 0.00001   ! Маленькое противодавление
+					
 					!if(qqq2(6) > 0.0) then
      !                   qqq2(6) = -0.1 ! Отсос магнитного поля
      !               end if
@@ -3538,14 +3549,15 @@
 			
 			metod = gl_Gran_scheme(gr)
 			
+			
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
 			
             if (.False.) then !(gl_Gran_type(gr) == 1) then
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0)
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0, p_correct_ = .True.)
 			else
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn)
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True.)
 			end if
 	
 	
@@ -3686,7 +3698,7 @@
                 Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
                 if (ro3 <= 0.0_8) then
 					write(*, *) "Ro < 0  3688"
-                    !write(*, *) "Ro < 0  1490 ", ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
+                    write(*, *) ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
 					!write(*, *) qqq(1), Q3
 					!write(*, *) Volume , Volume2
 					ro3 = 0.01
@@ -3709,6 +3721,7 @@
                 if (p3 <= 0.0_8) then
                     !print*, "p < 0  plasma 2028 ", p3 , gl_Cell_center(:, gr)
 					write(*, *) "p < 0  3688"
+					write(*, *) p3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
                     p3 = 0.000001
                     !pause
                 end if
@@ -3811,7 +3824,7 @@
  
  
         call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
-            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .True.)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
         gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
 		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)

@@ -488,11 +488,13 @@ module Surface_setting
             
             ! Вычисляем координаты текущего луча в пространстве
             the = par_pi_8/2.0 + (j) * par_triple_point/(N2)
+			the2 = par_pi_8/2.0 + (j) * par_triple_point_2/(N2)
             phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
             yzel = gl_RAY_B(par_n_TS, j, k)
             
+			ER(1) = cos(the); ER(2) = sin(the) * cos(phi); ER(3) = sin(the) * sin(phi)
 			KORD(1) = gl_x(yzel); KORD(2) = gl_y(yzel); KORD(3) = gl_z(yzel) 
             R_TS = norm2(KORD)  ! Новое расстояние до TS
 			
@@ -505,7 +507,8 @@ module Surface_setting
             ! HP
             yzel = gl_RAY_B(par_n_HP, j, k)
 			KORD(1) = gl_x(yzel); KORD(2) = gl_y(yzel); KORD(3) = gl_z(yzel) 
-            R_HP = norm2(KORD)  ! Новое расстояние до HP
+            !R_HP = norm2(KORD)  ! Новое расстояние до HP
+			R_HP = norm2(KORD - (R_TS * ER))  ! Новое расстояние до HP от края TS
 			
 			if ( sqrt(KORD(2)**2 + KORD(3)**2) > Surf_Get_HP(KORD(1), KORD(2), KORD(3))) then
 				R_HP = R_HP - dr
@@ -532,14 +535,20 @@ module Surface_setting
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
                 !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
-                else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
-                    r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+				else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
+                    !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
+					
+					r1 = par_R_inner + (R_TS - par_R_inner)
+                    r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+					gl_x(yzel) = r1 * cos(the) + r * cos(the2)
+					gl_y(yzel) = r1 * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
+					gl_z(yzel) = r1 * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
+					CYCLE
 				end if
 				
 				if (i == par_n_TS - 1) then
 					r = R_TS - 0.5               
 				end if
-				
 
                 ! Записываем новые координаты
                 gl_x(yzel) = r * cos(the)
