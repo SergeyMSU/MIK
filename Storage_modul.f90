@@ -58,15 +58,15 @@
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
 	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
-	integer(4), parameter :: par_n_moment = 9  !  Сколько различных моментов считаем (длинна массива)
+	integer(4) :: par_n_moment = 18 !9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 220.0  !  Радиус сферы, с которой запускаем частицы
 	real(8) :: par_Rleft! = par_R_LEFT + 0.0001 !-400.0 + 0.01  !  Задняя стенка
 	real(8) :: par_Rup! = par_R_END - 0.001  !  Верхняя стенка
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_mul1 = 108!40
-	integer(4), parameter :: MK_k_mul2 = 15!5
+	integer(4), parameter :: MK_k_mul1 = 50!108
+	integer(4), parameter :: MK_k_mul2 = 5!15
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
 	integer(4), parameter :: MK_N2 = MK_k_mul1 * 100/par_n_parallel  
 	integer(4), parameter :: MK_N3 = MK_k_mul2 * 100/par_n_parallel     ! (вылет сзади)
