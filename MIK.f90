@@ -7139,12 +7139,12 @@
 	    use Monte_Karlo
 	    integer(4) :: step, name, name2
 		
-		name = 239 ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
-		name2 = 1  ! Имя мини-сетки для М-К
+		name = 249  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
+		name2 = 2  ! Имя мини-сетки для М-К
 		name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1  ! Выбираем шаг, который делаем
+		step = 2 ! Выбираем шаг, который делаем
 		
-		
+		! 243 конец первой итерации
 		
 	
 	    ! Описание алгоритма
@@ -7253,11 +7253,11 @@
 			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
 			call Save_setka_bin(name + 1)
 			!
-			!call Int2_Dell_interpolate()
-			!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-	        !call Int2_Initial()			     ! Создание сетки интерполяции
-	         !call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			call Int2_Dell_interpolate()
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
 			! СОЗДАЁМ СЕТКУ
@@ -7317,7 +7317,7 @@
 			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
-			call Int2_Read_bin(name3)
+			call Int2_Read_bin(name)
 			call Int2_Re_interpol()
 			call Int2_Dell_interpolate()
 			print*, "End Interpolatiya" 

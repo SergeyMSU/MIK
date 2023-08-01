@@ -2237,6 +2237,7 @@
 	read(1) n1, n2, n3
 	allocate( int2_Moment(n1, n2, n3) )
 	read(1) int2_Moment
+	par_n_moment = n1
 	
 	read(1) n1, n2
 	allocate( int2_all_Cell(n1, n2) )

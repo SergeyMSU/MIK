@@ -39,7 +39,7 @@
 	
 	if(k > N3 .or. j > N2) return
 	
-	k1 = 0.0001
+	k1 = 0.001
 	if(j <= 18) k1 = 0.03   ! 0.03
 	
 	
@@ -142,14 +142,19 @@
 		
 		!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
 		
-		vel = par_nat_HP * 0.00004 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.0001
+		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00004
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		
 		!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
 		
-		vel = par_nat_HP * 0.00004 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.0001
+		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00004
 	end if
+	
+	if(j >= N2 - 10) then ! Натяжение на стыке А и Б лучей
+		vel = vel + par_nat_HP * 0.002 * (Bk/2.0 + Dk/2.0 - Ak)/Time
+	end if
+	
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
 	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
@@ -1150,9 +1155,9 @@
 			ER2  = KORD + ER2
             R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
-			! Блокируем схлопывание контакта к оси
-			if(R_HP < 20.0_8) then
-				R_HP = 20.0_8
+			! Блокируем схлопывание контакта к оси  20.0
+			if(R_HP < 17.0_8) then
+				R_HP = 17.0_8
 			end if
             
             xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
@@ -2000,7 +2005,7 @@
     qqq2 = gl_Cell_par(1:8, s2)
 	
 	k1 = 1.0
-	if (gl_Gran_center2(1, gr, now) >= 0.0) k1 = 0.7 !0.14
+	!if (gl_Gran_center2(1, gr, now) >= 2.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
 	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then

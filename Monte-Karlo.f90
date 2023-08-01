@@ -46,8 +46,8 @@ module Monte_Karlo
 	integer(4), allocatable :: stek(:)   ! (: число потоков) Переменная чтения и записи в стек
 	! Где стоит переменная, там что-то лежит, чтобы записать, нужно увеличить значение на 1
 	
-	real(8), allocatable :: M_K_Moment(:, :, :, :)  ! (9, par_n_sort, :, par_n_potok) То, что накапливаем в ячейках (по каждому сорту отдельно)
-	!(rho, u, v, w, T, Iu, Iv, Iw, IT)
+	real(8), allocatable :: M_K_Moment(:, :, :, :)  ! (18, par_n_sort, :, par_n_potok) То, что накапливаем в ячейках (по каждому сорту отдельно)
+	!(rho, u, v, w, T, Iu, Iv, Iw, IT, Huu, Huv, Huw, Hvv, Hvw, Hww, Huuu, Hvvv, Hwww)
 	
 	
 	contains
@@ -310,6 +310,25 @@ module Monte_Karlo
 				M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
 				M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
 					kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
+				
+				M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(2, j, i, 1)**2
+				M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
+				M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
+				M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(3, j, i, 1)**2
+				M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
+				M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+					M_K_Moment(4, j, i, 1)**2
+				M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
+					M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
+					M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
+					M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
 			end if
 		end do
 		
@@ -559,6 +578,26 @@ module Monte_Karlo
 			M_K_Moment(5, particle_2(2), cell, n_potok) = M_K_Moment(5, particle_2(2), cell, n_potok) + &
 				(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
 			
+			M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(4)**2
+			M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
+			M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
+			M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
+			M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
+			M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
+			M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(4)**3
+			M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(5)**3
+			M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
+				(t_ex * mu + t2 * mu2) * particle(6)**3
+			
+			
 			
 			if (u / cp > 7.0) then
 				uz_M = MK_Velosity_2(u, cp)/ (uz * (cp**2) * cp * par_pi_8 * par_sqrtpi)
@@ -799,6 +838,10 @@ module Monte_Karlo
 		
 		close(2)
 		
+		
+		MK_Mu(:, :, 2) = MK_Mu(:, :, 2) * 0.2
+		MK_Mu(:, :, 3) = MK_Mu(:, :, 3) * 0.5
+		MK_Mu(:, :, 4) = MK_Mu(:, :, 4) * 0.5
 		
 		
 		MK_SINKR(1) = sin(MK_al_zone(1))
