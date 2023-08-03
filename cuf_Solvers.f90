@@ -936,7 +936,7 @@
 			end if
 
             
-            ! Обнулим для следующего успользования
+            ! Обнулим для следующего использования
             gl_Point_num(yzel) = 0
             gl_Vx(yzel) = 0.0
             gl_Vy(yzel) = 0.0
@@ -944,7 +944,7 @@
             
 			ER2(1) = cos(the2); ER2(2) = sin(the2) * cos(phi); ER2(3) = sin(the2) * sin(phi)
             proect = DOT_PRODUCT(vel * Time, ER2)
-			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
+			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now)
 			ER3 = KORD + proect * ER2 - R_TS * ER
             R_HP = norm2(ER3)  ! Новое расстояние до HP
 			
@@ -966,12 +966,11 @@
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 					
-					r1 = par_R_inner + (R_TS - par_R_inner)
                     r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
-					gl_x2(yzel, now2) = r1 * cos(the) + r * cos(the2)
-					gl_y2(yzel, now2) = r1 * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
-					gl_z2(yzel, now2) = r1 * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
-					return
+					gl_x2(yzel, now2) = R_TS * cos(the) + r * cos(the2)
+					gl_y2(yzel, now2) = R_TS * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
+					gl_z2(yzel, now2) = R_TS * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
+					CYCLE
 				end if
 				
 				if (i == par_n_TS - 1) then
