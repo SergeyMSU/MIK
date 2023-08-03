@@ -151,9 +151,9 @@
 		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00004
 	end if
 	
-	if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
-		vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
-	end if
+	!if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
+	!	vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
+	!end if
 	
 			
 	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
