@@ -41,6 +41,9 @@
     real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
     real(8), parameter :: par_Kn = 49.9018   !0.4326569808         ! в перезарядке
+    real(8), parameter :: par_nu_ph = 12.2125 
+    real(8), parameter :: par_E_ph = 0.10878
+	
     
     real(8), parameter :: par_chi_real = 41.6479_8! 1.0_8      ! С каким хи считаем реально
     real(8), parameter :: par_chi = 41.6479_8      ! С каким хи надо было бы считать
@@ -50,6 +53,7 @@
 	real(8), parameter :: par_B_inf = 13.9666_8
 	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
+	real(8), parameter :: par_1ae = 0.197035_8
 	
 	! Параметры для Монте-Карло
 	integer(4), parameter :: par_n_potok = 32  ! Число потоков (у каждого потока свой стек)
@@ -58,7 +62,7 @@
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
 	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
-	integer(4) :: par_n_moment = 18 !9  !  Сколько различных моментов считаем (длинна массива)
+	integer(4) :: par_n_moment = 19 !9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 220.0  !  Радиус сферы, с которой запускаем частицы
 	real(8) :: par_Rleft! = par_R_LEFT + 0.0001 !-400.0 + 0.01  !  Задняя стенка
 	real(8) :: par_Rup! = par_R_END - 0.001  !  Верхняя стенка
@@ -66,11 +70,11 @@
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
 	integer(4), parameter :: MK_k_mul1 = 50!108
-	integer(4), parameter :: MK_k_mul2 = 5!15
+	integer(4), parameter :: MK_k_mul2 = 10!15
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
-	integer(4), parameter :: MK_N2 = MK_k_mul1 * 100/par_n_parallel  
-	integer(4), parameter :: MK_N3 = MK_k_mul2 * 100/par_n_parallel     ! (вылет сзади)
-	integer(4), parameter :: MK_N4 = MK_k_mul1 * 100/par_n_parallel   ! (вылет спереди с цилиндра)
+	integer(4), parameter :: MK_N2 = MK_k_mul1 * 200/par_n_parallel  
+	integer(4), parameter :: MK_N3 = MK_k_mul2 * 200/par_n_parallel     ! (вылет сзади)
+	integer(4), parameter :: MK_N4 = MK_k_mul1 * 200/par_n_parallel   ! (вылет спереди с цилиндра)
 	
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри
@@ -244,12 +248,10 @@
     real(8), allocatable :: gl_Cell_par_MF_inter(:,:,:)		  ! (5, 4,:) 
 	real(8), allocatable :: gl_Cell_dist_inter(:)
     
-    end module STORAGE
+    contains
     
     
     subroutine Set_STORAGE()             ! Функция выделяет память для всех элементов модуля STORAGE, используя параметры из модуля GEO_PARAM
-    
-    use STORAGE
     use GEO_PARAM
     implicit none
     
@@ -395,4 +397,59 @@
     
     if (par_developer_info) print *, "END Set_STORAGE"
     
-    end subroutine Set_STORAGE
+	end subroutine Set_STORAGE
+
+	subroutine Dell_STORAGE()
+	
+	deallocate(gl_RAY_A)
+    deallocate(gl_RAY_B)
+    deallocate(gl_RAY_C)
+    deallocate(gl_RAY_O)
+    deallocate(gl_RAY_K)
+    deallocate(gl_RAY_D)
+    deallocate(gl_RAY_E)
+    
+    deallocate(gl_Cell_A)
+    deallocate(gl_Cell_B)
+    deallocate(gl_Cell_C)
+    
+    
+    deallocate(gl_all_Cell)
+    deallocate(gl_Cell_neighbour)
+    deallocate(gl_Cell_gran)
+    
+    deallocate(gl_Cell_Volume)
+    deallocate(gl_Cell_dist)
+    deallocate( gl_Cell_center)
+    deallocate(gl_Cell_info)
+    deallocate(gl_Cell_type)
+    deallocate(gl_Cell_number)
+	deallocate(gl_zone_Cell)
+    
+    deallocate(gl_Cell_par)
+    deallocate(gl_Cell_par_MF)
+	deallocate(gl_Cell_par_MK)
+    
+    deallocate(gl_x)
+    deallocate(gl_y)
+    deallocate(gl_z)
+    
+    deallocate(gl_all_Gran)
+    deallocate(gl_Gran_neighbour)
+	deallocate(gl_Gran_neighbour_TVD)
+    deallocate(gl_Gran_normal)
+    deallocate(gl_Gran_square)
+    deallocate(gl_Gran_info)
+	deallocate(gl_Gran_type)
+	deallocate(gl_Gran_scheme)
+    deallocate(gl_Gran_POTOK)
+    deallocate(gl_Gran_POTOK_MF)
+    deallocate(gl_Gran_center)
+    
+    deallocate(gl_Contact)
+    deallocate(gl_TS)
+    deallocate(gl_BS)
+	
+	end subroutine Dell_STORAGE
+	
+	end module STORAGE

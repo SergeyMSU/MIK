@@ -13,6 +13,8 @@ module Monte_Karlo
 	integer(4), parameter :: par_stek = 5000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
 	logical, parameter :: MK_Mu_stat = .False.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
+	logical, parameter :: MK_photoionization = .True.    ! Нужна ли фотоионизация
+	
 	real(8), parameter :: MK_Mu_mult = 100.0_8  ! На что домножаем веса для избежания потери точности
 	
 	real(8) :: sqv_1, sqv_2, sqv_3, sqv_4, sqv   ! Потоки частиц через 
@@ -46,8 +48,9 @@ module Monte_Karlo
 	integer(4), allocatable :: stek(:)   ! (: число потоков) Переменная чтения и записи в стек
 	! Где стоит переменная, там что-то лежит, чтобы записать, нужно увеличить значение на 1
 	
-	real(8), allocatable :: M_K_Moment(:, :, :, :)  ! (18, par_n_sort, :, par_n_potok) То, что накапливаем в ячейках (по каждому сорту отдельно)
-	!(rho, u, v, w, T, Iu, Iv, Iw, IT, Huu, Huv, Huw, Hvv, Hvw, Hww, Huuu, Hvvv, Hwww)
+	real(8), allocatable :: M_K_Moment(:, :, :, :)  ! (19, par_n_sort, :, par_n_potok) То, что накапливаем в ячейках (по каждому сорту отдельно)
+	!(rho, u, v, w, T, Iu, Iv, Iw, IT, Huu, Huv, Huw, Hvv, Hvw, Hww, Huuu, Hvvv, Hwww, In)
+	!(1  , 2, 3, 4, 5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15,   16,   17,   18, 19)
 	
 	
 	contains
@@ -311,28 +314,32 @@ module Monte_Karlo
 				M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
 					kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
 				
-				M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(2, j, i, 1)**2
-				M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
-				M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
-				M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(3, j, i, 1)**2
-				M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
-				M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-					M_K_Moment(4, j, i, 1)**2
-				M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
-					M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
-				M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
-					M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
-				M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
-					M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				if(par_n_moment > 9) then
+					M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)**2
+					M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
+					M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
+					M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(3, j, i, 1)**2
+					M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
+					M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(4, j, i, 1)**2
+					M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
+						M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
+						M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
+						M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				end if
+				
 			end if
 		end do
 		
 		M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
+		M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
 	end do
 	
 	! Вне расчётной области нужно заполнить значения в тетраэдрах
@@ -396,6 +403,7 @@ module Monte_Karlo
 	real(8) :: Y, betta
 	
 	! Инициализация некоторых параметров
+	par_n_moment = 19
 	betta = 2.0 * par_pi_8/(par_l_phi - 2)
 	par_Rleft = par_R_LEFT + 0.0001
 	par_Rup = 298.0! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
@@ -450,6 +458,8 @@ module Monte_Karlo
 	real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
 	real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
 	real(8) :: v1, v2, v3, r_peregel
+	
+	real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
 	
 	real(8) :: Wr(par_n_zone + 1), Wthe(par_n_zone + 1), Wphi(par_n_zone + 1), mu_(par_n_zone + 1)
 	
@@ -524,16 +534,32 @@ module Monte_Karlo
 			else
 				nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
 			end if
-			kappa = (nu_ex * time)
+			
+			r = norm2(particle(1:3))
+			
+			if(MK_photoionization) then
+				nu_ph = par_nu_ph * (par_1ae/r)**2
+				kappa_ph = (nu_ph * time)     ! по фотоионизации
+			end if
+			
+			
+			kappa = (nu_ex * time)  ! по перезарядке
+			
+			kappa_all = kappa
+			if(MK_photoionization) kappa_all = kappa_all + kappa_ph
 			
 			call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
 			
-			t_ex = -(time / kappa) * log(1.0 - ksi * (1.0 - exp(-kappa)))  ! Время до перезарядки
+			t_ex = -(time / kappa) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
 			t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
-			mu_ex = mu * (1.0 - exp(-kappa)) ! вес перезаряженного атома
-			mu2 = mu - mu_ex  ! вес оставшегося неперезаряженного атома
+			mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
+			mu2 = mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома
+			mu_ph = 0.0
+			if(MK_photoionization) mu_ph = (kappa_ph / kappa_all) * mu_perez  ! Вес ионизированного атома
+			mu_ex = mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
 			
-			if(mu2 <= 0.0) then
+			
+			if(mu2 < 0.0) then
 				print*, mu2, mu, mu_ex, kappa
 				STOP "Eror oiuyyuiojhu987uio9i"
 			end if
@@ -578,25 +604,26 @@ module Monte_Karlo
 			M_K_Moment(5, particle_2(2), cell, n_potok) = M_K_Moment(5, particle_2(2), cell, n_potok) + &
 				(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
 			
-			M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(4)**2
-			M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
-			M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
-			M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
-			M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
-			M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
-			M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(4)**3
-			M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(5)**3
-			M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * particle(6)**3
-			
+			if(par_n_moment > 9) then
+				M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(4)**2
+				M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
+				M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
+				M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
+				M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
+				M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
+				M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(4)**3
+				M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(5)**3
+				M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * particle(6)**3
+			end if
 			
 			
 			if (u / cp > 7.0) then
@@ -630,6 +657,12 @@ module Monte_Karlo
 					mu_ex * (-0.5 * k3/k1 + k2/k1 * skalar / u)
 				
 			end if
+			
+			! Добавим интеграллы по фотоионизации  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			M_K_Moment(19, particle_2(2), cell, n_potok) = M_K_Moment(19, particle_2(2), cell, n_potok) + mu_ph 
+			M_K_Moment(6:8, particle_2(2), cell, n_potok) = M_K_Moment(6:8, particle_2(2), cell, n_potok) + mu_ph * particle(4:6)
+			M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+				mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 			
 			!_________________________________________________________________________________________
 			

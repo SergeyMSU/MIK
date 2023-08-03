@@ -971,7 +971,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 1 * 1000 ! 40000
+	all_step = 1 * 20000 ! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1195,7 +1195,7 @@ module MY_CUDA
     dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 30000) == 1) then
+	if (.True. .and. mod(step, 15000) == 1) then
 		do ijk = 1, 3000  ! Несколько раз просчитываем внутреннюю область
 			if (mod(ijk, 1000) == 0) then
 				print*, "Inner Step = ", ijk

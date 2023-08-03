@@ -151,8 +151,8 @@
 		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00004
 	end if
 	
-	if(j >= N2 - 10) then ! Натяжение на стыке А и Б лучей
-		vel = vel + par_nat_HP * 0.002 * (Bk/2.0 + Dk/2.0 - Ak)/Time
+	if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
+		vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
 	end if
 	
 			
@@ -3699,8 +3699,8 @@
 			end do
  
             if (l_1 == .TRUE.) then
-                ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2
-                Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2
+                ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2 + time * MK_kk(1)
+                Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2 + (qqq(9)/qqq(1)) *  time * MK_kk(1)
                 if (ro3 <= 0.0_8) then
 					write(*, *) "Ro < 0  3688"
                     write(*, *) ro3, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
@@ -3923,8 +3923,8 @@
 			SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
  
             if (l_1 == .TRUE.) then
-                ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume
-                Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume
+                ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume + dev_time_step_inner * MK_kk(1)
+                Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume + (qqq(9)/qqq(1)) *  dev_time_step_inner * MK_kk(1)
                 if (ro3 <= 0.0_8) then
                     write(*, *) "Ro < 0  3242341234 "
                 end if

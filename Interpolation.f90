@@ -25,7 +25,8 @@
 	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)
 	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
-	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, :)
+	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, : число точек)
+	! Для массы это просто значение, для остальных это коэффициент отношения
 	
     !real(8), allocatable :: int2_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
 	
@@ -1903,7 +1904,6 @@
 	
 	m = 0
 	do i = 1, 4
-		
 		if( DOT_PRODUCT(int2_plane_tetraendron(1:3, i, num), r ) + int2_plane_tetraendron(4, i, num) > 0 ) then
 			m = 1
 			num2 = int2_gran_sosed(int2_all_tetraendron(i, num))
@@ -2202,6 +2202,47 @@
 	
 	end subroutine Int2_Save_bin
 	
+	subroutine Int2_Save_interpol_for_all(num)
+	! Сохраняет интерполяционные файлы для всех желующих
+	use STORAGE
+    use GEO_PARAM
+    implicit none
+    integer, intent(in) :: num
+    character(len=5) :: name
+    
+    write(unit=name, fmt='(i5.5)') num
+    
+    open(1, file = "int2_save_for_all_" // name // ".bin", FORM = 'BINARY')
+	
+    
+    write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
+    write(1) int2_all_tetraendron
+	
+	write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
+    write(1) int2_plane_tetraendron
+	
+	write(1) size(int2_gran_sosed(:))
+    write(1) int2_gran_sosed
+	
+	write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
+    write(1) int2_all_tetraendron_matrix
+	
+	write(1) size(int2_Cell_par(:, 1)), size(int2_Cell_par(1, :))
+    write(1) int2_Cell_par
+	
+	write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
+    write(1) int2_all_tetraendron_point
+	
+	write(1) size(int2_Moment(:, 1, 1)), size(int2_Moment(1, :, 1)), size(int2_Moment(1, 1, :))
+    write(1) int2_Moment
+	
+	close(1)
+	
+	
+	! Body of Save_interpol_for_all
+	
+	end subroutine Int2_Save_interpol_for_all
+	
 	subroutine Int2_Read_bin(num)
 	implicit none
 	integer, intent(in) :: num
@@ -2345,6 +2386,9 @@
 				if(int2_Moment_k(j, i) < 0.05 .or. int2_Moment_k(j, i) > 10.0) int2_Moment_k(j, i) = 1.0
 			end if
 		end do
+		
+		int2_Moment_k(1, i) = sum(int2_Moment(19, :, i))
+		
 	end do
 	
 	
@@ -2672,7 +2716,7 @@
 				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK, PAR_K)
 				call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
 				if(num < 1) num = 3
-				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(:, 1), PAR_MK(:, 2), PAR_MK(:, 3), PAR_MK(:, 4), PAR_K(2:5)
+				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(1:9, 1), PAR_MK(1:9, 2), PAR_MK(1:9, 3), PAR_MK(1:9, 4), PAR_K(2:5)
 			end do
 		end do
 
@@ -2687,7 +2731,7 @@
 	end subroutine Int_2_Print_par_2D
 	
 	subroutine Int2_sum_moment(PAR_MK, PAR_MK_SUM)
-	
+	! Правильно суммирует моменты, чтобы найти общие параметры
 		real(8), intent(in) :: PAR_MK(par_n_moment, par_n_sort)
 		real(8), intent(out) :: PAR_MK_SUM(par_n_moment)
 		
@@ -3208,6 +3252,7 @@
 	
 	int2_Moment = 0.0
 	int2_Moment_k = 1.0
+	int2_Moment_k(1, :) = 0.0
 	int2_all_Volume = 0.0
 	int2_plane_tetraendron = 0.0
 	int2_coord = 0.0
@@ -4089,5 +4134,6 @@
 	close(1)
 	
 	end subroutine Streem_line
+	
 	
 	end module Interpolate

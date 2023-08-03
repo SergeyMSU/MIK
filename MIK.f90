@@ -7138,11 +7138,33 @@
 	    use Surface_setting
 	    use Monte_Karlo
 	    integer(4) :: step, name, name2
+		real(8) :: PAR(9)     ! Выходные параметры
+	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+	    real(8) :: PAR_MOMENT(18, par_n_sort)
 		
-		name = 249  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
-		name2 = 2  ! Имя мини-сетки для М-К
+		name = 251! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
+		! 249 до фотоионизации
+		name2 = 2 ! 2 ! Имя мини-сетки для М-К
 		name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 2 ! Выбираем шаг, который делаем
+		step = 1 ! Выбираем шаг, который делаем
+		
+		!PAR_MOMENT = 0.0
+		!call Int2_Read_bin(name2)
+		
+		
+		
+		!num = 3
+		!call Int2_Get_par_fast(1.0_8, 1.0_8, 1.0_8, num, PAR, PAR_MOMENT)
+		!print*, size(int2_Moment(:, 1, 1))
+		!print*, "______"
+		!print*, PAR
+		!print*, "______"
+		!print*, num
+		!print*, "______"
+		!print*, PAR_MOMENT(:, :)
+		!pause
+		!
+		!call Int2_Save_interpol_for_all(249)
 		
 		! 243 конец первой итерации
 		
@@ -7320,6 +7342,7 @@
 			call Int2_Read_bin(name)
 			call Int2_Re_interpol()
 			call Int2_Dell_interpolate()
+			par_n_moment = 19
 			print*, "End Interpolatiya" 
 			! Печатаем сетку (для просмотра)
 			call PRINT_ALL()
@@ -7332,6 +7355,8 @@
 			call Int2_Print_setka_2()
 		    call Int2_Print_sosed()
 			
+			call Dell_STORAGE()  ! Удаляем основную сетку (т.к. считается монте-карло)
+			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
 			call M_K_start()
@@ -7341,12 +7366,14 @@
 			
 			! Сохраняем интерполяционный файл - мини - сетки
 			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_interpol_for_all(name2)
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Int2_Read_bin(name2)
 			call Int2_culc_k()
 			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			call Int2_Save_bin(name2)
+			
 			
 		end if !----------------------------------------------------------------------------------------
 		
