@@ -2630,7 +2630,7 @@
 	POTOK = 0.0
 	s1 = gl_Gran_neighbour(1, gr)
 	s2 = gl_Gran_neighbour(2, gr)
-	qqq1 = gl_Cell_par(:, s1)
+	qqq1 = gl_Cell_par(1:9, s1)
 	fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 	null_bn = .False.
 	
@@ -2659,7 +2659,7 @@
 
             if (s2 >= 1) then
                 !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
-                qqq2 = gl_Cell_par(:, s2)
+                qqq2 = gl_Cell_par(1:9, s2)
                 fluid2 = gl_Cell_par_MF(:, :, s2)   ! Загрузили параметры жидкостей для мультифлюида
                 !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))   
 				
@@ -3136,7 +3136,7 @@
         POTOK = 0.0
         s1 = gl_Gran_neighbour(1, gr)
         s2 = gl_Gran_neighbour(2, gr)
-        qqq1 = gl_Cell_par(:, s1)
+        qqq1 = gl_Cell_par(1:9, s1)
         fluid1 = gl_Cell_par_MF(:, :, s1)   ! Загрузили параметры жидкостей для мультифлюида
 		
 		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)

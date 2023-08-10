@@ -54,7 +54,7 @@
 	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc, p_correct_)
+                                 qqq, null_bn1, n_disc, p_correct_, konvect_)
       ! Q - маяк, показывающий в какой области мы находимся
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
@@ -70,8 +70,10 @@
       integer(4), intent(in) :: n_state
 	  logical, intent(in), optional :: null_bn1, p_correct_
 	  integer, intent(in), optional :: n_disc
+	  real(8), intent(in out), optional :: konvect_(:, :)  ! (3, :) Для конвективного сноса различных переменных, второй аргумент, это их количество
 	  
 	  real(8) :: phi_p_correct, ksi, p_correct
+	  real(8), allocatable :: FR_(:), FL_(:), UZ_(:), FW_(:)
 	  logical :: null_bn
       
       dimension qqq(9),qqq1(9),qqq2(9)
@@ -107,6 +109,14 @@
 	else
 		p_correct = p_correct_
 	end if
+	
+	if(present(konvect_)) then
+		allocate(FR_(size(konvect_(1, :))))
+		allocate(FL_(size(konvect_(1, :))))
+		allocate(UZ_(size(konvect_(1, :))))
+		allocate(FW_(size(konvect_(1, :))))
+	end if
+	
 	
 	phi_p_correct = 1.0
 	null_bn = .False.
@@ -335,6 +345,11 @@
          FL(6)=x0 
          FL(7)=vL(1)*bL(2)-vL(2)*bL(1)  
          FL(8)=vL(1)*bL(3)-vL(3)*bL(1)  
+		 if(present(konvect_)) then
+			 do ik = 1, size(konvect_(1, :))
+				 FL_(ik) = konvect_(1, ik) *  vL(1)
+			 end do
+		 end if
 
          FR(1)=r2*vR(1)
          FR(9)=q2*vR(1)
@@ -345,6 +360,11 @@
          FR(6)=x0
          FR(7)=vR(1)*bR(2)-vR(2)*bR(1)  
          FR(8)=vR(1)*bR(3)-vR(3)*bR(1)  
+		 if(present(konvect_)) then
+			 do ik = 1, size(konvect_(1, :))
+				 FR_(ik) = konvect_(2, ik) *  vR(1)
+			 end do
+		 end if
 
         UL(1)=r1
         UL(9)=q1
@@ -363,6 +383,12 @@
        UZ(ik)=(SR*UR(ik)-SL*UL(ik)+FL(ik)-FR(ik))/(SR-SL)
 	   enddo
 	   
+	   if(present(konvect_)) then
+			 do ik = 1, size(konvect_(1, :))
+				 UZ_(ik) = (SR*konvect_(2, ik)-SL*konvect_(1, ik)+FL_(ik)-FR_(ik))/(SR-SL)
+			 end do
+		end if
+	   
 
 !c-------- choise for Bn [=UZ(6)] through fan:
        if(null_bn == .True.) UZ(6) = x0                           ! Это было закоменчено
@@ -372,7 +398,8 @@
 
                 do ik=1,9
                 dq(ik)=UR(ik)-UL(ik)
-                enddo
+				enddo
+				
 
                    TL=SL
                    TR=SR
@@ -382,17 +409,37 @@
                    FW(ik)=wv*UL(ik)
 				   enddo
 				   
+				   if(present(konvect_)) then
+			             do ik = 1, size(konvect_(1, :))
+				             FW_(ik)=wv * konvect_(1, ik)
+			             end do
+				    end if
+				   
                 endif
                 if(SL <= wv .and. wv <= SR)then
                    do ik=1, 9
                    FW(ik)=wv*UZ(ik)
-                   enddo
+				   enddo
+				   
+				   if(present(konvect_)) then
+			             do ik = 1, size(konvect_(1, :))
+				             FW_(ik)=wv * UZ_(ik)
+			             end do
+				   end if
+				   
                 endif
                 if(SR < wv)then
                    TR=x0
                    do ik=1, 9
                    FW(ik)=wv*UR(ik)
-                   enddo
+				   enddo
+				   
+				    if(present(konvect_)) then
+			             do ik = 1, size(konvect_(1, :))
+				             FW_(ik)=wv * konvect_(2, ik)
+			             end do
+				   end if
+				   
                 endif
 
 
@@ -413,11 +460,25 @@
         qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
         qqq(i+5)=aco(i,1)*qb(1)+aco(i,2)*qb(2)+aco(i,3)*qb(3)
         qqq(i+5)=spi4*qqq(i+5)
-        enddo
+		enddo
+		
+		if(present(konvect_)) then
+			    do ik = 1, size(konvect_(1, :))
+					konvect_(3, ik)=(TR*FL_(ik)-TL*FR_(ik)+a* (konvect_(2, ik) - konvect_(1, ik)) )/b-FW_(ik)
+			    end do
+		end if
 
         !do ik=1,8
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
+		
+		if(present(konvect_)) then
+		    deallocate(FR_)
+		    deallocate(FL_)
+		    deallocate(UZ_)
+		    deallocate(FW_)
+		end if
+		
            return
 		endif
 		
@@ -493,7 +554,8 @@
              UZL(ik+5)=bzL(ik)
              UZR(ik+1)=vzR(ik)*rzR
              UZR(ik+5)=bzR(ik)
-             enddo
+			 enddo
+			 
 
            if(SL.gt.wv)then
              qqq(1)=FL(1)-wv*UL(1)
@@ -504,7 +566,14 @@
              enddo
              do ik=6,8
                  qb(ik-5)=FL(ik)-wv*UL(ik)
-             enddo
+			 enddo
+			 
+			  if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FL_(ik) - wv * konvect_(1, ik)
+			        end do
+			  end if
+			  
            endif
 
            if(SL.le.wv.and.SM.ge.wv)then
@@ -516,7 +585,14 @@
              enddo
              do ik=6,8
          qb(ik-5)=FL(ik)+SL*(UZL(ik)-UL(ik))-wv*UZL(ik)
-             enddo
+			 enddo
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FL_(ik) + SL * (konvect_(1, ik) * suLm - konvect_(1, ik)) - wv * konvect_(1, ik) * suLm
+			        end do
+			 end if
+			 
            endif
 
            if(SM.le.wv.and.SR.ge.wv)then
@@ -532,6 +608,13 @@
     !            qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
 			 !enddo
 			 qb(1:3)=FR(6:8)+SR*(UZR(6:8)-UR(6:8))-wv*UZR(6:8)
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FR_(ik) + SR * (konvect_(2, ik) * suRm - konvect_(2, ik)) - wv * konvect_(2, ik) * suRm
+			        end do
+			 end if
+			 
            endif
 
            if(SR.lt.wv)then
@@ -543,7 +626,14 @@
              enddo
              do ik=6,8
                  qb(ik-5)=FR(ik)-wv*UR(ik)
-             enddo
+			 enddo
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FR_(ik) - wv * konvect_(2, ik)
+			        end do
+			 end if
+			 
 		   endif
 		   
 		   !c----- Bn
@@ -573,11 +663,18 @@
         !qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
         !qqq(i+5)=aco(i,1)*qb(1)+aco(i,2)*qb(2)+aco(i,3)*qb(3)
         qqq(i+5)=spi4*qqq(i+5)
-        enddo
+		enddo
 
         !do ik=1,8
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
+		
+		if(present(konvect_)) then
+		    deallocate(FR_)
+		    deallocate(FL_)
+		    deallocate(UZ_)
+		    deallocate(FW_)
+		end if
 
            return
 		endif
@@ -731,6 +828,12 @@
                  qb(ik-5)=FL(ik)-wv*UL(ik)
              enddo
              j_ccs= 1
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FL_(ik) - wv * konvect_(1, ik)
+			        end do
+			 end if
            endif
 
            if(SL.le.wv.and.SZL.ge.wv)then
@@ -747,6 +850,13 @@
          qb(ik-5)=FL(ik)+SL*(UZL(ik)-UL(ik))-wv*UZL(ik)
              enddo
              j_ccs= 2
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FL_(ik) + SL * (konvect_(1, ik) * suLm - konvect_(1, ik)) - wv * konvect_(1, ik) * suLm
+			        end do
+			 end if
+			 
            endif
 !c------ FZZ
        if(ibn.eq.1)then
@@ -770,6 +880,14 @@
                        + SL*( UZL(ik)- UL(ik))-wv*UZZL(ik)
              enddo
              j_ccs= 3
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = konvect_(1, ik) &
+                       + SL * ( konvect_(1, ik) * suLm - konvect_(1, ik))  - wv * konvect_(1, ik) * suLm
+			        end do
+			 end if
+			  
            endif
 
            if(SM.le.wv.and.SZR.ge.wv)then
@@ -791,6 +909,14 @@
                        + SR*( UZR(ik)- UR(ik))-wv*UZZR(ik)
              enddo
              j_ccs= 4
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = konvect_(2, ik) + SZR * (konvect_(2, ik) * suRm - konvect_(2, ik) * suRm) &
+                       + SR * ( konvect_(2, ik) * suRm - konvect_(2, ik))  - wv * konvect_(2, ik) * suRm
+			        end do
+			 end if
+			 
            endif
 
        endif
@@ -809,6 +935,13 @@
          qb(ik-5)=FR(ik)+SR*(UZR(ik)-UR(ik))-wv*UZR(ik)
              enddo
              j_ccs= 5
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FR_(ik) + SR * (konvect_(2, ik) * suRm - konvect_(2, ik)) - wv * konvect_(2, ik) * suRm
+			        end do
+			 end if
+			 
            endif
 
            if(SR.lt.wv)then
@@ -822,6 +955,13 @@
                  qb(ik-5)=FR(ik)-wv*UR(ik)
              enddo
              j_ccs= 6
+			 
+			 if(present(konvect_)) then
+			        do ik = 1, size(konvect_(1, :))
+						konvect_(3, ik) = FR_(ik) - wv * konvect_(2, ik)
+			        end do
+			 end if
+			 
            endif
 
            if(j_ccs.eq.-1)then
@@ -858,16 +998,28 @@
         qqq(i+1)=aco(i,1)*qv(1)+aco(i,2)*qv(2)+aco(i,3)*qv(3)
         qqq(i+5)=aco(i,1)*qb(1)+aco(i,2)*qb(2)+aco(i,3)*qb(3)
         qqq(i+5)=spi4*qqq(i+5)
-        enddo
+		enddo
 
         !do ik=1,8
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
 
+		if(present(konvect_)) then
+		    deallocate(FR_)
+		    deallocate(FL_)
+		    deallocate(UZ_)
+		    deallocate(FW_)
+		end if
 
            return
-        endif
+		endif
 
+		if(present(konvect_)) then
+		    deallocate(FR_)
+		    deallocate(FL_)
+		    deallocate(UZ_)
+		    deallocate(FW_)
+		end if
 
       return
 	end

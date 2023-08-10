@@ -204,7 +204,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_info(Ngran))
 		 allocate(dev_gl_Gran_scheme(Ngran))
 		 allocate(dev_gl_Gran_type(Ngran))
-		 allocate(dev_gl_Cell_par(9, Ncell))
+		 allocate(dev_gl_Cell_par, mold = gl_Cell_par)
 		 allocate(dev_gl_Cell_par_MF(5, 4, Ncell))
 		 allocate(dev_gl_Cell_center(3, Ncell))
 		 allocate(dev_gl_Gran_normal(3, Ngran))
