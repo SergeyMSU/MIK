@@ -3400,14 +3400,16 @@
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: dist, dsl, dsc, dsp, distant(3)
     real(8) :: POTOK(9), ttest(3)
-    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc
+    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc, rad3, rad4, rad5
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	real(8) :: df1, df2, dff1, dff2, rast(3)
 	real(8) :: qqq11(9), qqq22(9), qq, qqq1_TVD(9), qqq2_TVD(9)
+	logical :: tvd1, tvd2, tvd3, tvd4  ! Нужно ли делать особый снос в гиперзвуковом источнике
 	
 	logical :: null_bn
 	
 	now2 = mod(now, 2) + 1
+
 	
 	time = 100000.0
 	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
@@ -3434,8 +3436,10 @@
 	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 	dist = norm2(distant)
 	
+	tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
+	
 	! Попробуем снести плотность пропорционально квадрату
-            if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
+            if (.False.) then !if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
 			!if(gl_zone_Cell(s1) == 1) then
                 rad1 = norm2(gl_Cell_center2(:, s1, now))
                 rad2 = norm2(gl_Gran_center2(:, gr, now))
@@ -3459,7 +3463,7 @@
 				dist = min( dist, norm2(distant))
  
                 ! Попробуем снести плотность пропорционально квадрату
-                if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
+                if (.False.) then !(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2) then 
 				!if(gl_zone_Cell(s1) == 1) then
                     rad1 = norm2(gl_Cell_center2(:, s2, now))                              
                     rad2 = norm2(gl_Gran_center2(:, gr, now))
@@ -3510,9 +3514,11 @@
                 end if
 	end if
 	
+	tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
+	
 	! Делаем ТВД
 	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
-		if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
+		!if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) < 2.2 .and. norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) < 2.2) then
 			ss1 = gl_Gran_neighbour_TVD(1, gr)
 			ss2 = gl_Gran_neighbour_TVD(2, gr)
 			if (ss1 /= 0 .and. ss2 /= 0) then
@@ -3527,14 +3533,81 @@
 				qqq11 = gl_Cell_par(:, ss1)
 				qqq22 = gl_Cell_par(:, ss2)
 				
-				do i = 1, 9
-					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
-					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-				end do
+				tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
+				tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
+				
+				if(tvd1 == .False. .or. tvd2 == .False. .or. tvd3 == .False. .or. tvd4 == .False.) then
+					do i = 1, 9
+						qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+						qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+					end do
+				else
+					rad1 = norm2(gl_Cell_center2(:, s1, now))                              
+					rad2 = norm2(gl_Cell_center2(:, s2, now))                              
+					rad3 = norm2(gl_Cell_center2(:, ss1, now))                              
+					rad4 = norm2(gl_Cell_center2(:, ss2, now))                              
+                    rad5 = norm2(gl_Gran_center2(:, gr, now))
+					
+					qqq1_TVD(1) = linear(-dff1, qqq11(1) * rad3**2, -df1, qqq1(1) * rad1**2, df2, qqq2(1) * rad2**2, 0.0_8)/ rad5**2
+					qqq1_TVD(9) = linear(-dff1, qqq11(9) * rad3**2, -df1, qqq1(9) * rad1**2, df2, qqq2(9) * rad2**2, 0.0_8)/ rad5**2
+					qqq1_TVD(5) = linear(-dff1, qqq11(5) * rad3**(2 * ggg), -df1, qqq1(5) * rad1**(2 * ggg), df2,&
+						qqq2(5) * rad2**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+					
+					qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
+					qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
+					qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
+						qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+					
+					! Переводим скорости в сферическую с.к.
+					call spherical_skorost(gl_Cell_center2(3, s1, now), gl_Cell_center2(1, s1, now), gl_Cell_center2(2, s1, now), &
+                        qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+					qqq1(4) = aa
+					qqq1(2) = bb
+					qqq1(3) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, s2, now), gl_Cell_center2(1, s2, now), gl_Cell_center2(2, s2, now), &
+                        qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+					qqq2(4) = aa
+					qqq2(2) = bb
+					qqq2(3) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, ss1, now), gl_Cell_center2(1, ss1, now), gl_Cell_center2(2, ss1, now), &
+                        qqq11(4), qqq11(2), qqq11(3), aa, bb, cc)
+					qqq11(4) = aa
+					qqq11(2) = bb
+					qqq11(3) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, ss2, now), gl_Cell_center2(1, ss2, now), gl_Cell_center2(2, ss2, now), &
+                        qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
+					qqq22(4) = aa
+					qqq22(2) = bb
+					qqq22(3) = cc
+					
+					do i = 2, 4
+						qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+						qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+					end do
+					
+					do i = 6, 8
+						qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+						qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+					end do
+					
+					call dekard_skorost(gl_Gran_center2(3, gr, now), gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), &
+                        qqq1_TVD(4), qqq1_TVD(2), qqq1_TVD(3), aa, bb, cc)
+					qqq1_TVD(4) = aa
+					qqq1_TVD(2) = bb
+					qqq1_TVD(3) = cc
+					call dekard_skorost(gl_Gran_center2(3, gr, now), gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), &
+                        qqq2_TVD(4), qqq2_TVD(2), qqq2_TVD(3), aa, bb, cc)
+					qqq2_TVD(4) = aa
+					qqq2_TVD(2) = bb
+					qqq2_TVD(3) = cc
+				end if
 				
 				qqq1 = qqq1_TVD
 				qqq2 = qqq2_TVD
-			end if
+			!end if
 		end if
 	end if
 	
@@ -3751,20 +3824,22 @@
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
 		gl_all_Gran_inner => dev_gl_all_Gran_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center, &
 		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
-		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume
+		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD
 	use GEO_PARAM
 	implicit none
 	
 	integer(4) :: gr  ! Глобальный номер текущей грани
 	
-    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter
+    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter, ss1, ss2
     real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
     real(8) :: dist, dsl, dsc, dsp, distant(3)
     real(8) :: POTOK(9), ttest(3)
     real(8) :: POTOK_MF(5)
-    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc
+    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc, rad3, rad4, rad5
+	real(8) :: df1, df2, dff1, dff2, rast(3)
     real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+	real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9)
 	
 	logical :: null_bn
 	
@@ -3785,45 +3860,139 @@
 		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
 		dist = norm2(distant)
  
-        ! Попробуем снести плотность пропорционально квадрату
-        if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.5) then
-            rad1 = norm2(gl_Cell_center(:, s1))
-            rad2 = norm2(gl_Gran_center(:, gr))
-            qqq1(1) = qqq1(1) * rad1**2 / rad2**2
-            qqq1(9) = qqq1(9) * rad1**2 / rad2**2
-            qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-            ! Скорости сносим в сферической С.К.
-            call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
-                qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
-            call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-                aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+        !! Попробуем снести плотность пропорционально квадрату
+        !rad1 = norm2(gl_Cell_center(:, s1))
+        !rad2 = norm2(gl_Gran_center(:, gr))
+        !qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+        !qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+        !qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+        !! Скорости сносим в сферической С.К.
+        !call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+        !    qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+        !call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+        !    aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
  
-        end if
  
-        if (s2 >= 1) then
-            !if ( norm2(gl_Cell_center(:, s1)) <= par_R0 * par_R_int .and. norm2(gl_Cell_center(:, s2)) <= par_R0 * par_R_int) CYCLE
-            qqq2 = gl_Cell_par(:, s2)
-            !dist = min(gl_Cell_dist(s1), gl_Cell_dist(s2))
+        qqq2 = gl_Cell_par(:, s2)
 			
-			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
-			dist = min( dist, norm2(distant))
- 
-            ! Попробуем снести плотность пропорционально квадрату
-            if(norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.5) then
-                rad1 = norm2(gl_Cell_center(:, s2))
-                rad2 = norm2(gl_Gran_center(:, gr))
-                qqq2(1) = qqq2(1) * rad1**2 / rad2**2
-                qqq2(9) = qqq2(9) * rad1**2 / rad2**2
-                qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-                call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
-                    qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
-                call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-                    aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
- 
-			else
-				write(*,*), "YTGVBNYTGBJYGBNJUYHBNJUHGBNMIUHKIJ"
-			end if
+		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+		dist = min( dist, norm2(distant))
+  !
+  !      ! Попробуем снести плотность пропорционально квадрату
+  !      rad1 = norm2(gl_Cell_center(:, s2))
+  !      rad2 = norm2(gl_Gran_center(:, gr))
+  !      qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+  !      qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+  !      qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+  !      call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+  !          qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+  !      call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+  !          aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
+		
+		ss1 = gl_Gran_neighbour_TVD(1, gr)
+		ss2 = gl_Gran_neighbour_TVD(2, gr)
+		if (ss1 /= 0 .and. ss2 /= 0) then
+			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+			df1 = norm2(rast)
+			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+			df2 = norm2(rast)
+			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss1)
+			dff1 = norm2(rast)
+			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss1)
+			dff2 = norm2(rast)
+			qqq11 = gl_Cell_par(:, ss1)
+			qqq22 = gl_Cell_par(:, ss2)
+				
+				
+			rad1 = norm2(gl_Cell_center(:, s1))                              
+			rad2 = norm2(gl_Cell_center(:, s2))                              
+			rad3 = norm2(gl_Cell_center(:, ss1))                              
+			rad4 = norm2(gl_Cell_center(:, ss2))                              
+            rad5 = norm2(gl_Gran_center(:, gr))
+					
+			qqq1_TVD(1) = linear(-dff1, qqq11(1) * rad3**2, -df1, qqq1(1) * rad1**2, df2, qqq2(1) * rad2**2, 0.0_8)/ rad5**2
+			qqq1_TVD(9) = linear(-dff1, qqq11(9) * rad3**2, -df1, qqq1(9) * rad1**2, df2, qqq2(9) * rad2**2, 0.0_8)/ rad5**2
+			qqq1_TVD(5) = linear(-dff1, qqq11(5) * rad3**(2 * ggg), -df1, qqq1(5) * rad1**(2 * ggg), df2,&
+				qqq2(5) * rad2**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+					
+			qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
+			qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
+			qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
+				qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+					
+			! Переводим скорости в сферическую с.к.
+			call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+                qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+			qqq1(4) = aa
+			qqq1(2) = bb
+			qqq1(3) = cc
+					
+			call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+                qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+			qqq2(4) = aa
+			qqq2(2) = bb
+			qqq2(3) = cc
+					
+			call spherical_skorost(gl_Cell_center(3, ss1), gl_Cell_center(1, ss1), gl_Cell_center(2, ss1), &
+                qqq11(4), qqq11(2), qqq11(3), aa, bb, cc)
+			qqq11(4) = aa
+			qqq11(2) = bb
+			qqq11(3) = cc
+					
+			call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
+                qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
+			qqq22(4) = aa
+			qqq22(2) = bb
+			qqq22(3) = cc
+					
+			do i = 2, 4
+				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+			end do
+					
+			do i = 6, 8
+				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+			end do
+					
+			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                qqq1_TVD(4), qqq1_TVD(2), qqq1_TVD(3), aa, bb, cc)
+			qqq1_TVD(4) = aa
+			qqq1_TVD(2) = bb
+			qqq1_TVD(3) = cc
+			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+                qqq2_TVD(4), qqq2_TVD(2), qqq2_TVD(3), aa, bb, cc)
+			qqq2_TVD(4) = aa
+			qqq2_TVD(2) = bb
+			qqq2_TVD(3) = cc
+					
+			
+				
+			qqq1 = qqq1_TVD
+			qqq2 = qqq2_TVD
+		!end if
+	else
+		rad1 = norm2(gl_Cell_center(:, s1))
+        rad2 = norm2(gl_Gran_center(:, gr))
+        qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+        qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+        qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+        ! Скорости сносим в сферической С.К.
+        call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+            qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+        call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+            aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+		
+		rad1 = norm2(gl_Cell_center(:, s2))
+        qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+        qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+        qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+        call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+            qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+        call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+            aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
 	end if
+ 
  
  
  

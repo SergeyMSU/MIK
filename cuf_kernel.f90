@@ -971,7 +971,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 20000! 40000
+	all_step = 40000 * 9! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1185,17 +1185,27 @@ module MY_CUDA
 	
 	! Здесь нужно два цикла по внутренней области (сфере) ячеек и граней
 	
-	dev_gl_x = dev_gl_x2(:, now2)
-    dev_gl_y = dev_gl_y2(:, now2)
-    dev_gl_z = dev_gl_z2(:, now2)
-    dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
-    dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
-    dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
-    dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
-    dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+	!dev_gl_x = dev_gl_x2(:, now2)
+ !   dev_gl_y = dev_gl_y2(:, now2)
+ !   dev_gl_z = dev_gl_z2(:, now2)
+ !   dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+ !   dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+ !   dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+ !   dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+ !   dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 15000) == 1) then
+	if (.True. .and. mod(step, 3000) == 1) then
+		
+		dev_gl_x = dev_gl_x2(:, now2)
+		dev_gl_y = dev_gl_y2(:, now2)
+		dev_gl_z = dev_gl_z2(:, now2)
+		dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+		dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+		dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+		dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+		dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+		
 		do ijk = 1, 3000  ! Несколько раз просчитываем внутреннюю область
 			if (mod(ijk, 1000) == 0) then
 				print*, "Inner Step = ", ijk
@@ -1228,6 +1238,16 @@ module MY_CUDA
 	
 	
 	if (mod(step, 10000) == 0 .or. step == 1000) then
+		
+		dev_gl_x = dev_gl_x2(:, now2)
+		dev_gl_y = dev_gl_y2(:, now2)
+		dev_gl_z = dev_gl_z2(:, now2)
+		dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+		dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+		dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+		dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+		dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+		
 		print*, "PECHAT ", step
 		par_al1 = dev_par_al1
 		par_kk13 = dev_par_kk13
@@ -1246,6 +1266,16 @@ module MY_CUDA
 	end if
 	
 	if (mod(step, 100000) == 0) then
+		
+		dev_gl_x = dev_gl_x2(:, now2)
+		dev_gl_y = dev_gl_y2(:, now2)
+		dev_gl_z = dev_gl_z2(:, now2)
+		dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+		dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+		dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+		dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+		dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+		
 		print*, "PECHAT 2 ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
@@ -1253,6 +1283,16 @@ module MY_CUDA
 	end if
 	
 	if (mod(step, 3500) == 0) then
+		
+		dev_gl_x = dev_gl_x2(:, now2)
+		dev_gl_y = dev_gl_y2(:, now2)
+		dev_gl_z = dev_gl_z2(:, now2)
+		dev_gl_Cell_Volume = dev_gl_Cell_Volume2(:, now2)
+		dev_gl_Gran_normal = dev_gl_Gran_normal2(:, :, now2)
+		dev_gl_Gran_center = dev_gl_Gran_center2(:, :, now2)
+		dev_gl_Cell_center = dev_gl_Cell_center2(:, :, now2)
+		dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
+		
 		print*, "Renew TVD ", step
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()

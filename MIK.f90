@@ -1413,6 +1413,38 @@
     ! ************************************************************************************************************************************************
     ! Блок физики
 	
+	subroutine Test_raspadnik()
+	! Variables
+	USE Solvers
+	real(8) :: dsl, dsp, dsc
+    real(8) :: al, be, ge, w
+    integer(4) :: n_state
+	logical :: null_bn1, p_correct_
+	integer :: n_disc
+	real(8) :: konvect_(3, 1)
+	real(8) :: qqq1(9), qqq2(9), qqq(9)
+	
+	null_bn1 = .False.; p_correct_ = .True.; n_disc = 1
+	al = 1; be = 0; ge = 0; w = 0; n_state = 1
+	
+	qqq1 = (/1.0, 1.0, 0.3, 0.1, 0.002, 0.1, 0.2, 0.3, 2.0/)
+	qqq2 = (/1.0, -1.0, 0.3, 0.1, 0.008, 0.01, 0.6, 0.13, 100.0/)
+	konvect_(1, 1) = 2.0
+	konvect_(2, 1) = 100.0
+	
+	call chlld_Q(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq, null_bn1, n_disc, p_correct_, konvect_)
+	
+	print*, "qqq = ", qqq
+	print*, "konvect_ = ", konvect_
+	pause
+	! Body of Test_raspadnik
+	
+	
+	end subroutine Test_raspadnik
+	
 	subroutine Test_koordinate(x, y, z)
 	    use STORAGE
         use GEO_PARAM
@@ -1987,7 +2019,7 @@
 	do  iter = 1, Ncell
 		if(gl_Cell_info(iter) /= 0) CYCLE
 		do j = 1, 6
-			if(gl_Cell_gran(j,iter) > 0) then
+			if(gl_Cell_gran(j, iter) > 0) then
 				gl_Gran_info(gl_Cell_gran(j,iter)) = 2
 			end if
 		end do
@@ -6953,9 +6985,12 @@
 	name_posle = 999
 
 	
-	call Test_koordinate(1.0_8, 0.0_8, 0.0_8)
-	!call Play_iter_algoritm()
-	pause
+	!call Test_koordinate(1.0_8, 0.0_8, 0.0_8)
+	!call Test_raspadnik()
+	
+	
+	call Play_iter_algoritm()
+	!pause
 	STOP
 	
 	! НИЖЕ СТАРЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (потом можно будет удалить)
@@ -7220,7 +7255,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort)
 		
-		name = 253! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
+		name = 255! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
 		name2 = 2 ! 2 ! Имя мини-сетки для М-К
 		name3 = 237  ! Имя сетки интерполяции для М-К
