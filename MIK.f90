@@ -1425,17 +1425,17 @@
 	real(8) :: qqq1(9), qqq2(9), qqq(9)
 	
 	null_bn1 = .False.; p_correct_ = .True.; n_disc = 1
-	al = 1; be = 0; ge = 0; w = 0; n_state = 1
+	al = 1; be = 0; ge = 0; w = 1.1; n_state = 3
 	
-	qqq1 = (/1.0, 1.0, 0.3, 0.1, 0.002, 0.1, 0.2, 0.3, 2.0/)
-	qqq2 = (/1.0, -1.0, 0.3, 0.1, 0.008, 0.01, 0.6, 0.13, 100.0/)
+	qqq1 = (/1.0, 1.0, 0.0, 0.1, 10.002, 10.1, 0.2, 0.3, 2.0/)
+	qqq2 = (/1.0, -3.1, 0.0, 0.1, 0.002, 5.01, 0.6, 0.13, 100.0/)
 	konvect_(1, 1) = 2.0
 	konvect_(2, 1) = 100.0
 	
 	call chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc, p_correct_, konvect_)
+                                 qqq, null_bn1 = null_bn1, n_disc = n_disc, p_correct_ = p_correct_, konvect_ = konvect_)
 	
 	print*, "qqq = ", qqq
 	print*, "konvect_ = ", konvect_
@@ -1608,6 +1608,15 @@
     !gl_Cell_par(:, ncell) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro/)
 	gl_Cell_par(:, ncell) = (/ro * (par_R0/r)**2, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), & 
 		P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro * (par_R0/r)**2/)
+	
+	! Если включаем гелий
+	if(par_helium) then	
+		gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.07   ! He++
+		
+		gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.07
+		gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.07
+		gl_Cell_par(5, ncell) = gl_Cell_par(5, ncell) * 1.0525
+	end if
             
     ! Задаём мультифлюид (только первый сорт)
     gl_Cell_par_MF(:, 1, ncell) = (/0.0000001_8, c(1), c(2), c(3), 0.0000001_8 * P_E/ro /)
@@ -1629,11 +1638,21 @@
     ! Перенормировка параметров, если это необходимо
     ncell = size(gl_all_Cell(1, :))
     
-    !do gr = 1, ncell
-    !    if( gl_x(gl_all_Cell(1, gr)) > 200.0) then
-    !            gl_Cell_par(:, gr) = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
-    !    end if
-    !end do
+    do gr = 1, ncell
+		
+		!if(gl_zone_Cell(gr) == 1 .or. gl_zone_Cell(gr) == 2) then
+		!	gl_Cell_par2(1, gr) = gl_Cell_par(1, gr) * 0.07
+		!	gl_Cell_par(1, gr) = gl_Cell_par(1, gr) * 1.07
+		!	gl_Cell_par(9, gr) = gl_Cell_par(9, gr) * 1.07
+		!	gl_Cell_par(5, gr) = gl_Cell_par(5, gr) * 1.0525
+		!else
+		!	gl_Cell_par2(1, gr) = gl_Cell_par(1, gr) * 0.15
+		!	gl_Cell_par(1, gr) = gl_Cell_par(1, gr) * 1.15
+		!	gl_Cell_par(9, gr) = gl_Cell_par(9, gr) * 1.15
+		!	gl_Cell_par(5, gr) = gl_Cell_par(5, gr) * 1.075
+		!end if
+		
+    end do
     
     
     ! Задаём граничные условия (параметры в первых ячейках на внутренней сфере)
@@ -6149,7 +6168,7 @@
 
     open(1, file = 'print_par_2D.txt')
     write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
-    write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q',"
+    write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q', 'He',"
     write(1,*) "'Zone','T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
     write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
     write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
@@ -6163,7 +6182,9 @@
             c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
             m = gl_Cell_A(i, j, kk)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -6173,7 +6194,9 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -6183,7 +6206,9 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -6197,7 +6222,9 @@
             m = gl_Cell_A(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_B(1, :, 1))
@@ -6207,7 +6234,9 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
     N2 = size(gl_Cell_C(1, :, 1))
@@ -6217,7 +6246,9 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), gl_Cell_par_MF(:, :, m)
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
+				gl_Cell_par_MF(:, :, m)
         end do
     end do
 
@@ -7255,8 +7286,9 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort)
 		
-		name = 255! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
+		name = 259! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
+        ! 258 с гелием (только ввёл) до того, как поменять схему	
 		name2 = 2 ! 2 ! Имя мини-сетки для М-К
 		name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1 ! Выбираем шаг, который делаем

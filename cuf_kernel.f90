@@ -55,6 +55,7 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_Gran_type(:)         ! (:) классификатор грани (см. схему)
 	 integer(4), device, allocatable :: dev_gl_Cell_info(:)
 	 real(8), device, allocatable :: dev_gl_Cell_par(:, :)
+	 real(8), device, allocatable :: dev_gl_Cell_par2(:, :)
 	 real(8), device, allocatable :: dev_gl_Cell_par_MF(:,:,:)
 	 real(8), device, allocatable :: dev_gl_Cell_par_MK(:,:,:)
 	 real(8), device, allocatable :: dev_gl_Cell_center(:, :)
@@ -64,6 +65,7 @@ module MY_CUDA
 	 real(8), device, allocatable :: dev_gl_Cell_dist(:)
 	 real(8), device, allocatable :: dev_gl_Cell_Volume(:)
 	 real(8), device, allocatable :: dev_gl_Gran_POTOK(:,:)       ! (8, :) поток грани
+	 real(8), device, allocatable :: dev_gl_Gran_POTOK2(:,:)       !  поток грани 2
 	 real(8), device, allocatable :: dev_gl_Gran_POTOK_MF(:,:,:)       ! (5, 4, :) поток грани мультифлюидных жидкостей
 	 integer(4), device, allocatable :: dev_gl_Cell_gran(:,:)
 	 integer(4), device, allocatable :: dev_gl_all_Gran_inner(:)
@@ -205,6 +207,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_scheme(Ngran))
 		 allocate(dev_gl_Gran_type(Ngran))
 		 allocate(dev_gl_Cell_par, mold = gl_Cell_par)
+		 allocate(dev_gl_Cell_par2, mold = gl_Cell_par2)
 		 allocate(dev_gl_Cell_par_MF(5, 4, Ncell))
 		 allocate(dev_gl_Cell_center(3, Ncell))
 		 allocate(dev_gl_Gran_normal(3, Ngran))
@@ -212,7 +215,8 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_center(3, Ngran))
 		 allocate(dev_gl_Cell_dist(Ncell))
 		 allocate(dev_gl_Cell_Volume(Ncell))
-		 allocate(dev_gl_Gran_POTOK( size(gl_Gran_POTOK(:, 1))  , Ngran))
+		 allocate(dev_gl_Gran_POTOK(size(gl_Gran_POTOK(:, 1))  , Ngran))
+		 allocate(dev_gl_Gran_POTOK2(size(gl_Cell_par2(:, 1))  , Ngran))
 		 allocate(dev_gl_Gran_POTOK_MF(5, 4, Ngran))
 		 allocate(dev_gl_Cell_info(Ncell))
 		 allocate(dev_gl_Cell_gran(6, Ncell))
@@ -232,6 +236,7 @@ module MY_CUDA
 		 time_step = 1.0 ! 0.00000000001
 		 
 		 dev_gl_Gran_POTOK = 0.0
+		 dev_gl_Gran_POTOK2 = 0.0
 		 dev_gl_Gran_POTOK_MF = 0.0
 	
 	end subroutine Set_CUDA
@@ -361,6 +366,7 @@ module MY_CUDA
 		use STORAGE
 		 dev_gl_Gran_neighbour = gl_Gran_neighbour
 		 dev_gl_Cell_par = gl_Cell_par
+		 dev_gl_Cell_par2 = gl_Cell_par2
 		 dev_gl_Cell_par_MF = gl_Cell_par_MF
 		 dev_gl_Cell_par_MK = gl_Cell_par_MK
 		 dev_gl_Cell_center = gl_Cell_center
@@ -422,6 +428,7 @@ module MY_CUDA
 		use GEO_PARAM
 		use STORAGE
 		gl_Cell_par = dev_gl_Cell_par
+		gl_Cell_par2 = dev_gl_Cell_par2
 		gl_Cell_par_MF = dev_gl_Cell_par_MF
 	end subroutine Send_data_to_Host
 	
@@ -971,7 +978,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 40000 * 9! 40000
+	all_step = 15 * 40000! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1195,7 +1202,7 @@ module MY_CUDA
  !   dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 3000) == 1) then
+	if (.True. .and. mod(step, 15000) == 1) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1237,7 +1244,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 10000) == 0 .or. step == 1000) then
+	if (mod(step, 50000) == 0 .or. step == 1000) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1265,7 +1272,7 @@ module MY_CUDA
 		call Print_surface_y_2D()
 	end if
 	
-	if (mod(step, 100000) == 0) then
+	if (mod(step, 300000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1282,7 +1289,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 3500) == 0) then
+	if (mod(step, 10000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

@@ -45,7 +45,9 @@
     write(1) par_triple_point_2
 	
 	
-    write(1) 0
+    write(1) 1
+	write(1) gl_Cell_par2(1, :)
+	
     write(1) 0
     write(1) 0
     write(1) 0
@@ -143,6 +145,11 @@
 	end if
 	
     read(1) n
+	if (n == 1) then
+		read(1) gl_Cell_par2(1, :)
+	end if
+	
+	
     read(1) n
     read(1) n
     read(1) n

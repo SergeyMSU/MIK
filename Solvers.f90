@@ -70,10 +70,10 @@
       integer(4), intent(in) :: n_state
 	  logical, intent(in), optional :: null_bn1, p_correct_
 	  integer, intent(in), optional :: n_disc
-	  real(8), intent(in out), optional :: konvect_(:, :)  ! (3, :) Для конвективного сноса различных переменных, второй аргумент, это их количество
+	  real(8), intent(in out), optional :: konvect_(3, 1)  ! (3, :) Для конвективного сноса различных переменных, второй аргумент, это их количество
 	  
 	  real(8) :: phi_p_correct, ksi, p_correct
-	  real(8), allocatable :: FR_(:), FL_(:), UZ_(:), FW_(:)
+	  real(8) :: FR_(1), FL_(1), UZ_(1), FW_(1)
 	  logical :: null_bn
       
       dimension qqq(9),qqq1(9),qqq2(9)
@@ -110,12 +110,6 @@
 		p_correct = p_correct_
 	end if
 	
-	if(present(konvect_)) then
-		allocate(FR_(size(konvect_(1, :))))
-		allocate(FL_(size(konvect_(1, :))))
-		allocate(UZ_(size(konvect_(1, :))))
-		allocate(FW_(size(konvect_(1, :))))
-	end if
 	
 	
 	phi_p_correct = 1.0
@@ -415,8 +409,7 @@
 			             end do
 				    end if
 				   
-                endif
-                if(SL <= wv .and. wv <= SR)then
+                else if(SL <= wv .and. wv <= SR)then
                    do ik=1, 9
                    FW(ik)=wv*UZ(ik)
 				   enddo
@@ -427,8 +420,7 @@
 			             end do
 				   end if
 				   
-                endif
-                if(SR < wv)then
+                else if(SR < wv)then
                    TR=x0
                    do ik=1, 9
                    FW(ik)=wv*UR(ik)
@@ -439,7 +431,9 @@
 				             FW_(ik)=wv * konvect_(2, ik)
 			             end do
 				   end if
-				   
+				else
+					write(*,*) "Error yuiknhgty789okjy89"
+					stop
                 endif
 
 
@@ -472,12 +466,6 @@
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
 		
-		if(present(konvect_)) then
-		    deallocate(FR_)
-		    deallocate(FL_)
-		    deallocate(UZ_)
-		    deallocate(FW_)
-		end if
 		
            return
 		endif
@@ -574,9 +562,7 @@
 			        end do
 			  end if
 			  
-           endif
-
-           if(SL.le.wv.and.SM.ge.wv)then
+           else if(SL.le.wv.and.SM.ge.wv)then
              qqq(1)=FL(1)+SL*(rzL-r1) -wv*UZL(1)
              qqq(9)=FL(9)+SL*(qzL-q1) -wv*UZL(9)
              qqq(5)=FL(5)+SL*(ezL-e1) -wv*UZL(5)
@@ -593,9 +579,7 @@
 			        end do
 			 end if
 			 
-           endif
-
-           if(SM.le.wv.and.SR.ge.wv)then
+           else if(SM.le.wv.and.SR.ge.wv)then
              qqq(1)=FR(1)+SR*(rzR-r2) -wv*UZR(1)
              qqq(9)=FR(9)+SR*(qzR-q2) -wv*UZR(9)
              qqq(5)=FR(5)+SR*(ezR-e2) -wv*UZR(5)
@@ -615,9 +599,7 @@
 			        end do
 			 end if
 			 
-           endif
-
-           if(SR.lt.wv)then
+          else if(SR.lt.wv)then
              qqq(1)=FR(1)-wv*UR(1)
              qqq(9)=FR(9)-wv*UR(9)
              qqq(5)=FR(5)-wv*UR(5)
@@ -633,7 +615,9 @@
 						konvect_(3, ik) = FR_(ik) - wv * konvect_(2, ik)
 			        end do
 			 end if
-			 
+		  else
+			  write(*, *) "ERROR 8903372yhe2ue3wofike"
+			  stop
 		   endif
 		   
 		   !c----- Bn
@@ -669,12 +653,6 @@
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
 		
-		if(present(konvect_)) then
-		    deallocate(FR_)
-		    deallocate(FL_)
-		    deallocate(UZ_)
-		    deallocate(FW_)
-		end if
 
            return
 		endif
@@ -834,9 +812,7 @@
 						konvect_(3, ik) = FL_(ik) - wv * konvect_(1, ik)
 			        end do
 			 end if
-           endif
-
-           if(SL.le.wv.and.SZL.ge.wv)then
+           else if(SL.le.wv.and.SZL.ge.wv)then
               ik=1     
           qqq(ik)=FL(ik)+SL*(UZL(ik)-UL(ik))-wv*UZL(ik)
               ik=9     
@@ -883,14 +859,12 @@
 			 
 			 if(present(konvect_)) then
 			        do ik = 1, size(konvect_(1, :))
-						konvect_(3, ik) = konvect_(1, ik) &
+						konvect_(3, ik) = FL_(ik) &
                        + SL * ( konvect_(1, ik) * suLm - konvect_(1, ik))  - wv * konvect_(1, ik) * suLm
 			        end do
 			 end if
 			  
-           endif
-
-           if(SM.le.wv.and.SZR.ge.wv)then
+           else if(SM.le.wv.and.SZR.ge.wv)then
               ik=1
           qqq(ik)=FR(ik)+SZR*(UZZR(ik)-UZR(ik)) &
                        + SR*( UZR(ik)- UR(ik))-wv*UZZR(ik)
@@ -912,7 +886,7 @@
 			 
 			 if(present(konvect_)) then
 			        do ik = 1, size(konvect_(1, :))
-						konvect_(3, ik) = konvect_(2, ik) + SZR * (konvect_(2, ik) * suRm - konvect_(2, ik) * suRm) &
+						konvect_(3, ik) = FR_(ik) + SZR * (konvect_(2, ik) * suRm - konvect_(2, ik) * suRm) &
                        + SR * ( konvect_(2, ik) * suRm - konvect_(2, ik))  - wv * konvect_(2, ik) * suRm
 			        end do
 			 end if
@@ -942,9 +916,7 @@
 			        end do
 			 end if
 			 
-           endif
-
-           if(SR.lt.wv)then
+           else if(SR.lt.wv)then
              qqq(1)=FR(1)-wv*UR(1)
              qqq(9)=FR(9)-wv*UR(9)
              qqq(5)=FR(5)-wv*UR(5)
@@ -965,12 +937,15 @@
            endif
 
            if(j_ccs.eq.-1)then
-              print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
+              print*,'chlld_Q  HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
-              print*,w,SL,SZL,SM,SZR,SR
-			  !print*, qqq1
-			  !print*, "___"
-			  !print*, qqq2
+     !         print*,w,SL,SZL,SM,SZR,SR
+			  print*, "___"
+			  write(*, *) qqq1(1)
+			  print*, "___"
+			  write(*, *) qqq2(1)
+			  print*, "___"
+			  write(*, *) konvect_(1, 1), konvect_(2, 1), konvect_(3, 1)
               !pause
 			  STOP
            endif
@@ -1004,22 +979,10 @@
         ! qqq(ik)=ythll*el*qqq(ik)
         !enddo
 
-		if(present(konvect_)) then
-		    deallocate(FR_)
-		    deallocate(FL_)
-		    deallocate(UZ_)
-		    deallocate(FW_)
-		end if
 
            return
 		endif
 
-		if(present(konvect_)) then
-		    deallocate(FR_)
-		    deallocate(FL_)
-		    deallocate(UZ_)
-		    deallocate(FW_)
-		end if
 
       return
 	end
@@ -1699,7 +1662,7 @@
            endif
 
            if(j_ccs.eq.-1)then
-              print*,'HLLD solver, nstate=3, wrong choise!!!!',j_ccs
+              print*,'hlld  HLLD solver, nstate=3, wrong choise!!!!',j_ccs
               print*,'w SL SZL SM SZR SR'
               print*,w,SL,SZL,SM,SZR,SR
 			  !print*, qqq1

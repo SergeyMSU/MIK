@@ -160,47 +160,47 @@
     if (par_developer_info) print *, "Find_Surface: BS", node - 1, size(gl_BS)
 	
 	! ¬водим Ћакса на оси симметрии
+	if(.True.) then
+		do k = 1, size( gl_Cell_A(1, 1, :) )
+			do j = 1, size( gl_Cell_A(:, 1, 1) )
+				! ¬водим лакса поперЄк
+				gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 1, k))) = 1
+				if(gl_Cell_gran(4, gl_Cell_A(j, 1, k)) /= 0) then
+					gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 1, k))) = 1
+				end if
+				gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 1, k))) = 1
+				gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 1, k))) = 1
+			
+				gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 2, k))) = 1
+				if(gl_Cell_gran(4, gl_Cell_A(j, 2, k)) /= 0) then
+					gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 2, k))) = 1
+				end if
+				gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 2, k))) = 1
+				gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 2, k))) = 1
+			
+			end do
+		end do
 	
-	do k = 1, size( gl_Cell_A(1, 1, :) )
-        do j = 1, size( gl_Cell_A(:, 1, 1) )
-			! ¬водим лакса поперЄк
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 1, k))) = 1
-			if(gl_Cell_gran(4, gl_Cell_A(j, 1, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 1, k))) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 1, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 1, k))) = 1
+		do k = 1, size( gl_Cell_B(1, 1, :) )
+			do j = 1, par_n_TS + 5 !size( gl_Cell_B(:, 1, 1) )
+				! ¬водим лакса поперЄк
+				gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 1
+				if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
+					gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 1, k))) = 1
+				end if
+				gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 1, k))) = 1
+				gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 1, k))) = 1
 			
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 2, k))) = 1
-			if(gl_Cell_gran(4, gl_Cell_A(j, 2, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 2, k))) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 2, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 2, k))) = 1
+				gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 2, k))) = 1
+				if (gl_Cell_gran(4, gl_Cell_B(j, 2, k)) /= 0) then
+					gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 2, k))) = 1
+				end if
+				gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 2, k))) = 1
+				gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 2, k))) = 1
 			
-        end do
-	end do
-	
-	do k = 1, size( gl_Cell_B(1, 1, :) )
-        do j = 1, par_n_TS + 5 !size( gl_Cell_B(:, 1, 1) )
-			! ¬водим лакса поперЄк
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 1
-			if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 1, k))) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 1, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 1, k))) = 1
-			
-			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 2, k))) = 1
-			if (gl_Cell_gran(4, gl_Cell_B(j, 2, k)) /= 0) then
-			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 2, k))) = 1
-			end if
-			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 2, k))) = 1
-			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 2, k))) = 1
-			
-        end do
-	end do
-	
+			end do
+		end do
+	end if
 	
 	do k = 1, size( gl_Cell_A(par_n_HP - 1, 1, :) )
         do j = 1, size( gl_Cell_A(par_n_HP - 1, :, 1) )
