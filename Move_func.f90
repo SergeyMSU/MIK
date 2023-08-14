@@ -2275,3 +2275,68 @@
 	! Body of Surface_setup
 	
 	end subroutine Surface_setup
+	
+	!@cuf attributes(host, device) & 
+	subroutine Smooth_kvadr(x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z, xx, yy, zz)
+	! Функция определяющая новвое положение точки x, y, z
+	! В соответствии с тремя другими точками, строя квадратичный сплайн
+	real(8), intent(in) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z
+	real(8), intent(out) :: xx, yy, zz
+	real(8) :: ex(3), ey(3), c(3), xx2, yy2, xx3, xx4, a, b, yy4
+	
+	ex(1) = x3 - x1
+	ex(2) = y3 - y1
+	ex(3) = z3 - z1
+	
+	ey(1) = x2 - x1
+	ey(2) = y2 - y1
+	ey(3) = z2 - z1
+	
+	ex = ex/dsqrt(ex(1)**2 + ex(2)**2 + ex(3)**2)
+	ey = ey/dsqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+	
+	!print*, "ex = ", ex
+	
+	! Если они не сонаправлены
+	if( dabs(DOT_PRODUCT(ex, ey)) < 0.99 ) then
+		c(1) = ex(2) * ey(3) - ex(3) * ey(2)
+        c(2) = ex(3) * ey(1) - ex(1) * ey(3)
+        c(3) = ex(1) * ey(2) - ex(2) * ey(1)
+		
+		ey(1) = c(2) * ex(3) - c(3) * ex(2)
+        ey(2) = c(3) * ex(1) - c(1) * ex(3)
+        ey(3) = c(1) * ex(2) - c(2) * ex(1)
+		
+		
+		
+		ey = ey/dsqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+		
+		!print*, "ey = ", ey
+		
+		c(1) = x2 - x1; c(2) = y2 - y1; c(3) = z2 - z1
+		xx2 = DOT_PRODUCT(ex, c)
+		yy2 = DOT_PRODUCT(ey, c)
+		c(1) = x3 - x1; c(2) = y3 - y1; c(3) = z3 - z1
+		xx3 = DOT_PRODUCT(ex, c)
+		c(1) = x - x1; c(2) = y - y1; c(3) = z - z1
+		xx4 = DOT_PRODUCT(ex, c)
+		
+		a = -yy2/((xx3 - xx2) * xx2)
+		b = -xx3 * yy2/((xx2 - xx3) * xx2)
+		yy4 = a * xx4**2 + b * xx4
+		
+		xx = x1 + xx4 * ex(1) + yy4 * ey(1)
+		yy = y1 + xx4 * ex(2) + yy4 * ey(2)
+		zz = z1 + xx4 * ex(3) + yy4 * ey(3)
+		
+		return
+	else
+		xx = x
+		yy = y
+		zz = z
+	end if
+	
+	
+	! Body of Smooth_kvadr
+	
+	end subroutine Smooth_kvadr

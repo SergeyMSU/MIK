@@ -7005,7 +7005,7 @@
 
     integer(4) :: i, NGRAN, j, nn, name_do, name_posle
 	integer :: istat, s1,s2,s3, n1,n2, n3, k
-	real(8) :: local1, F(9), b
+	real(8) :: local1, F(9), b, xx, yy, zz
 	integer :: ierrSync, ierrAsync
 	
 	print*, "START PROGRAM"
@@ -7019,9 +7019,10 @@
 	!call Test_koordinate(1.0_8, 0.0_8, 0.0_8)
 	!call Test_raspadnik()
 	
-	
-	call Play_iter_algoritm()
-	!pause
+	call Smooth_kvadr(1.0_8, 0.0_8, 0.0_8, 3.0_8, 0.8_8, 0.0_8, 4.0_8, 0.0_8, 0.0_8, 2.0_8, 3.0_8, 0.0_8, xx, yy, zz)
+	print*, xx, yy, zz
+	!call Play_iter_algoritm()
+	pause
 	STOP
 	
 	! НИЖЕ СТАРЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (потом можно будет удалить)
