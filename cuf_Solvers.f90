@@ -39,7 +39,7 @@
 	
 	if(k > N3 .or. j > N2) return
 	
-	k1 = 0.001
+	k1 = 0.002! 0.001
 	if(j <= 18) k1 = 0.03   ! 0.03
 	
 	
@@ -142,13 +142,13 @@
 		
 		!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
 		
-		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00004
+		vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		
 		!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
 		
-		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00004
+		vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
 	end if
 	
 	!if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
@@ -364,14 +364,14 @@
 				!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.001
 				!vel(1) = 0.0
 				
-				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.0001 
+				vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  !0.000003 
 			else
 				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
 				
 				!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 				!vel(1) = 0.0
 		
-				vel = par_nat_HP * 0.000003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.0000003
+				vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.000003
 			end if
 	
 	

@@ -383,8 +383,8 @@
     gl_Gran_info = 0
     gl_Cell_info = 2
 	gl_Gran_type = 0
-	!gl_Gran_scheme = 2
-	gl_Gran_scheme = 3
+	gl_Gran_scheme = 2
+	!gl_Gran_scheme = 3
 	gl_zone_Cell = 2
 	if(par_helium) gl_Cell_par2 = 0.0
     
