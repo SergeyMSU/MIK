@@ -5,6 +5,7 @@ module MY_CUDA
 	 use cudafor
 	 use Solvers
 	 use My_func
+	 use MY_CUDA_smooth
 	 
 	 ! Константы
 	 real(8), constant :: dev_ggg
@@ -978,7 +979,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 2 * 40000! 40000
+	all_step = 8 * 40000! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1202,7 +1203,7 @@ module MY_CUDA
  !   dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (.True. .and. mod(step, 8000) == 1) then
+	if (.True. .and. mod(step, 10000) == 1) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1289,7 +1290,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 50000) == 0) then
+	if (mod(step, 10000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

@@ -1,4 +1,355 @@
 
+	module MY_CUDA_smooth
+	
+	contains 
+	!@cuf attributes(host, device) & 
+	subroutine Smooth_kvadr(x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z, xx, yy, zz)
+	! Функция определяющая новвое положение точки x, y, z
+	! В соответствии с тремя другими точками, строя квадратичный сплайн
+	real(8), intent(in) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z
+	real(8), intent(out) :: xx, yy, zz
+	real(8) :: ex(3), ey(3), c(3), xx2, yy2, xx3, xx4, a, b, yy4, nn
+	
+	ex(1) = x3 - x1
+	ex(2) = y3 - y1
+	ex(3) = z3 - z1
+	
+	ey(1) = x2 - x1
+	ey(2) = y2 - y1
+	ey(3) = z2 - z1
+	
+	nn = sqrt(ex(1)**2 + ex(2)**2 + ex(3)**2)
+	ex = ex/nn
+	
+	nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+	ey = ey/nn
+	
+	!print*, "ex = ", ex
+	
+	! Если они не сонаправлены
+	if( dabs(DOT_PRODUCT(ex, ey)) < 0.99 ) then
+		c(1) = ex(2) * ey(3) - ex(3) * ey(2)
+        c(2) = ex(3) * ey(1) - ex(1) * ey(3)
+        c(3) = ex(1) * ey(2) - ex(2) * ey(1)
+		
+		ey(1) = c(2) * ex(3) - c(3) * ex(2)
+        ey(2) = c(3) * ex(1) - c(1) * ex(3)
+        ey(3) = c(1) * ex(2) - c(2) * ex(1)
+		
+		
+		nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+		ey = ey/nn
+		
+		!print*, "ey = ", ey
+		
+		c(1) = x2 - x1; c(2) = y2 - y1; c(3) = z2 - z1
+		xx2 = DOT_PRODUCT(ex, c)
+		yy2 = DOT_PRODUCT(ey, c)
+		c(1) = x3 - x1; c(2) = y3 - y1; c(3) = z3 - z1
+		xx3 = DOT_PRODUCT(ex, c)
+		c(1) = x - x1; c(2) = y - y1; c(3) = z - z1
+		xx4 = DOT_PRODUCT(ex, c)
+		
+		a = -yy2/((xx3 - xx2) * xx2)
+		b = -xx3 * yy2/((xx2 - xx3) * xx2)
+		yy4 = a * xx4**2 + b * xx4
+		
+		xx = x1 + xx4 * ex(1) + yy4 * ey(1)
+		yy = y1 + xx4 * ex(2) + yy4 * ey(2)
+		zz = z1 + xx4 * ex(3) + yy4 * ey(3)
+		
+		return
+	else
+		xx = x
+		yy = y
+		zz = z
+	end if
+	
+	
+	! Body of Smooth_kvadr
+	
+	end subroutine Smooth_kvadr
+	
+	
+	!@cuf attributes(host) & 
+	subroutine Smooth_kvadr2(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, x5, y5, z5, xx, yy, zz)
+	!@cuf use cublas
+	! Функция определяющая новвое положение точки x, y, z
+	! В соответствии с тремя другими точками, строя квадратичный сплайн по методу наименьших квадратов
+		real(8), intent(in) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, x5, y5, z5
+		real(8), intent(out) :: xx, yy, zz
+		real(8) :: ex(3), ey(3), c(3), xx2, yy2, xx3, yy3, xx4, yy4, xx5, nn
+	
+      Integer, Parameter :: nb = 64
+!     .. Local Scalars ..
+      Real(8) :: rcond
+      Integer :: i, info, lda, lwork,rank
+      Integer, parameter :: n = 3
+      Integer, parameter :: m = 5
+!     .. Local Arrays ..
+      Real(8) :: a(5, 3), b(5), work(265)
+      Integer :: jpvt(3)
+	  
+	  
+	 !$inter external dgelsy
+	  
+	  ex(1) = x5 - x1
+	  ex(2) = y5 - y1
+	  ex(3) = z5 - z1
+	
+	ey(1) = x3 - x1
+	ey(2) = y3 - y1
+	ey(3) = z3 - z1
+	
+	nn = sqrt(ex(1)**2 + ex(2)**2 + ex(3)**2)
+	ex = ex/nn
+	
+	nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+	ey = ey/nn
+	
+	!print*, "ex = ", ex
+	
+	! Если они не сонаправлены
+	if( dabs(DOT_PRODUCT(ex, ey)) < 0.99 ) then
+		c(1) = ex(2) * ey(3) - ex(3) * ey(2)
+        c(2) = ex(3) * ey(1) - ex(1) * ey(3)
+        c(3) = ex(1) * ey(2) - ex(2) * ey(1)
+		
+		ey(1) = c(2) * ex(3) - c(3) * ex(2)
+        ey(2) = c(3) * ex(1) - c(1) * ex(3)
+        ey(3) = c(1) * ex(2) - c(2) * ex(1)
+		
+		
+		nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+		ey = ey/nn
+		
+		!print*, "ey = ", ey
+		
+		c(1) = x2 - x1; c(2) = y2 - y1; c(3) = z2 - z1
+		xx2 = DOT_PRODUCT(ex, c)
+		yy2 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x3 - x1; c(2) = y3 - y1; c(3) = z3 - z1
+		xx3 = DOT_PRODUCT(ex, c)
+		yy3 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x4 - x1; c(2) = y4 - y1; c(3) = z4 - z1
+		xx4 = DOT_PRODUCT(ex, c)
+		yy4 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x5 - x1; c(2) = y5 - y1; c(3) = z5 - z1
+		xx5 = DOT_PRODUCT(ex, c)
+		
+		!     Skip heading in data file
+			  
+	  
+			  lda = m
+			  lwork = 3*n + nb*(n+1)
+
+		!     Read A and B from data file
+
+			  a(1, 1) = 0
+			  a(1, 2) = 0
+			  a(1, 3) = 1
+	  
+			  a(2, 1) = xx2**2
+			  a(2, 2) = xx2
+			  a(2, 3) = 1
+	  
+			  a(3, 1) = xx3**2
+			  a(3, 2) = xx3
+			  a(3, 3) = 1
+	  
+			  a(4, 1) = xx4**2
+			  a(4, 2) = xx4
+			  a(4, 3) = 1
+	  
+			  a(5, 1) = xx5**2
+			  a(5, 2) = xx5
+			  a(5, 3) = 1.0
+	  
+			  b(1) = 0.0
+			  b(2) = yy2
+			  b(3) = yy3
+			  b(4) = yy4
+			  b(5) = 0.0
+	  
+
+		!     Initialize JPVT to be zero so that all columns are free
+
+			  jpvt(1:n) = 0
+
+		!     Choose RCOND to reflect the relative accuracy of the input data
+
+			  rcond = 0.000001_8
+
+		!     Solve the least squares problem min( norm2(b - Ax) ) for the x
+		!     of minimum norm.
+
+			 !$inter Call dgelsy(m, n, 1, a, lda, b, m, jpvt, rcond, rank, work, lwork, info)
+
+		!     Print solution
+	  
+			!  print*, "solution 1 = ", b(1:3)
+		
+			  
+		yy3 = b(1) * xx3**2 + b(2) * xx3 + b(3)
+		
+		xx = x1 + xx3 * ex(1) + yy3 * ey(1)
+		yy = y1 + xx3 * ex(2) + yy3 * ey(2)
+		zz = z1 + xx3 * ex(3) + yy3 * ey(3)
+		
+		return
+	else
+		xx = x3
+		yy = y3
+		zz = z3
+		
+		return
+	end if
+
+	
+	end subroutine Smooth_kvadr2
+	
+	!@cuf attributes(host, device) & 
+	subroutine Smooth_kvadr3(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, x5, y5, z5, xx, yy, zz)
+	!@cuf use cublas
+	! Функция определяющая новвое положение точки x, y, z
+	! В соответствии с тремя другими точками, строя квадратичный сплайн по методу наименьших квадратов
+		real(8), intent(in) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, x5, y5, z5
+		real(8), intent(out) :: xx, yy, zz
+		real(8) :: ex(3), ey(3), c(3), xx2, yy2, xx3, yy3, xx4, yy4, xx5, nn
+		real(8) :: a, b, cc, g2, g3, g4, h2, h4
+	
+	  
+	  ex(1) = x5 - x1
+	  ex(2) = y5 - y1
+	  ex(3) = z5 - z1
+	
+	ey(1) = x3 - x1
+	ey(2) = y3 - y1
+	ey(3) = z3 - z1
+	
+	nn = sqrt(ex(1)**2 + ex(2)**2 + ex(3)**2)
+	ex = ex/nn
+	
+	nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+	ey = ey/nn
+	
+	
+	! Если они не сонаправлены
+	if( dabs(DOT_PRODUCT(ex, ey)) < 0.99 ) then
+		c(1) = ex(2) * ey(3) - ex(3) * ey(2)
+        c(2) = ex(3) * ey(1) - ex(1) * ey(3)
+        c(3) = ex(1) * ey(2) - ex(2) * ey(1)
+		
+		ey(1) = c(2) * ex(3) - c(3) * ex(2)
+        ey(2) = c(3) * ex(1) - c(1) * ex(3)
+        ey(3) = c(1) * ex(2) - c(2) * ex(1)
+		
+		
+		nn = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+		ey = ey/nn
+		
+		
+		c(1) = x2 - x1; c(2) = y2 - y1; c(3) = z2 - z1
+		xx2 = DOT_PRODUCT(ex, c)
+		yy2 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x3 - x1; c(2) = y3 - y1; c(3) = z3 - z1
+		xx3 = DOT_PRODUCT(ex, c)
+		yy3 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x4 - x1; c(2) = y4 - y1; c(3) = z4 - z1
+		xx4 = DOT_PRODUCT(ex, c)
+		yy4 = DOT_PRODUCT(ey, c)
+		
+		c(1) = x5 - x1; c(2) = y5 - y1; c(3) = z5 - z1
+		xx5 = DOT_PRODUCT(ex, c)
+		
+		g2 = xx2/xx5
+		g3 = xx3/xx5
+		g4 = xx4/xx5
+		
+		if(dabs(y3) < 0.0000001) GO TO 11
+		
+		h2 = yy2/yy3
+		h4 = yy4/yy3
+		
+		
+		a = ((-1 + g4)*g4* ((-1 + g4)*(1 + h2) + 3*h4) +  g3**3*(h2 + g4*h2 + h4 - 3*g4*h4) +  &
+         g2**3*(1 + g4 + g3*(-3 + h4) +  h4 - 3*g4*h4) + g3*(-3 + h2 + h4 + g4*(1 + g4* &
+                 (1 + g4*(-3 + h2) - 2*h4) + h4)) +   g2*(1 - 3*h2 +  &
+             g3*(1 + g4**2)*(1 + h2) + h4 - 2*g3*g4**2*h4 + g3**3*(-3*h2 + h4) + &
+             g4*(h2 +  g4* (g4 + h2 - 3*g4*h2 - 2*h4) + h4) +  g3**2* &
+              (-2 + h2 + g4*(-2 + h2 + h4)) ) + g3**2* (3 - 2*h2 - 2*h4 +  &
+             g4*(-2 + h4 + g4*(3 - 2*h2 + 3*h4))) + g2**2*(-2 + 3*h2 + &
+             g3**2*(3 + 3*h2 - 2*h4) - 2*h4 + g3*(1 + g4 - 2*h2 - 2*g4*h2 + g4*h4) + g4*(-2*h2 + h4 + &
+                g4*(-2 + 3*h2 + 3*h4))))/ (3*(-1 + g4)**2*g4**2 - &
+          2*g3*(-1 + g4)**2*g4*(1 + g4) + 2*g3**3* (-3 + g4 + g4**2 - 3*g4**3) +  &
+          g3**4*(3 + g4*(-2 + 3*g4)) + g2**4*(3 + 3*g3**2 -  &
+             2*g3*(1 + g4) + g4*(-2 + 3*g4)  ) + 2*g2**3* (-3 - 3*g3**3 + g4 + g4**2 -  &
+             3*g4**3 + g3**2*(1 + g4) +  g3*(1 + g4**2)) +  2*g2*(-(g3**4*(1 + g4)) - &
+             (-1 + g4)**2*g4*(1 + g4) +g3**3*(1 + g4**2) + g3**2*(1 + g4**3) - &
+              g3*(1 + g4**4)) +  g3**2*(3 + g4*(2 + &
+                g4*(-6 + g4*(2 + 3*g4)))) + g2**2* (3 + 3*g3**4 +   2*g3**3*(1 + g4) - 6*g3**2*(1 + g4**2) +  &
+             2*g3*(1 + g4**3) +  g4*(2 +  g4*(-6 + g4*(2 + 3*g4)))))
+		
+		b = ((-1 + g4)*g4*   (1 + h2 - g4**2*(1 + h2) - 3*h4)  - g3*(-3 + g4**4*(-3 + h2) + &
+             h2 - g4**2*(-2 + h4) + h4) -  g3**4*(h2 + g4*h2 + h4 -	  3*g4*h4) -  g2**4*(1 + g4 + g3*(-3 + h4) + &
+             h4 - 3*g4*h4) +  g3**3*(h2 + g4**2*h2 + h4 -  3*g4**2*h4) + g2**3*(1 + g4**2 +  &
+             g3**2*(-3 + h4) + h4 - 3*g4**2*h4) +  g3**2*(-3 + h2 + h4 + g4*(1 - 2*h4 +  g4*(1 + g4*(-3 + h2) + h4)) ) + g2* &
+           (-1 + 3*h2 +  g3**4*(3*h2 - h4) - h4 +  g4**2* (-2*h2 + g4**2*(-1 + 3*h2) +  h4) +  g3**2*(1 - 2*h2 + &
+                g4**2*(1 - 2*h2 + h4))) +  g2**2*(1 +  g3*(1 + g4**2)*(-2 + h2) -  3*h2 + h4 + g3*g4**2*h4 + g3**3*(-3*h2 + h4) + &
+             g3**2* (1 + g4 + h2 + g4*h2 -   2*g4*h4) +  g4*(h2 - 2*h4 +  g4*(g4 + h2 - 3*g4*h2 + h4)  )))/ &
+        (3*(-1 + g4)**2*g4**2 -  2*g3*(-1 + g4)**2*g4*(1 + g4) + 2*g3**3*(-3 + g4 + g4**2 - 3*g4**3) + &
+          g3**4*(3 + g4*(-2 + 3*g4)) + g2**4*(3 + 3*g3**2 - 2*g3*(1 + g4) + g4*(-2 + 3*g4)) + 2*g2**3* &
+           (-3 - 3*g3**3 + g4 + g4**2 - 3*g4**3 + g3**2*(1 + g4) +  g3*(1 + g4**2)) +  2*g2*(-(g3**4*(1 + g4)) - &
+             (-1 + g4)**2*g4*(1 + g4) +  g3**3*(1 + g4**2) +  g3**2*(1 + g4**3) - g3*(1 + g4**4)) + &
+          g3**2*(3 + g4*(2 +  g4*(-6 + g4*(2 + 3*g4)))) + g2**2*(3 + 3*g3**4 + 2*g3**3*(1 + g4) - &
+             6*g3**2*(1 + g4**2) + 2*g3*(1 + g4**3) +  g4*(2 +  g4*(-6 + g4*(2 + 3*g4)))))
+		
+		cc = ((-1 + g4)**2*g4**2*(1 + h2) -  g3*(-1 + g4)*g4* (-1 + g4**2 - h4) +  g3**4*(h2 + g4**2*h2 + h4 -  g4*h4) + &
+          g3**3*(-2*(1 + g4**3)*h2 +  (-2 + g4 + g4**2)*h4) +  g3**2*(h2 + h4 +  g4*(1 +  g4* (-2 + g4 + g4**2*h2 - &
+                   2*h4) + h4)) +  g2**4*(1 + g4**2 + h4 +  g3**2*h4 - g4*h4 -   g3*(1 + g4 + g4*h4)) +  g2*(g3**2*(1 + g4**3)*(1 + h2) - &
+             g3*(1 + g4**4)*(1 + h2) + (-1 + g4)*g4*(h2 - g4**2*h2 + h4) - g3**4*(h2 + g4*h2 + g4*h4) + g3**3* &
+              (h2 + g4**2*h2 + g4**2*h4)) + g2**3* (-2*(1 + g4**3) - 2*g3**3*h4 +  (-2 + g4 + g4**2)*h4 +   g3**2*(1 + g4 + g4*h4) + &
+             g3*(1 + g4**2*(1 + h4))) +  g2**2*(1 +   g3*(1 + g4**3)*(1 + h2) +  h4 + g3**4*h4 +   g3**3*(h2 + g4*h2 + g4*h4) - &
+             2*g3**2*  (1 + h2 +  g4**2*(1 + h2 + h4)) +  g4*(h2 + h4 + g4*  (g4*(g4 + h2) -   2*(h2 + h4)))))/ &
+        (3*(-1 + g4)**2*g4**2 -  2*g3*(-1 + g4)**2*g4*(1 + g4) + 2*g3**3* (-3 + g4 + g4**2 - 3*g4**3) + &
+          g3**4*(3 + g4*(-2 + 3*g4)) +  g2**4*(3 + 3*g3**2 -    2*g3*(1 + g4) + g4*(-2 + 3*g4)  ) + 2*g2**3*  (-3 - 3*g3**3 + g4 + g4**2 - &
+             3*g4**3 + g3**2*(1 + g4) +  g3*(1 + g4**2)) +  2*g2*(-(g3**4*(1 + g4)) -   (-1 + g4)**2*g4*(1 + g4) + &
+             g3**3*(1 + g4**2) +  g3**2*(1 + g4**3) -  g3*(1 + g4**4)) +  g3**2*(3 +   g4*(2 + &
+                g4*(-6 + g4*(2 + 3*g4))))  + g2**2*(3 + 3*g3**4 +   2*g3**3*(1 + g4) -   6*g3**2*(1 + g4**2) + &
+             2*g3*(1 + g4**3) +   g4*(2 +    g4*(-6 + g4*(2 + 3*g4)))))
+		
+			  
+		yy3 = (a * (xx3/xx5)**2 + b * (xx3/xx5) + cc) * yy3
+		
+		
+		xx = x1 + xx3 * ex(1) + yy3 * ey(1)
+		yy = y1 + xx3 * ex(2) + yy3 * ey(2)
+		zz = z1 + xx3 * ex(3) + yy3 * ey(3)
+		
+		return
+	else		
+		xx = x3
+		yy = y3
+		zz = z3
+		
+		return
+	end if
+
+	11      continue		
+		xx = x3
+		yy = y3
+		zz = z3
+		
+		return
+	
+	end subroutine Smooth_kvadr3
+	
+	end module MY_CUDA_smooth
     
     subroutine Find_Surface()   ! Заполняет массивы поверхностей, которые выделяются
     ! Для BS находятся только поверхности на полусфере! (x > 0)
@@ -125,18 +476,25 @@
 	
 	! Считаем HLLD везде кроме 2 области
 	do k = 1, size(gl_Gran_scheme(:))
-		if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 1 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 1) then
-			gl_Gran_scheme(k) = 3
+		
+		if(gl_Gran_neighbour(1, k) > 0 .and. gl_Gran_neighbour(2, k) > 0) then
+		
+			if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 1 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 1) then
+				gl_Gran_scheme(k) = 3
+			end if
+		
+			if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 4 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 4) then
+				gl_Gran_scheme(k) = 3
+			end if
+		
+			if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 3 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 3) then
+				gl_Gran_scheme(k) = 3
+			end if
+			
+			if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 2 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 2) then
+				gl_Gran_scheme(k) = 3
+			end if
 		end if
-		
-		if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 4 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 4) then
-			gl_Gran_scheme(k) = 3
-		end if
-		
-		!if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 3 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 3) then
-		!	gl_Gran_scheme(k) = 3
-		!end if
-		
 		
 		if(gl_Gran_center(1, k) < -40) then
 			gl_Gran_scheme(k) = 3
@@ -724,13 +1082,14 @@
     use STORAGE
     use GEO_PARAM
 	use My_func
+	use MY_CUDA_smooth
     implicit none
     
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
     real(8), intent(in) :: Time
     integer, intent(in) :: now
     real(8) :: R_TS, proect, vel(3), R_HP, R_BS, Ak(3), Bk(3), Ck(3), Dk(3), Ek(3), ER(3), ER2(3), KORD(3), dist, ddt
-    integer :: yzel, N1, N2, N3, i, j, k, yzel2
+    integer :: yzel, N1, N2, N3, i, j, k, yzel2, yzel3, yzel22, yzel33
     real(8) :: the, the2, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13
     
     now2 = mod(now, 2) + 1   
@@ -773,7 +1132,7 @@
 			if (j > 1) then
 			    yzel2 = gl_RAY_A(par_n_TS, j - 1, k)
 			else
-				yzel2 = gl_RAY_A(par_n_TS, j + 1, k + ceiling(1.0 * N3/2))
+				yzel2 = gl_RAY_A(par_n_TS, j + 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 			end if
 			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
@@ -808,61 +1167,152 @@
 			! Контакт
 			
 			yzel = gl_RAY_A(par_n_HP, j, k)
-			Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
-			r = norm2(Ak)
+		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+		
+		if (j < N2) then
+			yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+		else
+			yzel2 = gl_RAY_B(par_n_HP, 1, k)
+		end if
+	
+		if (j < N2 - 1) then
+			yzel22 = gl_RAY_A(par_n_HP, j + 2, k)
+		else if (j == N2 - 1) then
+			yzel22 = gl_RAY_B(par_n_HP, 1, k)
+		else
+			yzel22 = gl_RAY_B(par_n_HP, 2, k)
+		end if
+		
+		if (j > 1) then
+			yzel3 = gl_RAY_A(par_n_HP, j - 1, k)
+		else
+			yzel3 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		end if
+		
+		if (j > 2) then
+			yzel33 = gl_RAY_A(par_n_HP, j - 2, k)
+		else if(j == 2) then
+			yzel33 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		else
+			yzel33 = gl_RAY_A(par_n_HP, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		end if
+		
+		call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			Ak(1), Ak(2), Ak(3), &
+			Ek(1), Ek(2), Ek(3))
+		
+		call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			Ak(1), Ak(2), Ak(3), &
+			Bk(1), Bk(2), Bk(3))
+		
+		if(k < N3) then
+			yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+		else
+			yzel2 = gl_RAY_A(par_n_HP, j, 1)
+		end if
+		
+		if(k < N3 - 1) then
+			yzel22 = gl_RAY_A(par_n_HP, j, k + 2)
+		else if(k == N3 - 1) then
+			yzel22 = gl_RAY_A(par_n_HP, j, 1)
+		else
+			yzel22 = gl_RAY_A(par_n_HP, j, 2)
+		end if
+	
+		if (k > 1) then
+			yzel3 = gl_RAY_A(par_n_HP, j, k - 1)
+		else
+			yzel3 = gl_RAY_A(par_n_HP, j, N3)
+		end if
+	
+		if (k > 2) then
+			yzel33 = gl_RAY_A(par_n_HP, j, k - 2)
+		else if(k == 2) then
+			yzel33 = gl_RAY_A(par_n_HP, j, N3)
+		else
+			yzel33 = gl_RAY_A(par_n_HP, j, N3 - 1)
+		end if
+	
+		call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			Ak(1), Ak(2), Ak(3), &
+			Ck(1), Ck(2), Ck(3))
+		
+		call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			Ak(1), Ak(2), Ak(3), &
+			Dk(1), Dk(2), Dk(3))
+		
+		if (gl_Point_num(yzel) > 0) then
+			vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+		else
+			vel = par_nat_HP * 0.0001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
+		end if
 			
-			if (j < N2) then
-			    yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
-			else
-				yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			
+			if(.False.) then
+				yzel = gl_RAY_A(par_n_HP, j, k)
+				Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+				r = norm2(Ak)
+			
+				if (j < N2) then
+					yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+				else
+					yzel2 = gl_RAY_B(par_n_HP, 1, k)
+				end if
+				Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				r1 = norm2(Bk)
+			
+				if (k > 1) then
+					yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
+				else
+					yzel2 = gl_RAY_A(par_n_HP, j, N3)
+				end if
+				Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				r2 = norm2(Ck)
+			
+				if (j > 1) then
+					yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
+				else
+					yzel2 = gl_RAY_A(par_n_HP, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+				end if
+				Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				r3 = norm2(Dk)
+			
+				if(k < N3) then
+					yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+				else
+					yzel2 = gl_RAY_A(par_n_HP, j, 1)
+				end if
+				Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+				r4 = norm2(Ek)
+			
+				dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+				dist = max(dist, 1.0_8)
+			
+				rr = (r1 + r2 + r3 + r4)/4.0
+			
+				if (gl_Point_num(yzel) > 0) then
+					!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+					vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.035
+				else
+					!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+					vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
+				end if
+			
+				!if(k == 2 .and. j == 2) then
+				!	print*, gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)
+				!	print*, vel
+				!	print*, "_____"
+				!	pause
+				!end if
 			end if
-			Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r1 = norm2(Bk)
-			
-			if (k > 1) then
-			    yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
-			else
-			    yzel2 = gl_RAY_A(par_n_HP, j, N3)
-			end if
-			Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r2 = norm2(Ck)
-			
-			if (j > 1) then
-			    yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
-			else
-				yzel2 = gl_RAY_A(par_n_HP, j, k + ceiling(1.0 * N3/2))
-			end if
-			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r3 = norm2(Dk)
-			
-			if(k < N3) then
-			    yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
-			else
-				yzel2 = gl_RAY_A(par_n_HP, j, 1)
-			end if
-			Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-			r4 = norm2(Ek)
-			
-			dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
-	        dist = max(dist, 1.0_8)
-			
-			rr = (r1 + r2 + r3 + r4)/4.0
-			
-			if (gl_Point_num(yzel) > 0) then
-			    !vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-				vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  ! 0.035
-			else
-				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-				vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
-			end if
-			
-			!if(k == 2 .and. j == 2) then
-			!	print*, gl_Vx(yzel), gl_Vy(yzel), gl_Vz(yzel)
-			!	print*, vel
-			!	print*, "_____"
-			!	pause
-			!end if
-			
 			
 			
 			gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
@@ -892,7 +1342,7 @@
 			if (j > 1) then
 			    yzel2 = gl_RAY_A(par_n_BS, j - 1, k)
 			else
-				yzel2 = gl_RAY_A(par_n_BS, j, k + ceiling(1.0 * N3/2))
+				yzel2 = gl_RAY_A(par_n_BS, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 			end if
 			Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
 			
@@ -1092,7 +1542,7 @@
 			if (j > 1) then
 			    yzel2 = gl_RAY_K(par_n_TS, j - 1, k)
 			else
-				yzel2 = gl_RAY_K(par_n_TS, j, k + ceiling(1.0 * N3/2))
+				yzel2 = gl_RAY_K(par_n_TS, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 			end if
 			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
 			! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
@@ -1272,15 +1722,6 @@
 			KORD(1) = gl_x2(yzel, now); KORD(2) = gl_y2(yzel, now); KORD(3) = gl_z2(yzel, now) 
             R_HP = norm2(KORD + proect * ER)  ! Новое расстояние до HP
 			
-		!	if(j == 1 .and. k == 1) then
-		!		write(*,*) yzel, now
-		!		write(*,*) R_HP
-		!		write(*,*) vel(1), vel(2), vel(3)
-		!		write(*,*) Time, proect
-		!		write(*,*) ER(1), ER(2), ER(3)
-		!		write(*, *) KORD(1), KORD(2), KORD(3)
-		!		write(*,*) "______________________"
-		!end if
 			
             
             ! BS
@@ -2276,67 +2717,3 @@
 	
 	end subroutine Surface_setup
 	
-	!@cuf attributes(host, device) & 
-	subroutine Smooth_kvadr(x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z, xx, yy, zz)
-	! Функция определяющая новвое положение точки x, y, z
-	! В соответствии с тремя другими точками, строя квадратичный сплайн
-	real(8), intent(in) :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z
-	real(8), intent(out) :: xx, yy, zz
-	real(8) :: ex(3), ey(3), c(3), xx2, yy2, xx3, xx4, a, b, yy4
-	
-	ex(1) = x3 - x1
-	ex(2) = y3 - y1
-	ex(3) = z3 - z1
-	
-	ey(1) = x2 - x1
-	ey(2) = y2 - y1
-	ey(3) = z2 - z1
-	
-	ex = ex/dsqrt(ex(1)**2 + ex(2)**2 + ex(3)**2)
-	ey = ey/dsqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
-	
-	!print*, "ex = ", ex
-	
-	! Если они не сонаправлены
-	if( dabs(DOT_PRODUCT(ex, ey)) < 0.99 ) then
-		c(1) = ex(2) * ey(3) - ex(3) * ey(2)
-        c(2) = ex(3) * ey(1) - ex(1) * ey(3)
-        c(3) = ex(1) * ey(2) - ex(2) * ey(1)
-		
-		ey(1) = c(2) * ex(3) - c(3) * ex(2)
-        ey(2) = c(3) * ex(1) - c(1) * ex(3)
-        ey(3) = c(1) * ex(2) - c(2) * ex(1)
-		
-		
-		
-		ey = ey/dsqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
-		
-		!print*, "ey = ", ey
-		
-		c(1) = x2 - x1; c(2) = y2 - y1; c(3) = z2 - z1
-		xx2 = DOT_PRODUCT(ex, c)
-		yy2 = DOT_PRODUCT(ey, c)
-		c(1) = x3 - x1; c(2) = y3 - y1; c(3) = z3 - z1
-		xx3 = DOT_PRODUCT(ex, c)
-		c(1) = x - x1; c(2) = y - y1; c(3) = z - z1
-		xx4 = DOT_PRODUCT(ex, c)
-		
-		a = -yy2/((xx3 - xx2) * xx2)
-		b = -xx3 * yy2/((xx2 - xx3) * xx2)
-		yy4 = a * xx4**2 + b * xx4
-		
-		xx = x1 + xx4 * ex(1) + yy4 * ey(1)
-		yy = y1 + xx4 * ex(2) + yy4 * ey(2)
-		zz = z1 + xx4 * ex(3) + yy4 * ey(3)
-		
-		return
-	else
-		xx = x
-		yy = y
-		zz = z
-	end if
-	
-	
-	! Body of Smooth_kvadr
-	
-	end subroutine Smooth_kvadr

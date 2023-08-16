@@ -4027,7 +4027,7 @@
     ! Запускаем глобальный цикл
     now = 2                           ! Какие параметры сейчас будут считаться (1 или 2). Они меняются по очереди
     time = 0.00002_8               ! Начальная инициализация шага по времени 
-    do step = 1, 1  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do step = 1, 2  !    ! Нужно чтобы это число было чётным!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         if (mod(step, 100) == 0) then
 			print*, "Step = ", step , "  step_time = ", time, "  mingran = ", mincell, & 
@@ -7001,6 +7001,7 @@
 	use Surface_setting
 	!@cuf use MY_CUDA
 	use Monte_Karlo
+	use MY_CUDA_smooth
     implicit none
 
     integer(4) :: i, NGRAN, j, nn, name_do, name_posle
@@ -7019,9 +7020,10 @@
 	!call Test_koordinate(1.0_8, 0.0_8, 0.0_8)
 	!call Test_raspadnik()
 	
-	call Smooth_kvadr(1.0_8, 0.0_8, 0.0_8, 3.0_8, 0.8_8, 0.0_8, 4.0_8, 0.0_8, 0.0_8, 2.0_8, 3.0_8, 0.0_8, xx, yy, zz)
-	print*, xx, yy, zz
-	!call Play_iter_algoritm()
+	!call Smooth_kvadr3(0.0_8, 0.0_8, 0.0_8,  3.0_8, 3.0_8, 0.0_8,  4.0_8, 4.5_8, 0.0_8,   5.0_8, 3.0_8, 0.0_8, 7.0_8, 0.0_8, 0.0_8,   xx, yy, zz)
+	!print*, xx, yy, zz
+	call Play_iter_algoritm()
+	
 	pause
 	STOP
 	
@@ -7282,12 +7284,12 @@
 	    use Interpolate2
 	    use Surface_setting
 	    use Monte_Karlo
-	    integer(4) :: step, name, name2
+	    integer(4) :: step, name, name2, i
 		real(8) :: PAR(9)     ! Выходные параметры
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort)
 		
-		name = 258! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
+		name = 259! 250  ! С 237 надо пересторить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -7299,19 +7301,34 @@
 		!call Int2_Read_bin(name2)
 		
 		
+		!Делаем файл интерполяции для ИГОРЯ
+		!call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 		
-		!num = 3
-		!call Int2_Get_par_fast(1.0_8, 1.0_8, 1.0_8, num, PAR, PAR_MOMENT)
-		!print*, size(int2_Moment(:, 1, 1))
-		!print*, "______"
-		!print*, PAR
-		!print*, "______"
-		!print*, num
-		!print*, "______"
-		!print*, PAR_MOMENT(:, :)
-		!pause
-		!
-		!call Int2_Save_interpol_for_all(249)
+		!do i = 1, size(gl_Cell_par2(1, :))
+		!	if( ieee_is_nan(gl_Cell_par2(1, i)) .or. ieee_is_normal(gl_Cell_par2(1, i)) == .False. ) then
+		!		print*, "No = ", gl_Cell_par2(1, i)
+		!		print*, gl_Cell_center(:, i)
+		!	end if
+		!	
+		!end do
+		
+		! He-лий
+		!do i = 1, size(gl_Cell_par(1, :))
+		!	gl_Cell_par(1, i) = gl_Cell_par(1, i) - gl_Cell_par2(1, i)
+		!	
+		!	if(gl_zone_Cell(i) == 1 .or. gl_zone_Cell(i) == 2) then
+		!		gl_Cell_par(5, i) = gl_Cell_par(5, i) / (2.0 * gl_Cell_par(1, i) + 1.5 * gl_Cell_par2(1, i)) * 2.0 * gl_Cell_par(1, i)
+		!	else
+		!		gl_Cell_par(5, i) = gl_Cell_par(5, i) / (2.0 * gl_Cell_par(1, i) + gl_Cell_par2(1, i)) * 2.0 * gl_Cell_par(1, i)
+		!	end if
+		!end do
+		
+		
+		!print*, "Interpol"
+		!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+		!call Int2_Initial()			     ! Создание сетки интерполяции
+		!call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+		!call Int2_Save_interpol_for_all(259)
 		
 		! 243 конец первой итерации
 		
@@ -7327,7 +7344,7 @@
         print*, "Vypolnyaetsya shag nomer ", step
 		print*, "********************************************************************************************"
 		
-		if(step == -1) then  ! Перестройка сетки (когда поменили структуру)
+		if(step == -1) then  ! Перестройка сетки (когда поменяли структуру)
 			call Download_setka(name)  ! Загрузка основной сетки
 			call Surf_Read_setka_bin(name)
 			

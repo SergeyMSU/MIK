@@ -74,7 +74,7 @@
     implicit none
     integer, intent(in) :: num
     character(len=3) :: name
-    integer :: n
+    integer :: n, i
     logical :: exists
     
     write(unit=name,fmt='(i3.3)') num
@@ -146,7 +146,9 @@
 	
     read(1) n
 	if (n == 1) then
-		read(1) gl_Cell_par2(1, :)
+		do i = 1, size(gl_Cell_par2(1, :))
+		    read(1) gl_Cell_par2(1, i)
+		end do
 	end if
 	
 	

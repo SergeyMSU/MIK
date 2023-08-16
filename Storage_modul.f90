@@ -34,7 +34,7 @@
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1 * 0.4_8! 0.3      ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = lock_move * 1.0_8 ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = lock_move * 0.5_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
@@ -357,6 +357,7 @@
     
     if (par_developer_info) print*, "Set_STORAGE: all CELL: ", size(gl_all_Cell(1,:))
     if (par_developer_info) print*, "Set_STORAGE: 1 sloy CELL: ", n2
+    if (par_developer_info) print*, "Kol-vo ploskostey po ygly =  ", size(gl_RAY_A(1, 1, :))
     
     
     ! Заполняем начальными значениями
