@@ -4017,7 +4017,7 @@
     
 	
     
-    !$OpenMP start_time = omp_get_wtime()
+     start_time = omp_get_wtime()
 	
 	mincell = 1
     
@@ -4455,7 +4455,7 @@
         gl_Cell_center = gl_Cell_center2(:, :, 2)
         gl_Gran_square = gl_Gran_square2(:, 2)
 
-        !$OpenMP end_time = omp_get_wtime()
+         end_time = omp_get_wtime()
 		print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 		
 
@@ -4530,7 +4530,7 @@
     
 	
     
-    !$OpenMP start_time = omp_get_wtime()
+     start_time = omp_get_wtime()
 	
 	mincell = 1
     
@@ -5244,7 +5244,7 @@
         gl_Cell_center = gl_Cell_center2(:, :, 2)
         gl_Gran_square = gl_Gran_square2(:, 2)
 
-        !$OpenMP end_time = omp_get_wtime()
+         end_time = omp_get_wtime()
 		print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 		
 
@@ -7230,7 +7230,7 @@
     !    end if
     !end do
 	
-	!  !$inter call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, 4)
+	!   call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, 4)
 	
 	!call Interpolate_point(4.0_8, 2.0_8, 0.003_8, F, istat, nn)
 	

@@ -7,6 +7,7 @@
     implicit none
     integer, intent(in) :: num
     character(len=3) :: name
+	integer :: i
     
     write(unit=name,fmt='(i3.3)') num
     
@@ -46,7 +47,9 @@
 	
 	
     write(1) 1
-	write(1) gl_Cell_par2(1, :)
+	do i = 1, size(gl_Cell_par2(1, :))
+		    write(1) gl_Cell_par2(1, i)
+	end do
 	
     write(1) 0
     write(1) 0

@@ -91,7 +91,7 @@
       Integer :: jpvt(3)
 	  
 	  
-	 !$inter external dgelsy
+	  external dgelsy
 	  
 	  ex(1) = x5 - x1
 	  ex(2) = y5 - y1
@@ -186,7 +186,7 @@
 		!     Solve the least squares problem min( norm2(b - Ax) ) for the x
 		!     of minimum norm.
 
-			 !$inter Call dgelsy(m, n, 1, a, lda, b, m, jpvt, rcond, rank, work, lwork, info)
+			  Call dgelsy(m, n, 1, a, lda, b, m, jpvt, rcond, rank, work, lwork, info)
 
 		!     Print solution
 	  
