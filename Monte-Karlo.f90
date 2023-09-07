@@ -10,7 +10,7 @@ module Monte_Karlo
 	
 	implicit none
 	
-	integer(4), parameter :: par_stek = 5000  ! Глубина стека (заранее выделяется память под него)
+	integer(4), parameter :: par_stek = 1000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
 	logical, parameter :: MK_Mu_stat = .False.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
 	logical, parameter :: MK_photoionization = .True.    ! Нужна ли фотоионизация
@@ -59,6 +59,7 @@ module Monte_Karlo
 	subroutine M_K_start()
 	
 	USE OMP_LIB
+	!$MPI include 'mpif.h'
 	! Variables
 	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step, k
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
@@ -67,60 +68,56 @@ module Monte_Karlo
 	real(8) :: ll, rr, Vphi, Vr
 	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
 	real(8) :: start_time, end_time
+	integer mpi_process_Rank, mpi_size_Of_Cluster, mpi_ierror, mpi_rank
+	real(8), allocatable :: buff(:, :, :)  ! ДЛЯ MPI
+	!$MPI integer :: mpi_status(MPI_STATUS_SIZE)
 	
 	call M_K_Set()    ! Создали массивы
-	call Get_sensor() ! Считали датчики случайных чисел
 	call M_K_init()   ! Инициализируем веса и т.д.
 	
 	print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
 	end_time = 0.0
 	start_time = 0.0
 	
-	! ТЕСТ
-	!mu_ = 0.0
-	!Wr_ = 0.0
-	!sensor(1, 2, 1) = 1
-	!sensor(2, 2, 1) = 1
-	!sensor(3, 2, 1) = 1
-	!sensor(1, 1, 1) = 1
-	!sensor(2, 1, 1) = 1
-	!sensor(3, 1, 1) = 1
-	!
-	!call M_K_Change_Velosity4(1, -1.0_8, 0.1_8, 0.2_8, 0.1_8, 0.3_8, -0.23_8, Wr_, Wt_, Wp_, mu_,&
-	!	1.0_8, 0.25_8, 2, 0.24_8, 0.01_8, -0.01_8, bb)
-	!
-	!print*,  mu_(1:3)
-	!print*,  "____"
-	!print*, Wr_(1:3)
-	!
-	!
-	!return
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ТЕСТ
 	! Запускаем каждый поток в параллельном цикле
 
-	!$OpenMP call omp_set_num_threads(min(32, par_n_potok))
+	!$OpenMP call omp_set_num_threads(par_n_potok)
 	!$OpenMP start_time = omp_get_wtime()
 	step = 1
+	
+	mpi_size_Of_Cluster = par_n_claster
+	mpi_rank = 0
+	!$MPI call MPI_INIT(mpi_ierror)
+	!$MPI call MPI_COMM_SIZE(MPI_COMM_WORLD, mpi_size_Of_Cluster, mpi_ierror)
+	!$MPI call MPI_COMM_RANK(MPI_COMM_WORLD, mpi_rank, mpi_ierror)
+	if(mpi_size_Of_Cluster /= par_n_claster) then
+		print*, "MPI error par_n_claster  789tyuighjbnmp;edzxcvrertgd  ", mpi_size_Of_Cluster, par_n_claster
+		!$MPI call MPI_Abort(MPI_COMM_WORLD, 102, mpi_ierror)
+		STOP
+	end if
+	
+	call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
 	
 	!$omp parallel
 	
 	!$omp do private(potok, num, mu_, Wt_, Wp_, Wr_, X_, bb, i, Vx, Vy, Vz, cell, sin_, x, phi, y, z, ksi, r_peregel, no, to_i, to_j, ksi1, ksi2, ksi3, ksi4, ksi5, ll, rr, Vphi, Vr)
 	do iter = 1, par_n_potok * par_n_parallel
 	
-		potok = omp_get_thread_num() + 1
+		potok = (omp_get_thread_num() + 1) 
 		
 		!$omp critical
-		print*, "start potok = ", potok, " iter = ", iter, "   step = ", step, "from = ", par_n_potok * par_n_parallel
+		print*, "start potok = ", potok, " iter = ", iter, "   step = ", step, "from = ", par_n_potok * par_n_parallel, &
+		  "  computer № ", mpi_rank
 		step = step + 1
 		!$omp end critical
 		
 		cell = 3
 		! Запускаем частицы первого типа (с полусферы)
 		do num = 1, MK_N1
-			if( mod(num, 100000) == 0) then
-				print*, "num = ", num, "  from ", MK_N1, "  potok = ", potok
-				!print*, sensor(:, 1, potok), sensor(:, 2, potok)
-			end if
+			!if( mod(num, 100000) == 0) then
+			!	print*, "num = ", num, "  from ", MK_N1, "  potok = ", potok, "  computer № ", mpi_rank
+			!	!print*, sensor(:, 1, potok), sensor(:, 2, potok)
+			!end if
 			
 			! sensor(:, 1, potok) = (/  730   ,    18493      ,    61 /)
 			! sensor(:, 2, potok) = (/  21338   ,    11299    ,     833/)
@@ -141,6 +138,7 @@ module Monte_Karlo
 				call dekard_skorost(x, y, z, Wr_(i), Wp_(i), Wt_(i), Vx, Vy, Vz)
 			
 				if(cell < 1) then
+					!$MPI call MPI_Abort(MPI_COMM_WORLD, 103, mpi_ierror)
 					STOP "Error 0lhy976yihko  "
 				end if
 				
@@ -186,6 +184,7 @@ module Monte_Karlo
 			
 			if(cell < 1) then
 				print*, x, y, z, cell
+				!$MPI call MPI_Abort(MPI_COMM_WORLD, 104, mpi_ierror)
 				STOP "Error 0lhy976yihkoqwewqdqwd  "
 			end if
 			
@@ -217,6 +216,7 @@ module Monte_Karlo
 			
 			call Int2_Get_tetraedron(par_Rleft, y, z, cell)
 			if(cell < 1) then
+				!$MPI call MPI_Abort(MPI_COMM_WORLD, 105, mpi_ierror)
 				STOP "Error 0lhy976yihkodfresdfre  "
 			end if
 			
@@ -245,6 +245,7 @@ module Monte_Karlo
 			
 			call Int2_Get_tetraedron(-0.001_8, y, z, cell)
 			if(cell < 1) then
+				!$MPI call MPI_Abort(MPI_COMM_WORLD, 106, mpi_ierror)
 				STOP "Error 0lhy976yihko133131312  "
 			end if
 			
@@ -271,15 +272,37 @@ module Monte_Karlo
 	!$omp end parallel
 	
 	!$OpenMP end_time = omp_get_wtime()
-	print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 	
-	no = MK_Mu_mult * MK_N
+	if(mpi_rank == 0) print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
+	
+	no = MK_Mu_mult * MK_N * par_n_claster
 	M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
 	
 	do i = 2, par_n_potok
 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
 	end do
 	
+	! Сложим все MPI потоки
+	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
+	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
+	
+	!$MPI do i = 1, par_n_claster - 1
+	!$MPI 	if(mpi_rank == i) call MPI_SEND(M_K_Moment(:, :, :, 1), size(buff), MPI_DOUBLE_PRECISION, 0, &
+	!$MPI 		100, MPI_COMM_WORLD, mpi_ierror)
+	!$MPI 	if(mpi_rank == 0) then
+	!$MPI 		call MPI_RECV(buff, size(buff), MPI_DOUBLE_PRECISION, i, 100, MPI_COMM_WORLD, mpi_status, mpi_ierror)
+	!$MPI 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + buff
+	!$MPI 	end if
+	!$MPI end do
+	
+	!$MPI if(mpi_rank  == 0) deallocate(buff)
+	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
+	!$MPI call MPI_FINALIZE(mpi_ierror)
+	
+	!$MPI if(mpi_rank  /= 0) then
+	!$MPI print*, "Process  ", mpi_rank, "  zavershon"
+	!$MPI STOP 
+	!$MPI end if
 	
 	! Бежим по всем тетраэдрам и нормируем моменты
 	do i = 1, size(M_K_Moment(1, 1, :, 1))
@@ -352,6 +375,9 @@ module Monte_Karlo
 				M_K_Moment(:, :, i, 1) = 0.0
 				M_K_Moment(1, 4, i, 1) = 1.0
 				M_K_Moment(5, 4, i, 1) = 1.0
+				M_K_Moment(10, 4, i, 1) = 1.0
+				M_K_Moment(13, 4, i, 1) = 1.0
+				M_K_Moment(15, 4, i, 1) = 1.0
 				M_K_Moment(2, 4, i, 1) = par_Velosity_inf
 				CYCLE loop2
 			end if
@@ -446,7 +472,7 @@ module Monte_Karlo
 	integer(4), intent(in) :: n_potok  ! Номер потока 
 	
 	real(8) :: particle(8)
-	integer(4):: particle_2(4), i
+	integer(4):: particle_2(4), i, ijk
 	logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
 	
 	integer(4) :: num  ! Номер частицы, верхняя в стеке
@@ -463,7 +489,7 @@ module Monte_Karlo
 	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
 	real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
 	real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
-	real(8) :: v1, v2, v3, r_peregel
+	real(8) :: v1, v2, v3, r_peregel, ddt
 	
 	real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
 	
@@ -509,58 +535,62 @@ module Monte_Karlo
 			
 			time = max(0.00000001_8, time * 1.001) ! Увеличим время, чтобы частица точно вышла из ячейки
 			
-			call Int2_Get_par_fast2(particle(1), particle(2), particle(3), cell, PAR)
+			kappa = 0.0
+			do ijk = 1, 3
+				
+				select case (ijk)
+					case(1)
+						ddt = 1.0/6.0                                      ! Безопасный доступ к памяти
+					case(2)
+						ddt = 5.0/6.0                                     ! Безопасный доступ к памяти
+					case(3)
+						ddt = 3.0/6.0                                   ! Безопасный доступ к памяти
+					case default
+						print*, "Error uijkhjgfbnbnn hbuhuefw"
+						STOP
+				end select
+				
+				call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
+					particle(3) + time * ddt * particle(6), cell, PAR)
 			
-			if( particle(2)**2 +  particle(3)**2 < 1.0 .and. particle(1) < -40.0) then
-				print*, "centr = ", particle(1), particle(2), particle(3)
-				print*, PAR
+				cp = sqrt(PAR(5)/PAR(1))
+				vx = PAR(2)
+				vy = PAR(3)
+				vz = PAR(4)
+				ro = PAR(1)
 			
-				PAR = int2_Cell_par(:, int2_all_tetraendron_point(1, cell))  ! Взяли значения в каком-то узле
-				print*, "________"
-				print*, PAR
-				print*, "________"
-				print*, "________"
-				pause
-			end if
+				if(ro <= 0.0 .or. ro > 1000.0) then
+					print*, PAR
+					print*, "___"
+					print*, cell, int2_all_tetraendron_point(:, cell)
+					pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
+				end if
 			
-			cp = sqrt(PAR(5)/PAR(1))
-			vx = PAR(2)
-			vy = PAR(3)
-			vz = PAR(4)
-			ro = PAR(1)
+				! Найдём время до перезарядки и веса частиц  ****************************************************************************************
+				u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
+				u1 =  vx - particle(4)
+				u2 =  vy - particle(5)
+				u3 =  vz - particle(6)
+				skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
 			
-			if(ro <= 0.0 .or. ro > 1000.0) then
-				print*, PAR
-				print*, "___"
-				print*, cell, int2_all_tetraendron_point(:, cell)
-				pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
-			end if
+				if (u / cp > 7.0) then
+					uz = MK_Velosity_1(u, cp);
+					nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
+				else
+					nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
+				end if
+		
+				kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
+			end do
 			
 			area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
-		
-			! Найдём время до перезарядки и веса частиц  ****************************************************************************************
-			u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
-			u1 =  vx - particle(4)
-			u2 =  vy - particle(5)
-			u3 =  vz - particle(6)
-			skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
 			
-			if (u / cp > 7.0) then
-				uz = MK_Velosity_1(u, cp);
-				nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
-			else
-				nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
-			end if
-			
-			r = norm2(particle(1:3))
+			r = norm2(particle(1:3) + time/2.0 * particle(4:6))
 			
 			if(MK_photoionization) then
 				nu_ph = par_nu_ph * (par_1ae/r)**2
 				kappa_ph = (nu_ph * time)     ! по фотоионизации
 			end if
-			
-			
-			kappa = (nu_ex * time)  ! по перезарядке
 			
 			kappa_all = kappa
 			if(MK_photoionization) kappa_all = kappa_all + kappa_ph
@@ -1984,11 +2014,12 @@ end function MK_f2
 
 	
 	
-	subroutine Get_sensor()
+	subroutine Get_sensor(mpi_rank)
 	! Считываем датчики случайных чисел из файла
 	! Variables
+	integer, intent(in) :: mpi_rank
 	logical :: exists
-	integer(4) :: i, a, b, c
+	integer(4) :: i, a, b, c, j
     
 	
     inquire(file="rnd_my.txt", exist=exists)
@@ -1998,18 +2029,20 @@ end function MK_f2
         STOP "net faila!!!"
     end if
 	
-	if (par_n_potok * 2 > 1021) then
+	if (par_n_claster * par_n_potok * 2 > 1021) then
 		print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
 		pause
 	end if
 	
 	open(1, file = "rnd_my.txt", status = 'old')
     
-	do i = 1, par_n_potok
-		read(1,*) a, b, c
-		sensor(:, 1, i) = (/ a, b, c /)
-		read(1,*) a, b, c
-		sensor(:, 2, i) = (/ a, b, c /)
+	do j = 1, mpi_rank + 1
+		do i = 1, par_n_potok
+			read(1,*) a, b, c
+			sensor(:, 1, i) = (/ a, b, c /)
+			read(1,*) a, b, c
+			sensor(:, 2, i) = (/ a, b, c /)
+		end do
 	end do
 	
 	close(1)

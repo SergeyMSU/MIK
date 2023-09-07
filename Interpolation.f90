@@ -3504,6 +3504,7 @@
 	!int2_gran_normal = 0.0
 	int2_Cell_par = 0.0
 	int2_Cell_par2 = 1
+	int2_Cell_par_2 = 0.0
 	
 	end subroutine Int2_Set_Interpolate
 	

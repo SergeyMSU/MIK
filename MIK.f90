@@ -8,6 +8,7 @@
     
     ! ceiling(a) возвращает наименьшее целое число, большее или равное a. Тип - integer по умолчанию
 	
+	
 	include "Storage_modul.f90"
 	include "Solvers.f90"
 
@@ -1615,7 +1616,7 @@
     !c = DBLE(c) * par_chi/DBLE(r)
 	
 	c = DBLE(c) * (par_velocity_in(ijk + 1) * (1.0 - tt) + tt * par_velocity_in(ijk + 2))/DBLE(r) * 0.0963179
-    P_E = (ro * norm2(c)**2) / (ggg * par_Mach_0**2)
+    P_E = par_p_0 ! (ro * norm2(c)**2) / (ggg * par_Mach_0**2)
 	
     ! Задаём плазму  (ro, u, v, w, p, bx, by, bz, Q)
     !gl_Cell_par(:, ncell) = (/ro, DBLE(c(1)), DBLE(c(2)), DBLE(c(3)), P_E * (par_R0/r) ** (2.0 * ggg), cc(1), cc(2), cc(3), ro/)
@@ -1624,10 +1625,10 @@
 	
 	! Если включаем гелий
 	if(par_helium) then	
-		gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.07   ! He++
+		gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.14   ! He++
 		
-		gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.07
-		gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.07
+		gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.14
+		gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.14
 		gl_Cell_par(5, ncell) = gl_Cell_par(5, ncell) * 1.0525
 	end if
             
@@ -1653,16 +1654,17 @@
     
     do gr = 1, ncell
 		
-		!if(gl_zone_Cell(gr) == 1 .or. gl_zone_Cell(gr) == 2) then
-		!	gl_Cell_par2(1, gr) = gl_Cell_par(1, gr) * 0.07
-		!	gl_Cell_par(1, gr) = gl_Cell_par(1, gr) * 1.07
-		!	gl_Cell_par(9, gr) = gl_Cell_par(9, gr) * 1.07
-		!	gl_Cell_par(5, gr) = gl_Cell_par(5, gr) * 1.0525
+		!if(gl_zone_Cell(gr) == 3 .or. gl_zone_Cell(gr) == 4) then
+		!if(gl_Cell_center(1, gr) > 0.0 .and. norm2(gl_Cell_center(:, gr)) > 200.0) then
+		!	gl_Cell_par(1, gr) = 1.3
+		!	gl_Cell_par2(1, gr) = 0.3
+		!	gl_Cell_par(9, gr) = 1.3
+		!end if
+		
 		!else
-		!	gl_Cell_par2(1, gr) = gl_Cell_par(1, gr) * 0.15
-		!	gl_Cell_par(1, gr) = gl_Cell_par(1, gr) * 1.15
-		!	gl_Cell_par(9, gr) = gl_Cell_par(9, gr) * 1.15
-		!	gl_Cell_par(5, gr) = gl_Cell_par(5, gr) * 1.075
+		!	gl_Cell_par2(1, gr) = gl_Cell_par2(1, gr) /0.07 * 0.14
+		!	gl_Cell_par(1, gr) = gl_Cell_par(1, gr) /1.07 * 1.14
+		!	gl_Cell_par(9, gr) = gl_Cell_par(9, gr) /1.07 * 1.14
 		!end if
 		
     end do
@@ -1680,8 +1682,8 @@
             ncell = gl_Cell_A(1, j, k)
             call Inner_conditions(ncell)
             
-            ncell = gl_Cell_A(2, j, k)
-            call Inner_conditions(ncell)
+            !ncell = gl_Cell_A(2, j, k)
+            !call Inner_conditions(ncell)
 			
         end do
     end do
@@ -1696,8 +1698,8 @@
             ncell = gl_Cell_B(1, j, k)
             call Inner_conditions(ncell)
             
-            ncell = gl_Cell_B(2, j, k)
-            call Inner_conditions(ncell)
+            !ncell = gl_Cell_B(2, j, k)
+            !call Inner_conditions(ncell)
 			
         end do
 	end do
@@ -6961,15 +6963,22 @@
     use GEO_PARAM
 	integer(4), intent(in) :: num
 	
+	print*, " Download_setka 1"
 	call Read_setka_bin(num)            ! Считываем сетку с файла 
+	print*, " Download_setka 2"
     call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
-    call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
-    call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+    print*, " Download_setka 3"
+	call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+    print*, " Download_setka 4"
+	call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
                                        ! предыдущей функции)
+	print*, " Download_setka 5"
 	call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+	print*, " Download_setka 6"
 	call Initial_conditions()  ! Задаём граничные условия. Нужно проверить с каким chi задаётся (если проводится перенормировка на каждом шаге)
-    call Find_TVD_sosed()
-	
+    print*, " Download_setka 7"
+	call Find_TVD_sosed()
+	print*, " Download_setka 8"
 	
 	end subroutine Download_setka
 	
@@ -7379,12 +7388,14 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort)
 		
-		name = 274! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 285! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
 		! 269 до того, как убрал осреднение скоростей в распаднике
-		name2 = 3 ! 2 ! 2 ! Имя мини-сетки для М-К
+		! 277 закончил мгд (278 аналогичное)
+		! 283 до изменения граничных условий в источнике
+		name2 = 4 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1 ! Выбираем шаг, который делаем
 		
@@ -7497,9 +7508,9 @@
 			print*, "Download"
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 			
-			
+			print*, "Download int"
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
-			!call Int2_Save_interpol_for_all_MK(name2)
+			call Int2_Save_interpol_for_all_MK(name2)
 			!call Int2_Dell_interpolate()
 			
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
@@ -7514,7 +7525,7 @@
 				end if
 			end do
 			
-			call PRINT_ALL()
+			!call PRINT_ALL()
 			!go to 101
 			
 		    !@cuf call CUDA_info()
@@ -7532,25 +7543,26 @@
 			
 			
 			! Печатаем сетку (для просмотра)
-			call PRINT_ALL()
+			!call PRINT_ALL()
 			! СОХРАНЕНИЕ
 			print*, "Save"
+			call Save_param(name + 1)
 			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
 			call Save_setka_bin(name + 1)
 			print*, "Save 2"
 			!
-			!call Int2_Dell_interpolate()
-			!print*, "Save 3"
-			!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-			!print*, "Save 4"
-	  !      call Int2_Initial()			     ! Создание сетки интерполяции
-			!print*, "Save 5"
-			!call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			!print*, "Save 6"
-			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
-			!print*, "Save 7"
-			!! Сохранение сетки для общего пользования
-		 !   call Int2_Save_interpol_for_all_MHD(name + 1)
+			call Int2_Dell_interpolate()
+			print*, "Save 3"
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			print*, "Save 4"
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			print*, "Save 5"
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			print*, "Save 6"
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			print*, "Save 7"
+			! Сохранение сетки для общего пользования
+		    call Int2_Save_interpol_for_all_MHD(name + 1)
 			
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
@@ -7617,7 +7629,7 @@
 			par_n_moment = 19
 			print*, "End Interpolatiya" 
 			! Печатаем сетку (для просмотра)
-			call PRINT_ALL()
+			!call PRINT_ALL()
 			
 			
 			! Делаем файл интерполяции № 2 из мини-сетки
@@ -7642,7 +7654,8 @@
 			
 			! Сохраняем интерполяционный файл - мини - сетки
 			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
-			!call Int2_Save_interpol_for_all_MHD(name2)
+			call Int2_Save_interpol_for_all_MK(name2)
+			call Int_2_Print_par_2D_set()
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Int2_Read_bin(name2)
@@ -7650,7 +7663,8 @@
 			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			call Int2_Save_bin(name2)
 			
-			
+	
+		
 		end if !----------------------------------------------------------------------------------------
 		
 101     continue

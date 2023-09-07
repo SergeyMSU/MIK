@@ -51,14 +51,16 @@
     real(8), parameter :: par_Velosity_inf = -2.54279_8
 	real(8), parameter :: par_Mach_alf = 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
+	real(8), parameter :: par_p_0 = 4624.57_8
 	real(8), parameter :: par_B_inf = 13.9666_8
 	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
 	real(8), parameter :: par_1ae = 0.197035_8
 	
 	! Параметры для Монте-Карло
-	integer(4), parameter :: par_n_potok = 32  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_potok = 32! 32  ! Число потоков (у каждого потока свой стек)
 	integer(4), parameter :: par_n_parallel = 20  ! Для распараллеливания цикла (т.е. каждый поток будет в среднем обрабатывать
+	integer(4), parameter :: par_n_claster = 1  ! Число компьютеров (для MPI)
 	! такое число итераций
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
@@ -70,10 +72,10 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_mul1 = 70!108
-	integer(4), parameter :: MK_k_mul2 = 14!15
-	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! Число исходных частиц первого типа (с полусферы)
-	integer(4), parameter :: MK_N2 = MK_k_mul1 * 200/par_n_parallel  
+	integer(4), parameter :: MK_k_mul1 = 90! 70!108
+	integer(4), parameter :: MK_k_mul2 = 15! 14!15
+	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
+	integer(4), parameter :: MK_N2 = MK_k_mul1 * 200/par_n_parallel  ! 200
 	integer(4), parameter :: MK_N3 = MK_k_mul2 * 200/par_n_parallel     ! (вылет сзади)
 	integer(4), parameter :: MK_N4 = MK_k_mul1 * 200/par_n_parallel   ! (вылет спереди с цилиндра)
 	
