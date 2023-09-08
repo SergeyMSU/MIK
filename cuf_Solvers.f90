@@ -704,7 +704,7 @@
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
 			!return
-			kkk = 0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			kkk = 6.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!if(j < 15) kkk = 6.0
 			! Контакт
 			if (.True.) then !(j < N2 - 3) then
@@ -4701,7 +4701,7 @@
     real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
-	
+	real(8) :: Matr(3, 3), Matr2(3, 3), vv(3), kord(3), the1, the2, the3, the4, the5
 	logical :: null_bn
 	
 	konvect_(3, 1) = 0.0
@@ -4710,6 +4710,26 @@
 	
 	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
 	if (iter > size(gl_all_Gran_inner)) return
+	
+	Matr(1,1) = -0.995868
+	Matr(1,2) = 0.0177307
+	Matr(1,3) = 0.0890681
+	Matr(2,1) = 0.0730412
+	Matr(2,2) = 0.739193
+	Matr(2,3) = 0.669521
+	Matr(3,1) = -0.0539675
+	Matr(3,2) = 0.67326
+	Matr(3,3) = -0.737434
+	
+	Matr2(1,1) = -0.995868
+	Matr2(1,2) = 0.0730412
+	Matr2(1,3) = -0.0539675
+	Matr2(2,1) = 0.0177307
+	Matr2(2,2) = 0.739193
+	Matr2(2,3) = 0.67326
+	Matr2(3,1) = 0.0890681
+	Matr2(3,2) = 0.669521
+	Matr2(3,3) = -0.737434
 	
 	gr = gl_all_Gran_inner(iter)
         !if(gl_Gran_info(gr) == 0) CYCLE
@@ -4758,6 +4778,7 @@
 		if (gl_Cell_number(1, s2) == 1 .and. gl_Cell_number(1, s1) /= 1) write(*, *) "Error cuf_solvers uytuyruyt94847667"
 		
 		if (gl_Cell_number(1, s1) == 1 .and. gl_Cell_number(1, s2) /= 1) then
+
 			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
 			df1 = norm2(rast)
 			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
@@ -4797,12 +4818,50 @@
 			qqq22(4) = aa
 			qqq22(2) = bb
 			qqq22(3) = cc
+			
+			vv = MATMUL(Matr2, qqq22(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
+			the4 = acos(kord(3)/rad4)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq22(8) = aa
+			qqq22(6) = bb
+			qqq22(7) = cc
+			
+			vv = MATMUL(Matr2, qqq2(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
+			the2 = acos(kord(3)/rad2)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq2(8) = aa
+			qqq2(6) = bb
+			qqq2(7) = cc
+			
+			vv = MATMUL(Matr2, qqq1(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
+			the1 = acos(kord(3)/rad1)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq1(8) = aa
+			qqq1(6) = bb
+			qqq1(7) = cc
+			
+			kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
+			the5 = acos(kord(3)/rad5)
 					
 			do i = 2, 4
 				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
 			end do
 					
-			do i = 6, 8
+			do i = 6, 6
+				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
+			end do
+			
+			do i = 7, 7
+				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
+			end do
+			
+			do i = 8, 8
 				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
 			end do
 					
@@ -4811,6 +4870,25 @@
 			qqq2_TVD(4) = aa
 			qqq2_TVD(2) = bb
 			qqq2_TVD(3) = cc
+			
+			
+			qqq1(6) = qqq1(6) * rad1**2 / rad5**2
+			qqq1(7) = qqq1(7) * rad1 / sin(the1) / rad5 * sin(the5)
+			call dekard_skorost(kord(3), kord(1), kord(2), &
+                qqq1(8), qqq1(6), qqq1(7), aa, bb, cc)
+			qqq1(8) = aa
+			qqq1(6) = bb
+			qqq1(7) = cc
+			qqq1(6:8) = MATMUL(Matr, qqq1(6:8))
+			
+			
+			call dekard_skorost(kord(3), kord(1), kord(2), &
+                qqq2_TVD(8), qqq2_TVD(6), qqq2_TVD(7), aa, bb, cc)
+			qqq2_TVD(8) = aa
+			qqq2_TVD(6) = bb
+			qqq2_TVD(7) = cc
+			qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
+			
 					
 			
 			qqq2 = qqq2_TVD
@@ -4868,31 +4946,80 @@
 			qqq1(4) = aa
 			qqq1(2) = bb
 			qqq1(3) = cc
+			
+			vv = MATMUL(Matr2, qqq1(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
+			the1 = acos(kord(3)/rad1)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq1(8) = aa
+			qqq1(6) = bb
+			qqq1(7) = cc
 					
 			call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
                 qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
 			qqq2(4) = aa
 			qqq2(2) = bb
 			qqq2(3) = cc
+			
+			vv = MATMUL(Matr2, qqq2(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
+			the2 = acos(kord(3)/rad2)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq2(8) = aa
+			qqq2(6) = bb
+			qqq2(7) = cc
 					
 			call spherical_skorost(gl_Cell_center(3, ss1), gl_Cell_center(1, ss1), gl_Cell_center(2, ss1), &
                 qqq11(4), qqq11(2), qqq11(3), aa, bb, cc)
 			qqq11(4) = aa
 			qqq11(2) = bb
 			qqq11(3) = cc
+			
+			vv = MATMUL(Matr2, qqq11(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss1))
+			the3 = acos(kord(3)/rad3)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq11(8) = aa
+			qqq11(6) = bb
+			qqq11(7) = cc
 					
 			call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
                 qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
 			qqq22(4) = aa
 			qqq22(2) = bb
 			qqq22(3) = cc
+			
+			vv = MATMUL(Matr2, qqq22(6:8))
+			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
+			the4 = acos(kord(3)/rad4)
+			call spherical_skorost(kord(3), kord(1), kord(2), &
+                vv(3), vv(1), vv(2), aa, bb, cc)
+			qqq22(8) = aa
+			qqq22(6) = bb
+			qqq22(7) = cc
+			
+			kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
+			the5 = acos(kord(3)/rad5)
 					
 			do i = 2, 4
 				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
 				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
 			end do
 					
-			do i = 6, 8
+			do i = 6, 6
+				qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3**2, -df1, qqq1(i) * rad1**2, df2, qqq2(i) * rad2**2, 0.0_8)/rad5**2
+				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
+			end do
+			
+			do i = 7, 7
+				qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3 / sin(the3), -df1, qqq1(i) * rad1 / sin(the1), df2, qqq2(i) * rad2 / sin(the2), 0.0_8)/rad5 * sin(the5)
+				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
+			end do
+			
+			do i = 8, 8
 				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
 				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
 			end do
@@ -4907,6 +5034,21 @@
 			qqq2_TVD(4) = aa
 			qqq2_TVD(2) = bb
 			qqq2_TVD(3) = cc
+			
+			
+			call dekard_skorost(kord(3), kord(1), kord(2), &
+                qqq1_TVD(8), qqq1_TVD(6), qqq1_TVD(7), aa, bb, cc)
+			qqq1_TVD(8) = aa
+			qqq1_TVD(6) = bb
+			qqq1_TVD(7) = cc
+			qqq1_TVD(6:8) = MATMUL(Matr, qqq1_TVD(6:8))
+			
+			call dekard_skorost(kord(3), kord(1), kord(2), &
+                qqq2_TVD(8), qqq2_TVD(6), qqq2_TVD(7), aa, bb, cc)
+			qqq2_TVD(8) = aa
+			qqq2_TVD(6) = bb
+			qqq2_TVD(7) = cc
+			qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
 					
 			
 				

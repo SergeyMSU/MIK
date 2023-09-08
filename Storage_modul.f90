@@ -30,11 +30,11 @@
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = lock_move * 0.06 * 0.001_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = 0.1 * lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.02 * 0.1_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = lock_move * 0.5_8 ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = 0.1 * lock_move * 0.5_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
@@ -115,7 +115,7 @@
     
     integer :: par_n_points  ! Всего точек в сетке
 	
-	NAMELIST /SETKA_PARAM/ par_n_TS, par_n_HP, par_n_BS, par_n_END, par_n_IA, par_n_IB, par_triple_point, par_l_phi, &
+	NAMELIST /SETKA_PARAM/ par_n_TS, par_n_HP, par_n_BS, par_n_END, par_n_IA, par_n_IB, par_triple_point, par_triple_point_2, par_l_phi, &
 		par_m_A, par_m_BC, par_m_O, par_m_K, &
 		par_R_inner, par_kk1, par_kk12, par_kk2, par_kk3, par_kk31, par_kk13, par_al1, par_n_points
 	
