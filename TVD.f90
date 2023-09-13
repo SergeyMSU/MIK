@@ -5,7 +5,7 @@
     use GEO_PARAM
 	implicit none
 	
-	integer(4) :: gr, Num, cell, cell2, j, best, cell1, cell3, cell4
+	integer(4) :: gr, Num, cell, cell2, j, best, cell1, cell3, cell4, N1, N2, N3, i, k
 	real(8) :: normal(3), c1(3), c2(3), vec(3)
 	real(8) :: dotmax, xc
 	real(8) :: d1, d2, d3, d4
@@ -95,6 +95,34 @@
 		
 	end do
 	
+	! Отдельно задаём ТВД - соседей для ячеек на оси (соседей через эту ось, полученных вращением)
+	N1 = size(gl_Cell_A(:, 1, 1))
+	N2 = size(gl_Cell_A(1, :, 1))
+	N3 = size(gl_Cell_A(1, 1, :))
+	
+	do k = 1, 1!N3
+		do i = 1, N1
+			gr = gl_Cell_gran(3, gl_Cell_A(i, 1, k))
+			gl_Gran_neighbour_TVD(2, gr) = gl_Cell_A(i, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			!print*, "Center 1 = ", gl_Cell_center(:, gl_Cell_A(i, 1, k))
+			!print*, "Center 2 = ", gl_Cell_center(:, gl_Cell_A(i, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1))
+			!print*, "gran 3 2 = ", gl_Cell_center(:, gl_Gran_neighbour(2, gr))
+			!print*, "gran 3 1 = ", gl_Cell_center(:, gl_Gran_neighbour(1, gr))
+			!pause
+		end do
+	end do
+	
+	
+	N1 = size(gl_Cell_B(:, 1, 1))
+	N2 = size(gl_Cell_B(1, :, 1))
+	N3 = size(gl_Cell_B(1, 1, :))
+	
+	do k = 1, N3
+		do i = 1, N1
+			gr = gl_Cell_gran(3, gl_Cell_B(i, 1, k))
+			gl_Gran_neighbour_TVD(2, gr) = gl_Cell_B(i, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		end do
+	end do
 	
 	! Можно сделать некоторые проверки правильности расчёта соседей
 	do gr = 1, Num
@@ -114,8 +142,8 @@
 		c4 = gl_Cell_center(:, cell4)
 		
 		if(DOT_PRODUCT(c2-c1, c4-c3) < 0.0) then
-			!print*, gl_Gran_normal(:, gr)
-			!print*, "Problem  93 TVD.f90  ", gr
+			print*, c1
+			print*, "Problem  93 TVD.f90  ", gr
 			!PAUSE
 		end if
 		

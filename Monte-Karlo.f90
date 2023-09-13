@@ -375,9 +375,9 @@ module Monte_Karlo
 				M_K_Moment(:, :, i, 1) = 0.0
 				M_K_Moment(1, 4, i, 1) = 1.0
 				M_K_Moment(5, 4, i, 1) = 1.0
-				M_K_Moment(10, 4, i, 1) = 1.0
-				M_K_Moment(13, 4, i, 1) = 1.0
-				M_K_Moment(15, 4, i, 1) = 1.0
+				M_K_Moment(10, 4, i, 1) = 0.5
+				M_K_Moment(13, 4, i, 1) = 0.5
+				M_K_Moment(15, 4, i, 1) = 0.5
 				M_K_Moment(2, 4, i, 1) = par_Velosity_inf
 				CYCLE loop2
 			end if
@@ -433,6 +433,8 @@ module Monte_Karlo
 	subroutine M_K_init()
 	! Variables
 	real(8) :: Y, betta
+	real(8) :: PAR(9) 
+	integer :: cell
 	
 	! Инициализация некоторых параметров
 	par_n_moment = 19
@@ -461,6 +463,11 @@ module Monte_Karlo
 	! Body of M_K_init
 	MK_N = MK_N * par_n_potok * par_n_parallel
 	
+	
+	! Проверка параметров
+	cell = 3
+	call Int2_Get_par_fast(260.0_8, 1.0_8, 1.0_8, cell, PAR)
+	print*, "Proverka MK, 745465635", "must be 1 = ", sqrt(PAR(5)/PAR(1))
 	
 	end subroutine M_K_init
 	

@@ -313,7 +313,15 @@
 
                 ! до TS
                 if (i <= par_n_TS) then  ! До расстояния = par_R_character
-                    r =  par_R0 + (par_R_character - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
+					if(i == 2) then
+						r =  par_R0 - (par_R_character - par_R0) * (DBLE(3 - 2)/(par_n_TS - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+					else
+                        r =  par_R0 + (par_R_character - par_R0) * (DBLE(i - 2)/(par_n_TS - 2))**par_kk1
+					end if
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     r = par_R_character + (i - par_n_TS) * 0.3 * par_R_character/(par_n_HP - par_n_TS)
                 else if (i <= par_n_BS) then  ! До расстояния = par_R_character * 2
@@ -358,7 +366,16 @@
 
                 ! до TS
                 if (i <= par_n_TS) then  ! До расстояния = par_R_character
-                    r =  par_R0 + (par_R_character - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+					if(i == 2) then
+						r =  par_R0 - (par_R_character - par_R0) * (DBLE(3 - 2)/(par_n_TS - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+					else
+                        r =  par_R0 + (par_R_character - par_R0) * (DBLE(i - 2)/(par_n_TS - 2))**par_kk1
+					end if
+                    !r =  par_R0 + (par_R_character - par_R0) * (REAL(i - 2, KIND = 4)/(par_n_TS - 2))**par_kk1
                     !print *, r
                     !pause
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
@@ -490,8 +507,17 @@
                 the = par_pi_8/2.0 + par_triple_point + (N2 - j + 1) * (par_pi_8/2.0 - par_triple_point)/(N2)
                 phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1) !(k - 1) * 2.0_8 * par_pi_8/(N3)
                 ! Вычисляем координаты точки на луче
-
-                r =  par_R0 + (par_R_character - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+				if(i == 2) then
+						r =  par_R0 - (par_R_character - par_R0) * (DBLE(3 - 2)/(par_n_TS - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+				else
+                    r =  par_R0 + (par_R_character - par_R0) * (DBLE(i - 2)/(par_n_TS - 2))**par_kk1
+				end if
+					
+                !r =  par_R0 + (par_R_character - par_R0) * (REAL(i - 2, KIND = 4)/(par_n_TS - 2))**par_kk1
 
 
                 ! Создаём точку
@@ -1625,11 +1651,11 @@
 	
 	! Если включаем гелий
 	if(par_helium) then	
-		gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.14   ! He++
+		gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.14056   ! He++
 		
-		gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.14
-		gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.14
-		gl_Cell_par(5, ncell) = gl_Cell_par(5, ncell) * 1.0525
+		gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.14056
+		gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.14056
+		!gl_Cell_par(5, ncell) = gl_Cell_par(5, ncell) * 1.0525
 	end if
             
     ! Задаём мультифлюид (только первый сорт)
@@ -1682,8 +1708,8 @@
             ncell = gl_Cell_A(1, j, k)
             call Inner_conditions(ncell)
             
-            !ncell = gl_Cell_A(2, j, k)
-            !call Inner_conditions(ncell)
+            ncell = gl_Cell_A(2, j, k)
+            call Inner_conditions(ncell)
 			
         end do
     end do
@@ -1698,8 +1724,8 @@
             ncell = gl_Cell_B(1, j, k)
             call Inner_conditions(ncell)
             
-            !ncell = gl_Cell_B(2, j, k)
-            !call Inner_conditions(ncell)
+            ncell = gl_Cell_B(2, j, k)
+            call Inner_conditions(ncell)
 			
         end do
 	end do
@@ -6170,29 +6196,44 @@
 	subroutine Print_par_1D()
 	use GEO_PARAM
     use STORAGE
+	use Interpolate2
     implicit none
 
-    integer :: N1, N2, kk, k, i, j, N, m
+    integer :: N1, N2, kk, k, i, j, N, m, num
     real(8) :: c(3), Mach
+	real(8) :: PAR(9)     ! Выходные параметры
+	real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
+	real(8) :: Dr, DI1, DI2, DI3
+	
+	Dr = 1.0/par_R0
+	DI1 = 0.0264
+	DI2 = 0.007622
+	DI3 = 0.00292921
 
-
+    num = 3
     N = size(gl_Cell_A(:, 1, 1)) 
 
     open(1, file = 'print_par_1D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, u, p, n_He, Max"
+    write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, u, p, p+BB, BB, n_He, Max, In, Iu, IT"
 
 
     do j = 1, N
         c = gl_Cell_center(:, gl_Cell_A(j, 1, 1))
         m = gl_Cell_A(j, 1, 1)
 		
-        write(1,*) norm2(c), gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c), gl_Cell_par(5, m ), gl_Cell_par2(1, m ), &
-			norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+		call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
+		
+        write(1,*) norm2(c) * Dr, gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c),&
+			gl_Cell_par(5, m ), gl_Cell_par(5, m ) + norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8), norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8),&
+			gl_Cell_par2(1, m ), &
+			norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
+			sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3
 	end do
 	
 	close(1)
 	
-	print*, "TS = ", norm2(gl_Cell_center(:, gl_Cell_A(par_n_TS - 1, 1, 1))), norm2(gl_Cell_center(:, gl_Cell_A(par_n_TS, 1, 1)))
+	print*, "****   TS = ", (norm2(gl_Cell_center(:, gl_Cell_A(par_n_TS - 1, 1, 1))) + norm2(gl_Cell_center(:, gl_Cell_A(par_n_TS, 1, 1))))/2.0
+	print*, "****   HP = ", (norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP - 1, 1, 1))) + norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP, 1, 1))))/2.0
 	
 	end subroutine Print_par_1D
 
@@ -7386,22 +7427,28 @@
 	    integer(4) :: step, name, name2, i
 		real(8) :: PAR(9)     ! Выходные параметры
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
-	    real(8) :: PAR_MOMENT(18, par_n_sort)
+	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 288! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 300! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
 		! 269 до того, как убрал осреднение скоростей в распаднике
 		! 277 закончил мгд (278 аналогичное)
 		! 284 до изменения граничных условий в источнике
-		name2 = 4 ! 2 ! 2 ! Имя мини-сетки для М-К
+		! 288 до того, как увеличили число точек в нуле
+		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = -2 ! Выбираем шаг, который делаем
+		step = 1 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
 		
+		!u = 0.5
+		!cp = 11.0
+		!uz = MK_Velosity_1(u, cp)
+		!print*, "MK = ", u/cp, MK_int_1(u, cp), uz * MK_sigma(uz)
+		!pause
 		
 		!Делаем файл интерполяции для ИГОРЯ
 		!call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -7462,7 +7509,7 @@
             par_n_END = 167! 72! 6                ! Количество точек до конца сетки (конец включается)
             par_n_IA =  34! 12                   ! Количество точек, которые входят во внутреннюю область
 	        par_n_IB =  36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
-			par_kk1 = 1.85_8
+			par_kk1 = 2.0_8
 			
 			call Set_STORAGE()                 ! Выделяем память под все массивы программы
             call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
@@ -7473,30 +7520,36 @@
                                                ! предыдущей функции)
             call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
 			
+			print*, "CENTR = ", norm2(gl_Cell_center(:, gl_Cell_A(1, 1, 1)))
+			print*, "CENTR 2 = ", norm2(gl_Cell_center(:, gl_Cell_A(2, 1, 1)))
+			
 			! Считываем файл поверхностей разрыва и двигаем сетку
 			
 			call Surf_Read_setka_bin(name)
 			
 	        print*, "Nachinaem dvizhenie setki"
-	        do i = 1, 120
-	        	call Surf_Set_surf(20.0_8)
+	        do i = 1, 170
+	        	call Surf_Set_surf(10.0_8)
 	        end do
 	        
 	        do i = 1, 35
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 10
+	        do i = 1, 20
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 20
+	        do i = 1, 25
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
-			do i = 1, 25
+			do i = 1, 35
 	        	call Surf_Set_surf(0.003_8)
 			end do
+			
+			print*, "CENTR = ", norm2(gl_Cell_center(:, gl_Cell_A(1, 1, 1)))
+			print*, "CENTR 2 = ", norm2(gl_Cell_center(:, gl_Cell_A(2, 1, 1)))
 			
             call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
             call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
@@ -7581,7 +7634,7 @@
 			
 			print*, "Download int"
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
-			call Int2_Save_interpol_for_all_MK(name2)
+			!call Int2_Save_interpol_for_all_MK(name2)
 			!call Int2_Dell_interpolate()
 			
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
@@ -7614,7 +7667,7 @@
 			
 			
 			! Печатаем сетку (для просмотра)
-			!call PRINT_ALL()
+			call PRINT_ALL()
 			! СОХРАНЕНИЕ
 			print*, "Save"
 			call Save_param(name + 1)
@@ -7634,7 +7687,7 @@
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
 		    call Int2_Save_interpol_for_all_MHD(name + 1)
-			
+			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
 			! СОЗДАЁМ СЕТКУ

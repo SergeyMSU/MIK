@@ -2193,9 +2193,7 @@ end subroutine Smooth_inverse
             ! Далее обычный цикл нахождения координат точек, такой же, как и при построении сетки
             do i = 1, N1
                 
-                if (i == 1) then
-                    CYCLE
-                end if
+                if (i == 1) CYCLE
 
                 yzel = gl_RAY_A(i, j, k)
                 ! Вычисляем координаты точки на луче
@@ -2204,7 +2202,16 @@ end subroutine Smooth_inverse
 
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
-						r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+						if(i == 2) then
+							r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+							if(r < 0.0) then
+								print*, "Error iouihjgfdcydygy  ", r
+								STOP
+							end if
+						else
+							r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+						end if
+						!r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
 				else if (i <= par_n_TS) then  
 						r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
 				!if (i <= par_n_TS) then  ! До расстояния = R_TS
@@ -2306,7 +2313,16 @@ end subroutine Smooth_inverse
 				
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
-                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+					if(i == 2) then
+						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+					else
+                        r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+					end if
+                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
@@ -2500,7 +2516,16 @@ end subroutine Smooth_inverse
                 yzel = gl_RAY_K(i, j, k)
 				
 				if (i <= par_n_IB) then  ! NEW
-                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+					if(i == 2) then
+						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+					else
+                        r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+					end if
+                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
                 else 
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
 				end if

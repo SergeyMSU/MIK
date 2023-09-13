@@ -185,7 +185,7 @@
 	!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	!end if
 	
-	k1 = 20.0 !10
+	k1 = 30.0 !10
 	if(j <= 5) k1 = 150.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
@@ -1269,7 +1269,7 @@
 		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		vel = par_nat_HP * 0.0006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
 		
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -1277,7 +1277,7 @@
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.00006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.000002
+		vel = par_nat_HP * 0.0006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00006
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -1502,7 +1502,16 @@
 
             ! до TS
 			if (i <= par_n_IB) then  ! NEW
-                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+					if(i == 2) then
+							r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+							if(r < 0.0) then
+								print*, "Error iouihjgfdcydygy w324423ewdf "
+								STOP
+							end if
+					else
+                        r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+					end if
+                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
 			else if (i <= par_n_TS) then  
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
             !if (i <= par_n_TS) then  ! До расстояния = R_TS
@@ -1647,7 +1656,16 @@
 
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
-                    r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+					if(i == 2) then
+						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
+					else
+                        r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+					end if
+                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
                     r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
                 !if (i <= par_n_TS) then  ! До расстояния = R_TS
@@ -1964,7 +1982,16 @@
         yzel = gl_RAY_K(i, j, k)
 		
 		if (i <= par_n_IB) then  ! NEW
-            r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
+			if(i == 2) then
+				r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+				if(r < 0.0) then
+					print*, "Error iouihjgfdcydygy  ", r
+					STOP
+				end if
+			else
+                r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+			end if
+            !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
         else 
             r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
 		end if
@@ -4122,6 +4149,7 @@
 		gl_Gran_scheme => dev_gl_Gran_scheme, gl_zone_Cell => dev_gl_zone_Cell, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, &
 		gl_Cell_par2 => dev_gl_Cell_par2, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2
 	use GEO_PARAM
+	use cgod
 	implicit none
 	integer, intent(in) :: now
 	
@@ -4136,12 +4164,16 @@
 	real(8) :: df1, df2, dff1, dff2, rast(3)
 	real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
 	logical :: tvd1, tvd2, tvd3, tvd4  ! Нужно ли делать особый снос в гиперзвуковом источнике
+	integer(4) :: kdir, KOBL, idgod
 	
 	logical :: null_bn
 	
 	now2 = mod(now, 2) + 1
 
 	konvect_(3, 1) = 0.0
+	KOBL = 0
+	kdir = 0
+	idgod = 0
 	time = 100000.0
 	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	
@@ -4453,14 +4485,32 @@
 			
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
 			
-            if (.False.) then !(gl_Gran_type(gr) == 1) then
-				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, 0, p_correct_ = .True., konvect_ = konvect_)
+            if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
+				qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+				qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+				call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
+										 gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
+										 wc, qqq1(1:8), qqq2(1:8), &
+										 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
+										 POTOK)
+				if (idgod == 2) then ! Если не удалось посчитать Годуновым
+					qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+					qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+					call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+						wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
+				else
+					! Нужно правильно посчитать конвективный снос
+					if(dsc >= wc) then
+						konvect_(3, 1) = konvect_(1, 1) * POTOK(1) / qqq1(1)
+					else
+						konvect_(3, 1) = konvect_(2, 1) * POTOK(1) / qqq2(1)
+					end if
+				end if
 			else
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
                 wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
 			end if
-	
+			
 	
 	
             time = min(time, 0.99 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
@@ -4468,7 +4518,7 @@
             gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
-			
+			if (gl_Gran_type(gr) == 2) gl_Gran_POTOK(10, gr) = 0.0
 	
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
@@ -5145,7 +5195,7 @@
 	gr = gl_all_Cell_inner(iter)
             !if(gl_Cell_info(gr) == 2) CYCLE
             l_1 = .TRUE.
-            if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 1) ) l_1 = .FALSE. ! 2   ! Не считаем в первых двух ячейках
+            if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE. ! 2   ! Не считаем в первых двух ячейках
             POTOK = 0.0
             POTOK2 = 0.0
 			sks = 0.0

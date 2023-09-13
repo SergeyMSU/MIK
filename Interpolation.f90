@@ -2243,9 +2243,9 @@
 			int2_Cell_par(1, i) = int2_Cell_par(1, i) - int2_Cell_par_2(1, i)
 			
 			if(zone == 1 .or. zone == 2) then
-				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (2.0 * int2_Cell_par(1, i) + 1.5 * int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) * 8.0 * int2_Cell_par(1, i)
 			else
-				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (2.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 4.0 * int2_Cell_par(1, i)
 			end if
 		end do
 		
@@ -2257,9 +2257,9 @@
 		do i = 1, size(int2_Cell_par(1, :))
 			zone = int2_Cell_par2(1, i)
 			if(zone == 1 .or. zone == 2) then
-				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (2.0 * int2_Cell_par(1, i) + 1.5 * int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) / (8.0 * int2_Cell_par(1, i))
 			else
-				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (2.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (4.0 * int2_Cell_par(1, i))
 			end if
 			int2_Cell_par(1, i) = int2_Cell_par(1, i) + int2_Cell_par_2(1, i)
 		end do
@@ -2297,9 +2297,9 @@
 		int2_Cell_par(1, i) = int2_Cell_par(1, i) - int2_Cell_par_2(1, i)
 			
 		if(zone == 1 .or. zone == 2) then
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (2.0 * int2_Cell_par(1, i) + 1.5 * int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
+			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) * 4.0 * int2_Cell_par(1, i)
 		else
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (2.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
+			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
 		end if
 	end do
 	
@@ -2313,9 +2313,9 @@
 	do i = 1, size(int2_Cell_par(1, :))
 		zone = int2_Cell_par2(1, i)
 		if(zone == 1 .or. zone == 2) then
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (2.0 * int2_Cell_par(1, i) + 1.5 * int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
+			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) / (4.0 * int2_Cell_par(1, i))
 		else
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (2.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
+			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
 		end if
 		int2_Cell_par(1, i) = int2_Cell_par(1, i) + int2_Cell_par_2(1, i)
 	end do
@@ -2588,7 +2588,7 @@
 	
 	end subroutine Int2_Set_interpol_matrix
 	
-	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, n_HE)
 	! Ќайти тетраедр, которому принадлежит точка и получить значени€ параметров
 	! ¬ отличие от медленной версии, эта не вычисл€ет матрицу интерпол€ции каждый раз, 
 	! предполагаетс€, что матрицы лежат в пам€ти
@@ -2599,6 +2599,7 @@
 	integer(4), intent(in out) :: num  ! “етраэдр, в котором предположительно находитс€ точка (num по умолчанию должен быть равен 3)
 	real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
 	real(8), intent(out), optional :: PAR_k(5)
+	real(8), intent(out), optional :: n_HE
 	
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
@@ -2630,6 +2631,12 @@
 	if(present(PAR_k)) then
 		PAR_k = vec(1, 1) * int2_Moment_k(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment_k(:, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Moment_k(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment_k(:, int2_all_tetraendron_point(4, num) )
+	end if
+	
+	if(present(n_HE)) then
+		n_HE = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
+	
 	end if
 	
 	
@@ -3023,7 +3030,7 @@
 	! ћен€ет значени€ переменных (основных) основной сетки из интерполированной
 	! Variables
 	integer(4) :: N1, N2, N3, i, num
-	real(8) :: r(3), PAR(9)
+	real(8) :: r(3), PAR(9), n_HE
 	
 	if( size(gl_Cell_par(:, 1)) /= size(int2_Cell_par(:, 1)) .or. size(gl_Cell_par(:, 1)) /= 9) then
 		print*, "Error ishflspeurbvmdr  ", size(gl_Cell_par(:, 1)), size(int2_Cell_par(:, 1))
@@ -3035,14 +3042,16 @@
 	
 	do i = 1, N1
 		r = gl_Cell_center(:, i)
-		call Int2_Get_par_fast(r(1), r(2), r(3), num, PAR)
+		call Int2_Get_par_fast(r(1), r(2), r(3), num, PAR, n_HE = n_HE)
 		if(num < 1) then
 			num = 3
 			call Int2_Get_tetraedron_inner(r(1), r(2), r(3), num)
 			if(num < 1) STOP "ERROR  u;dkfg783hju"
 			gl_Cell_par(:, i) = int2_Cell_par(:, int2_all_tetraendron_point(1, num))
+			gl_Cell_par2(:, i) = int2_Cell_par_2(:, int2_all_tetraendron_point(1, num))
 		else
 			gl_Cell_par(:, i) = PAR
+			gl_Cell_par2(:, i) = n_HE
 		end if
 	end do
 	

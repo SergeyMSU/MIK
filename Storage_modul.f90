@@ -29,12 +29,12 @@
 	
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
-	real(8), parameter :: par_nat_TS = lock_move * 0.06 * 0.001_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 0.1 * lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_TS = lock_move * 0.03 * 0.001_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
+	real(8), parameter :: par_nat_HP = 0.3 * lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
-	real(8), parameter :: koef1 = lock_move * 0.02 * 0.1_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = 0.1 * lock_move * 0.5_8 ! 1.0  0.5  0.01
+	real(8), parameter :: koef1 = lock_move * 0.01 * 0.1_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
+    real(8), parameter :: koef2 = 0.3 * lock_move * 0.5_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
@@ -51,7 +51,7 @@
     real(8), parameter :: par_Velosity_inf = -2.54279_8
 	real(8), parameter :: par_Mach_alf = 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
-	real(8), parameter :: par_p_0 = 4624.57_8
+	real(8), parameter :: par_p_0 = 4624.57_8 ! 4790.19! 4624.57_8
 	real(8), parameter :: par_B_inf = 13.9666_8
 	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
@@ -72,7 +72,7 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_mul1 = 90! 70!108
+	integer(4), parameter :: MK_k_mul1 = 70! 70!108
 	integer(4), parameter :: MK_k_mul2 = 15! 14!15
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
 	integer(4), parameter :: MK_N2 = MK_k_mul1 * 200/par_n_parallel  ! 200
@@ -103,7 +103,7 @@
     !integer :: par_m_O = 5      ! Количество лучей O в плоскости
     !integer :: par_m_K = 5      ! Количество лучей K в плоскости
     real(8) :: par_triple_point = 13.0 * par_pi_8/40.0     ! До какого угла начиная от pi/2 (с положительного x) тройная точка
-    real(8) :: par_triple_point_2 = 13.0 * par_pi_8/40.0     ! Под каким углом выходит луч после тройной точки начиная от pi/2 (с положительного x) 
+    real(8) :: par_triple_point_2 = 7.0 * par_pi_8/40.0     ! Под каким углом выходит луч после тройной точки начиная от pi/2 (с положительного x) 
     
     ! Количество точек по лучам A
     integer(4) :: par_n_TS =  35! 26                    ! Количество точек до TS (TS включается)
