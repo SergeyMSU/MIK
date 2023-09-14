@@ -185,8 +185,8 @@
 	!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	!end if
 	
-	k1 = 30.0 !10
-	if(j <= 5) k1 = 30.0   ! 0.03
+	k1 = 250.0 !10
+	!if(j <= 5) k1 = 200.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
 		vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
@@ -2496,7 +2496,7 @@
 		center2(3) = gl_z2(yzel, now)
 		the2 = polar_angle(center2(1), sqrt(center2(2)**2 + center2(3)**2))
 			
-		if (the2 > 0.1 .and. the2 < the1 .and. the1 < par_pi_8/3.0) CYCLE
+		if (the2 > 0.2 .and. the2 < the1 .and. the1 < par_pi_8/3.0) CYCLE
 			
 		! Блок безопасного доступа
 			select case (mod(yzel, 4))
