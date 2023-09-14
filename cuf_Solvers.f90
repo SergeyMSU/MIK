@@ -186,7 +186,7 @@
 	!end if
 	
 	k1 = 30.0 !10
-	if(j <= 5) k1 = 50.0   ! 0.03
+	if(j <= 5) k1 = 30.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
 		vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003

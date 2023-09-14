@@ -33,7 +33,7 @@
 	real(8), parameter :: par_nat_HP = lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
-	real(8), parameter :: koef1 = lock_move * 0.03 * 0.2_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
+	real(8), parameter :: koef1 = lock_move * 0.03 * 0.5_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
     real(8), parameter :: koef2 = lock_move * 0.5_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
