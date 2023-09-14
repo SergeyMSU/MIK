@@ -2079,8 +2079,8 @@
 	integer, dimension(4) :: ipiv   ! pivot indices
 	integer :: n, info
 	
-	!$inter external DGETRF
-	!$inter external DGETRI
+	 external DGETRF
+	 external DGETRI
 	
 	info = 0
 	
@@ -2102,13 +2102,13 @@
 	n = size(M,1)
 	
 	
-	!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+	 call DGETRF(n, n, Minv, n, ipiv, info)
 	
 	if (info /= 0) then
      stop 'Matrix is numerically singular! wfergt56y454erthy5t'
 	end if
 	
-	!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+	 call DGETRI(n, Minv, n, ipiv, work, n, info)
 	
 	if (info /= 0) then
      stop 'Matrix inversion failed! frfg543565tttg'
@@ -2552,8 +2552,8 @@
 	integer, dimension(4) :: ipiv   ! pivot indices
 	integer :: n, info
 	
-	!$inter external DGETRF
-	!$inter external DGETRI
+	 external DGETRF
+	 external DGETRI
 	
 	info = 0
 	
@@ -2571,13 +2571,13 @@
 		n = size(M,1)
 	
 	
-		!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+		 call DGETRF(n, n, Minv, n, ipiv, info)
 	
 		if (info /= 0) then
 		 stop 'Matrix is numerically singular! wfergt56y454erthy5t'
 		end if
 	
-		!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+		 call DGETRI(n, Minv, n, ipiv, work, n, info)
 	
 		if (info /= 0) then
 		 stop 'Matrix inversion failed! frfg543565tttg'
@@ -4093,8 +4093,8 @@
 	
 	! print*, x, y, z, "START"
 	
-	!$inter external DGETRF
-	!$inter external DGETRI
+	 external DGETRF
+	 external DGETRI
 	
 	! print*, "START"
 	
@@ -4270,13 +4270,13 @@
 	Minv = M
 	n = size(M,1)
 	
-	!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+	 call DGETRF(n, n, Minv, n, ipiv, info)
 	
 	if (info /= 0) then
      stop 'Matrix is numerically singular! wfergt56y454erthy5t'
 	end if
 	
-	!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+	 call DGETRI(n, Minv, n, ipiv, work, n, info)
 	
 	if (info /= 0) then
      stop 'Matrix inversion failed! frfg543565tttg'

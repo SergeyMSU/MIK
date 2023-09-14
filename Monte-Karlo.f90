@@ -81,8 +81,8 @@ module Monte_Karlo
 	
 	! «апускаем каждый поток в параллельном цикле
 
-	!$OpenMP call omp_set_num_threads(par_n_potok)
-	!$OpenMP start_time = omp_get_wtime()
+	 call omp_set_num_threads(par_n_potok)
+	 start_time = omp_get_wtime()
 	step = 1
 	
 	mpi_size_Of_Cluster = par_n_claster
@@ -271,7 +271,7 @@ module Monte_Karlo
 
 	!$omp end parallel
 	
-	!$OpenMP end_time = omp_get_wtime()
+	 end_time = omp_get_wtime()
 	
 	if(mpi_rank == 0) print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 	

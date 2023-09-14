@@ -4058,7 +4058,7 @@
     
 	
     
-    !$OpenMP start_time = omp_get_wtime()
+     start_time = omp_get_wtime()
 	
 	mincell = 1
     
@@ -4496,7 +4496,7 @@
         gl_Cell_center = gl_Cell_center2(:, :, 2)
         gl_Gran_square = gl_Gran_square2(:, 2)
 
-        !$OpenMP end_time = omp_get_wtime()
+         end_time = omp_get_wtime()
 		print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 		
 
@@ -4571,7 +4571,7 @@
     
 	
     
-    !$OpenMP start_time = omp_get_wtime()
+     start_time = omp_get_wtime()
 	
 	mincell = 1
     
@@ -5285,7 +5285,7 @@
         gl_Cell_center = gl_Cell_center2(:, :, 2)
         gl_Gran_square = gl_Gran_square2(:, 2)
 
-        !$OpenMP end_time = omp_get_wtime()
+         end_time = omp_get_wtime()
 		print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
 		
 
@@ -7293,7 +7293,7 @@
     !    end if
     !end do
 	
-	!  !$inter call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, 4)
+	!   call Find_tetraedr_Interpolate(0.9_8, 0.04_8, 0.001_8, 4)
 	
 	!call Interpolate_point(4.0_8, 2.0_8, 0.003_8, F, istat, nn)
 	
@@ -7429,7 +7429,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 300! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 304! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -7437,6 +7437,7 @@
 		! 277 закончил мгд (278 аналогичное)
 		! 284 до изменения граничных условий в источнике
 		! 288 до того, как увеличили число точек в нуле
+		! 298 до тог, как изменили схему на гелиопаузе
 		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1 ! Выбираем шаг, который делаем
@@ -7649,7 +7650,7 @@
 				end if
 			end do
 			
-			!call PRINT_ALL()
+			call PRINT_ALL()
 			!go to 101
 			
 		    !@cuf call CUDA_info()
@@ -7669,25 +7670,25 @@
 			! Печатаем сетку (для просмотра)
 			call PRINT_ALL()
 			! СОХРАНЕНИЕ
-			print*, "Save"
-			call Save_param(name + 1)
-			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
-			call Save_setka_bin(name + 1)
-			print*, "Save 2"
-			!
-			call Int2_Dell_interpolate()
-			print*, "Save 3"
-			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-			print*, "Save 4"
-	        call Int2_Initial()			     ! Создание сетки интерполяции
-			print*, "Save 5"
-			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			print*, "Save 6"
-			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
-			print*, "Save 7"
-			!! Сохранение сетки для общего пользования
-		    call Int2_Save_interpol_for_all_MHD(name + 1)
-			!
+			!print*, "Save"
+			!call Save_param(name + 1)
+			!call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
+			!call Save_setka_bin(name + 1)
+			!print*, "Save 2"
+			!!
+			!call Int2_Dell_interpolate()
+			!print*, "Save 3"
+			!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			!print*, "Save 4"
+	  !      call Int2_Initial()			     ! Создание сетки интерполяции
+			!print*, "Save 5"
+			!call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			!print*, "Save 6"
+			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			!print*, "Save 7"
+			!!! Сохранение сетки для общего пользования
+		 !   call Int2_Save_interpol_for_all_MHD(name + 1)
+			
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
 			! СОЗДАЁМ СЕТКУ
