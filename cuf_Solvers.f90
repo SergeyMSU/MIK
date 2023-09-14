@@ -2831,7 +2831,7 @@
         
 	dsc = 0.0_8
 	
-	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+	if (par_null_bn == .True.) then
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
@@ -4183,7 +4183,6 @@
 	
 	TT = time_step
 	
-	
 	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
 	if (gr > dev_Ngran) return
 	
@@ -4460,9 +4459,9 @@
 		end if
 	end if
 	
-	! На ударной волне не делаем снос
-	if(gl_Gran_type(gr) == 1 .and. gl_Gran_center2(1, gr, now) <= -5.0) then
-		qqq1 = gl_Cell_par(:, s1)
+	! На ударной волне не делаем снос справа
+	if(gl_Gran_type(gr) == 1) then ! .and. gl_Gran_center2(1, gr, now) <= -5.0) then
+		!qqq1 = gl_Cell_par(:, s1)
 		qqq2 = gl_Cell_par(:, s2)
 	end if
 	
@@ -4470,6 +4469,9 @@
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
 	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
+		!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
+		
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
 	end if
@@ -4493,7 +4495,13 @@
 										 wc, qqq1(1:8), qqq2(1:8), &
 										 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
 										 POTOK)
+				if(gl_Gran_center2(1, gr, now) > 20.0) then
+					write(*, *) " POTOK = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8)
+					write(*, *) " idgod = ", idgod, wc, dsc
+				end if
+				POTOK(6:8) = 0.0
 				if (idgod == 2) then ! Если не удалось посчитать Годуновым
+					write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
 					qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 					qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
 					call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
