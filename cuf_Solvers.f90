@@ -186,7 +186,7 @@
 	!end if
 	
 	k1 = 30.0 !10
-	if(j <= 5) k1 = 150.0   ! 0.03
+	if(j <= 5) k1 = 50.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
 		vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
@@ -2456,7 +2456,6 @@
 		df2 = norm2(rast)
 		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss2, now)
 		dff2 = norm2(rast)
-		qqq22 = gl_Cell_par(1:8, ss2)
 	
 	
 		rad1 = norm2(gl_Cell_center2(:, s1, now))                                
@@ -2472,15 +2471,9 @@
 					
 		call dekard_skorost(gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now), &
 			aa, bb, cc, qqq1_TVD(2), qqq1_TVD(3), qqq1_TVD(4))
-					
-		do i = 1, 8
-			!qqq2_TVD(i) = qqq2(i)! linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-			qqq2_TVD(i) = linear2(-dff2, qqq22(i), -df2, qqq2(i), 0.0_8)
-		end do
-					
+				
 	
 		qqq1 = qqq1_TVD
-		qqq2 = qqq2_TVD
 	
 	end if
         
@@ -4344,13 +4337,16 @@
                         aa, bb, cc, qqq1_TVD(2), qqq1_TVD(3), qqq1_TVD(4))
 					
 					
-					do i = 1, 9
-						!qqq2_TVD(i) = qqq2(i) ! linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-						qqq2_TVD(i) = linear2(-dff2, qqq22(i), -df2, qqq2(i), 0.0_8)
-					end do
+					!do i = 1, 9
+					!	!qqq2_TVD(i) = qqq2(i) ! linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+					!	!qqq2_TVD(i) = linear2(-dff2, qqq22(i), -df2, qqq2(i), 0.0_8)
+					!end do
 					
 					!qqq2_TVD_2(1) = konvect_(2, 1)! linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)	
-					qqq2_TVD_2(1) = linear2(-dff2, qqq22_2(1), -df2, konvect_(2, 1), 0.0_8)	
+					!qqq2_TVD_2(1) = linear2(-dff2, qqq22_2(1), -df2, konvect_(2, 1), 0.0_8)
+					
+					qqq2_TVD = qqq2
+					qqq2_TVD_2 = konvect_(2, 1)
 					
 				else if(tvd1 == .False. .and. tvd2 == .True.) then                              
 					rad2 = norm2(gl_Cell_center2(:, s2, now))                               
@@ -4480,7 +4476,6 @@
             ! Нужно вычислить скорость движения грани
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 			
-	
 			
 			metod = gl_Gran_scheme(gr)
 			
@@ -4495,10 +4490,10 @@
 										 wc, qqq1(1:8), qqq2(1:8), &
 										 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
 										 POTOK)
-				if(gl_Gran_center2(1, gr, now) > 20.0) then
-					write(*, *) " POTOK = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8)
-					write(*, *) " idgod = ", idgod, wc, dsc
-				end if
+				!if(gl_Gran_center2(1, gr, now) > 20.0) then
+				!	write(*, *) " POTOK = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8)
+				!	write(*, *) " idgod = ", idgod, wc, dsc
+				!end if
 				POTOK(6:8) = 0.0
 				if (idgod == 2) then ! Если не удалось посчитать Годуновым
 					write(*, *) "Ne ydalos godunov 098767890987678923874224243234"

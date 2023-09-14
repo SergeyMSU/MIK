@@ -33,7 +33,7 @@
 	real(8), parameter :: par_nat_HP = lock_move * 0.3_8 ! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
-	real(8), parameter :: koef1 = lock_move * 0.03 * 0.1_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
+	real(8), parameter :: koef1 = lock_move * 0.03 * 0.2_8! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
     real(8), parameter :: koef2 = lock_move * 0.5_8 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
@@ -220,6 +220,7 @@
     real(8), allocatable :: gl_Gran_normal(:,:)       ! (3, :) Нормаль грани   4444444444444444
     real(8), allocatable :: gl_Gran_square(:)         ! (:) Площадь грани
     real(8), allocatable :: gl_Gran_POTOK(:,:)       ! (10, :) поток грани    последний - дивергенция магнитного поля для очистки
+    real(8), allocatable :: gl_Gran_POTOK2(:,:)       ! (10, :) поток грани    последний - дивергенция магнитного поля для очистки
     real(8), allocatable :: gl_Gran_POTOK_MF(:,:,:)       ! (5, 4, :) поток грани мультифлюидных жидкостей
     real(8), allocatable :: gl_Gran_center(:,:)       ! (3, :) 
 	integer(4), allocatable :: gl_Gran_type(:)      ! Показывает тип грани (0 - обычная, 1 - TS, 2 - HP)      INFO
@@ -340,6 +341,7 @@
 	allocate(gl_Gran_type(n1))
 	allocate(gl_Gran_scheme(n1))
     allocate(gl_Gran_POTOK(10, n1))
+    allocate(gl_Gran_POTOK2(size(gl_Cell_par2(:, 1)), n1))
     allocate(gl_Gran_POTOK_MF(5, 4, n1))
     allocate(gl_Gran_center(3, n1))
     
@@ -381,6 +383,7 @@
     gl_Cell_dist = 0.0
     gl_Cell_center = 0.0
     gl_Gran_POTOK = 0.0
+	gl_Gran_POTOK2 = 0.0
     gl_Cell_par = 0.0
     gl_Gran_center = 0.0
     gl_Gran_info = 0
