@@ -4379,7 +4379,18 @@
 					end do
 					
 					qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
-					qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)	
+					qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)
+					
+					if(gl_zone_Cell(s2) /= gl_zone_Cell(ss2) .and. gl_zone_Cell(s2) /= 4 .and. gl_zone_Cell(ss2) /= 4) then
+						qqq2_TVD = qqq2
+						qqq2_TVD_2(1) = konvect_(2, 1)
+					end if
+					
+					if(gl_zone_Cell(s1) /= gl_zone_Cell(ss1) .and. gl_zone_Cell(s1) /= 4 .and. gl_zone_Cell(ss1) /= 4) then
+						qqq1_TVD = qqq1
+						qqq1_TVD_2(1) = konvect_(1, 1)
+					end if
+					
 				else
 					rad1 = norm2(gl_Cell_center2(:, s1, now))                              
 					rad2 = norm2(gl_Cell_center2(:, s2, now))                              
