@@ -6214,7 +6214,7 @@
     N = size(gl_Cell_A(:, 1, 1)) 
 
     open(1, file = 'print_par_1D.txt')
-    write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, u, p, p+BB, BB, n_He, Max, In, Iu, IT"
+    write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, Ur, u, v, w, p, p+BB, BB, Bx, By, Bz, n_He, Max, In, Iu, IT"
 
 
     do j = 1, N
@@ -6224,7 +6224,9 @@
 		call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
 		
         write(1,*) norm2(c) * Dr, gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c),&
+			gl_Cell_par(2, m ), gl_Cell_par(3, m ), gl_Cell_par(4, m ), &
 			gl_Cell_par(5, m ), gl_Cell_par(5, m ) + norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8), norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8),&
+			gl_Cell_par(6, m ), gl_Cell_par(7, m ), gl_Cell_par(8, m ), &
 			gl_Cell_par2(1, m ), &
 			norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
 			sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3
@@ -7429,7 +7431,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 299! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 300! 250  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -7687,7 +7689,7 @@
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
 		    call Int2_Save_interpol_for_all_MHD(name + 1)
-			!
+			!!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
 			! СОЗДАЁМ СЕТКУ
