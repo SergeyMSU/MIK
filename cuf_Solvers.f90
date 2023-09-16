@@ -4494,30 +4494,31 @@
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
 			
             if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
-				qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
-				qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
-				call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
-										 gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
-										 wc, qqq1(1:8), qqq2(1:8), &
-										 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
-										 POTOK)
-				!if(gl_Gran_center2(1, gr, now) > 20.0) then
-				!	write(*, *) " POTOK = ", POTOK(1), POTOK(2), POTOK(3), POTOK(4), POTOK(5), POTOK(6), POTOK(7), POTOK(8)
-				!	write(*, *) " idgod = ", idgod, wc, dsc
-				!end if
-				POTOK(6:8) = 0.0
-				if (idgod == 2) then ! Если не удалось посчитать Годуновым
-					write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
-					qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
-					qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
-					call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-						wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
-				else
-					! Нужно правильно посчитать конвективный снос
-					if(dsc >= wc) then
-						konvect_(3, 1) = konvect_(1, 1) * POTOK(1) / qqq1(1)
+				
+				POTOK = 0.0
+				if (.False.) then
+					qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+					qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+					call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
+											 gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
+											 wc, qqq1(1:8), qqq2(1:8), &
+											 dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
+											 POTOK)
+					
+					POTOK(6:8) = 0.0
+					if (idgod == 2) then ! Если не удалось посчитать Годуновым
+						write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
+						qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+						qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+						call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+							wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
 					else
-						konvect_(3, 1) = konvect_(2, 1) * POTOK(1) / qqq2(1)
+						! Нужно правильно посчитать конвективный снос
+						if(dsc >= wc) then
+							konvect_(3, 1) = konvect_(1, 1) * POTOK(1) / qqq1(1)
+						else
+							konvect_(3, 1) = konvect_(2, 1) * POTOK(1) / qqq2(1)
+						end if
 					end if
 				end if
 			else
@@ -4622,11 +4623,22 @@
                     POTOK = POTOK + gl_Gran_POTOK(1:9, j)
                     POTOK2 = POTOK2 + gl_Gran_POTOK2(1, j)
 					sks = sks + gl_Gran_POTOK(10, j)
+					
+					if(gl_Gran_type(j) == 2) then ! Особые потоки для контакта
+						POTOK(2:4) = POTOK(2:4) + (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) * gl_Gran_normal2(:, j, now)
+					end if
+					
                 else
                     POTOK = POTOK - gl_Gran_POTOK(1:9, j)
                     POTOK2 = POTOK2 - gl_Gran_POTOK2(1, j)
 					sks = sks - gl_Gran_POTOK(10, j)
-                end if
+					
+					if(gl_Gran_type(j) == 2) then ! Особые потоки для контакта
+						POTOK(2:4) = POTOK(2:4) - (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) * gl_Gran_normal2(:, j, now)
+					end if
+					
+				end if
+				
             end do
  
  
