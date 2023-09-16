@@ -185,7 +185,7 @@
 	!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	!end if
 	
-	k1 = 250.0 !10
+	k1 = 180.0 !10
 	!if(j <= 5) k1 = 200.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
