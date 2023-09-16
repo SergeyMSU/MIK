@@ -1464,13 +1464,22 @@
 	real(8) :: qqq1(9), qqq2(9), qqq(9)
 	
 	null_bn1 = .False.; p_correct_ = .True.; n_disc = 1
-	al = 1.0/sqrt(2.0); be = 1.0/sqrt(2.0); ge = 0; w = 0.0; n_state = 3
+	al = 1.0; be = 0.0; ge = 0; w = 0.0; n_state = 3
 	
 	qqq1 = (/10.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 10.5, 100.0/)
-	qqq2 = (/1.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 10.5, 100.0/)
+	qqq2 = (/1.0, 0.0, 0.0, 0.0, 6.0, 0.0, 0.0, 10.5, 100.0/)
 	konvect_(1, 1) = 2.0
 	konvect_(2, 1) = 100.0
 	
+	call chlld_Q(n_state, al, be, ge, &
+                                 w, qqq1, qqq2, &
+                                 dsl, dsp, dsc, &
+                                 qqq, null_bn1 = null_bn1, n_disc = n_disc, p_correct_ = p_correct_, konvect_ = konvect_)
+	
+	print*, "qqq = ", qqq
+	print*, "konvect_ = ", konvect_
+	print*, "____"
+	w = dsc
 	call chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
