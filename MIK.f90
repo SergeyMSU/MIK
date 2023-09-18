@@ -152,7 +152,31 @@
 		linear2 =  (d * (y - x2) + t2)
 		return
 		
-    end function linear2
+	end function linear2
+	
+	!@cuf attributes(host, device) & 
+    subroutine polyar_skorost(phi, Vy, Vz, Vr, Vphi)
+    ! Variables
+    implicit none
+    real(8), intent(in) :: phi, Vy, Vz
+    real(8), intent(out) :: Vr, Vphi
+
+    Vr = Vy * cos(phi) + Vz * sin(phi)
+    Vphi = Vz * cos(phi) - Vy * sin(phi)
+
+	end subroutine polyar_skorost
+	
+	!@cuf attributes(host, device) & 
+	subroutine dekard_polyar_skorost(phi, Vr, Vphi, Vy, Vz)
+    ! Variables
+    implicit none
+    real(8), intent(in) :: phi, Vr, Vphi 
+    real(8), intent(out) :: Vy, Vz
+
+    Vy = Vr * cos(phi) - Vphi * sin(phi)
+    Vz = Vr * sin(phi) + Vphi * cos(phi)
+
+	end subroutine dekard_polyar_skorost
 
 
 	end module My_func
@@ -192,6 +216,8 @@
     Vphi = -Vx * sin(phi_1) + Vy * cos(phi_1);
 
 	end subroutine spherical_skorost
+	
+	
 
 	!@cuf attributes(host, device) & 
     subroutine dekard_skorost(z, x, y, Vr, Vphi, Vtheta, Vz, Vx, Vy)
@@ -8025,7 +8051,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 308! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 315! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -8273,18 +8299,18 @@
 			call Save_setka_bin(name + 1)
 			print*, "Save 2"
 			!
-			call Int2_Dell_interpolate()
-			print*, "Save 3"
-			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-			print*, "Save 4"
-	        call Int2_Initial()			     ! Создание сетки интерполяции
-			print*, "Save 5"
-			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			print*, "Save 6"
-			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
-			print*, "Save 7"
-			!! Сохранение сетки для общего пользования
-		    call Int2_Save_interpol_for_all_MHD(name + 1)
+			!call Int2_Dell_interpolate()
+			!print*, "Save 3"
+			!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			!print*, "Save 4"
+	  !      call Int2_Initial()			     ! Создание сетки интерполяции
+			!print*, "Save 5"
+			!call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			!print*, "Save 6"
+			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			!print*, "Save 7"
+			!!! Сохранение сетки для общего пользования
+		 !   call Int2_Save_interpol_for_all_MHD(name + 1)
 			!!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------

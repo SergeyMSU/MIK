@@ -185,7 +185,7 @@
 	!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
 	!end if
 	
-	k1 = 180.0 !10
+	k1 = 50.0 !10
 	!if(j <= 5) k1 = 200.0   ! 0.03
 	
 	if (gl_Point_num(yzel) > 0) then
@@ -704,7 +704,7 @@
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
 			!return
-			kkk = 6.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			kkk = 360.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!if(j < 15) kkk = 6.0
 			! Контакт
 			if (.True.) then !(j < N2 - 3) then
@@ -902,10 +902,10 @@
 		
 			if (gl_Point_num(yzel) > 0) then
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-				vel = kkk * par_nat_HP * 0.0002 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+				vel = kkk * par_nat_HP * 0.0002 * ( (Ck + 8.0 * Ek)/9.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
 			else
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
-				vel = kkk * par_nat_HP * 0.0002 * (Ck/2.0 + Ek/2.0 - Ak)/Time   !  0.00006
+				vel = kkk * par_nat_HP * 0.0002 * ( (Ck + 8.0 * Ek)/9.0 - Ak)/Time   !  0.00006
 			end if
 			
 			else  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1155,9 +1155,9 @@
 	Ck(1), Ck(2), Ck(3))
 			
 	if (gl_Point_num(yzel) > 0) then
-		vel = 10.0 * gl_Point_num(yzel) * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
+		vel = 2 * 10.0 * gl_Point_num(yzel) * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
 	else
-		vel = 10.0 * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
+		vel = 2 * 10.0 * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
 	end if
 		
 			
@@ -2407,6 +2407,48 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
+	attributes(global) subroutine Cuda_mean_axis_simmetry()  ! Осредняем плотность на оси симметрии
+	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, gl_Cell_A => dev_gl_Cell_A
+	use GEO_PARAM
+	use cudafor
+	implicit none
+	
+	integer :: i, Num, k, Num2
+	real(8) :: SS
+	
+	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+	
+	Num = size(gl_Cell_A(:, 1, 1))
+	
+	if (i > Num .or. i < par_n_TS) return
+	
+	SS = 0.0
+	Num2 = size(gl_Cell_A(1, 1, :))
+	do k = 1, Num2
+		SS = SS + gl_Cell_par(1, gl_Cell_A(i, 1, k))
+	end do
+	
+	SS = SS/Num2
+	
+	do k = 1, Num2
+		gl_Cell_par(1, gl_Cell_A(i, 1, k)) = SS
+	end do
+	
+	end subroutine Cuda_mean_axis_simmetry
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
 	attributes(global) subroutine Cuda_Calc_move_TS(now)
 	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
 		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
@@ -2448,7 +2490,7 @@
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
 	
-	if(gl_Gran_center2(1, gr, now) > -5.0) then
+	if(.True.) then !(gl_Gran_center2(1, gr, now) > -5.0) then
 	
 		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 		df1 = norm2(rast)
@@ -2478,7 +2520,7 @@
 	end if
         
     call chlld(metod, normal(1), normal(2), normal(3), &
-            www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
+            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 2)
 	
 		
     dsl = dsl * koef1
@@ -2843,7 +2885,7 @@
 				www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
 	end if
         
-    dsc = k1 * (dsc + 0.0 * DOT_PRODUCT(0.5 * (qqq1(2:4) + qqq2(2:4)), normal)) * koef2
+    dsc = dsc * koef2
 	
 	!if (gl_Gran_center2(1, gr, now) < -40.0 .and. gl_Cell_par(9, s1) > 50.0) then
 	!		!print*, gl_Gran_center2(:, gr, now) 
@@ -4140,9 +4182,10 @@
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
 		gl_Gran_scheme => dev_gl_Gran_scheme, gl_zone_Cell => dev_gl_zone_Cell, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, &
-		gl_Cell_par2 => dev_gl_Cell_par2, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2
+		gl_Cell_par2 => dev_gl_Cell_par2, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2, gl_Cell_number => dev_gl_Cell_number
 	use GEO_PARAM
 	use cgod
+	use My_func
 	implicit none
 	integer, intent(in) :: now
 	
@@ -4154,10 +4197,10 @@
     real(8) :: POTOK(9), ttest(3)
     real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc, rad3, rad4, rad5
     real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
-	real(8) :: df1, df2, dff1, dff2, rast(3)
+	real(8) :: df1, df2, dff1, dff2, rast(3), phi1, phi2, phi3, phi4, phi5
 	real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
-	logical :: tvd1, tvd2, tvd3, tvd4  ! Нужно ли делать особый снос в гиперзвуковом источнике
-	integer(4) :: kdir, KOBL, idgod
+	logical :: tvd1, tvd2, tvd3, tvd4, ydar  ! Нужно ли делать особый снос в гиперзвуковом источнике
+	integer(4) :: kdir, KOBL, idgod, n_disc
 	
 	logical :: null_bn
 	
@@ -4167,6 +4210,8 @@
 	KOBL = 0
 	kdir = 0
 	idgod = 0
+	ydar = .False.
+	n_disc = 1
 	time = 100000.0
 	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	
@@ -4192,8 +4237,8 @@
 	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 	dist = norm2(distant)
 	
-	!tvd1 = (gl_zone_Cell(s1) == 1) 
-	tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
+	tvd1 = (gl_zone_Cell(s1) == 1) 
+	!tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
 	
 	! Попробуем снести плотность пропорционально квадрату
             if (.False.) then !if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -4291,8 +4336,8 @@
                 end if
 	end if
 	
-	!tvd2 = (gl_zone_Cell(s2) == 1) !
-	tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
+	tvd2 = (gl_zone_Cell(s2) == 1) !
+	!tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
 	
 	! Делаем ТВД
 	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
@@ -4313,10 +4358,10 @@
 				qqq11_2 = gl_Cell_par2(:, ss1)
 				qqq22_2 = gl_Cell_par2(:, ss2)
 				
-				!tvd3 = (gl_zone_Cell(ss1) == 1) 
-				tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
-				!tvd4 = (gl_zone_Cell(ss2) == 1) !
-				tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
+				tvd3 = (gl_zone_Cell(ss1) == 1) 
+				!tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
+				tvd4 = (gl_zone_Cell(ss2) == 1) !
+				!tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
 				
 				if(tvd1 == .True. .and. tvd2 == .False.) then
 					rad1 = norm2(gl_Cell_center2(:, s1, now))                              
@@ -4373,22 +4418,67 @@
 					qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
 					
 				else if(tvd1 == .False. .and. tvd2 == .False.) then
-					do i = 1, 9
+					
+					! Делаем снос в цилиндрической ск для первых двух ячеек от оси
+					if(.False. .and. gl_Cell_number(1, s1) == gl_Cell_number(1, s2) .and. gl_Cell_number(2, s1) == gl_Cell_number(2, s2)& 
+					.and. gl_Cell_number(2, s1) <= 2) then
+						phi1 = polar_angle(gl_Cell_center2(2, s1, now), gl_Cell_center2(3, s1, now))
+						phi2 = polar_angle(gl_Cell_center2(2, s2, now), gl_Cell_center2(3, s2, now))
+						phi3 = polar_angle(gl_Cell_center2(2, ss1, now), gl_Cell_center2(3, ss1, now))
+						phi4 = polar_angle(gl_Cell_center2(2, ss2, now), gl_Cell_center2(3, ss2, now))
+						phi5 = polar_angle(gl_Gran_center2(2, gr, now), gl_Gran_center2(3, gr, now))
+						
+						call polyar_skorost(phi1, qqq1(3), qqq1(4), aa, bb)
+						qqq1(3) = aa
+						qqq1(4) = bb
+						
+						call polyar_skorost(phi2, qqq2(3), qqq2(4), aa, bb)
+						qqq2(3) = aa
+						qqq2(4) = bb
+						
+						call polyar_skorost(phi3, qqq11(3), qqq11(4), aa, bb)
+						qqq11(3) = aa
+						qqq11(4) = bb
+						
+						call polyar_skorost(phi4, qqq22(3), qqq22(4), aa, bb)
+						qqq22(3) = aa
+						qqq22(4) = bb
+						
+						
+						do i = 1, 9
 						qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
 						qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-					end do
+						end do
+						
+						call dekard_polyar_skorost(phi5, qqq1_TVD(3), qqq1_TVD(4), aa, bb)
+						qqq1_TVD(3) = aa
+						qqq1_TVD(4) = bb
+						
+						call dekard_polyar_skorost(phi5, qqq2_TVD(3), qqq2_TVD(4), aa, bb)
+						qqq2_TVD(3) = aa
+						qqq2_TVD(4) = bb
 					
-					qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
-					qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)
+						qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
+						qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)
+					else
 					
-					if(gl_zone_Cell(s2) /= gl_zone_Cell(ss2) .and. gl_zone_Cell(s2) /= 4 .and. gl_zone_Cell(ss2) /= 4) then
-						qqq2_TVD = qqq2
-						qqq2_TVD_2(1) = konvect_(2, 1)
-					end if
+						do i = 1, 9
+							qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+							qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+						end do
 					
-					if(gl_zone_Cell(s1) /= gl_zone_Cell(ss1) .and. gl_zone_Cell(s1) /= 4 .and. gl_zone_Cell(ss1) /= 4) then
-						qqq1_TVD = qqq1
-						qqq1_TVD_2(1) = konvect_(1, 1)
+						qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
+						qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)
+					
+						if(gl_zone_Cell(s2) /= gl_zone_Cell(ss2) .and. gl_zone_Cell(s2) /= 4 .and. gl_zone_Cell(ss2) /= 4) then
+							qqq2_TVD = qqq2
+							qqq2_TVD_2(1) = konvect_(2, 1)
+						end if
+					
+						if(gl_zone_Cell(s1) /= gl_zone_Cell(ss1) .and. gl_zone_Cell(s1) /= 4 .and. gl_zone_Cell(ss1) /= 4) then
+							qqq1_TVD = qqq1
+							qqq1_TVD_2(1) = konvect_(1, 1)
+						end if
 					end if
 					
 				else
@@ -4435,6 +4525,32 @@
 					qqq22(2) = bb
 					qqq22(3) = cc
 					
+					! Перевод Магнитных полей в сферическую ск
+					
+					call spherical_skorost(gl_Cell_center2(3, s1, now), gl_Cell_center2(1, s1, now), gl_Cell_center2(2, s1, now), &
+                        qqq1(8), qqq1(6), qqq1(7), aa, bb, cc)
+					qqq1(8) = aa
+					qqq1(6) = bb
+					qqq1(7) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, s2, now), gl_Cell_center2(1, s2, now), gl_Cell_center2(2, s2, now), &
+                        qqq2(8), qqq2(6), qqq2(7), aa, bb, cc)
+					qqq2(8) = aa
+					qqq2(6) = bb
+					qqq2(7) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, ss1, now), gl_Cell_center2(1, ss1, now), gl_Cell_center2(2, ss1, now), &
+                        qqq11(8), qqq11(6), qqq11(7), aa, bb, cc)
+					qqq11(8) = aa
+					qqq11(6) = bb
+					qqq11(7) = cc
+					
+					call spherical_skorost(gl_Cell_center2(3, ss2, now), gl_Cell_center2(1, ss2, now), gl_Cell_center2(2, ss2, now), &
+                        qqq22(8), qqq22(6), qqq22(7), aa, bb, cc)
+					qqq22(8) = aa
+					qqq22(6) = bb
+					qqq22(7) = cc
+					
 					do i = 2, 4
 						qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
 						qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
@@ -4455,6 +4571,17 @@
 					qqq2_TVD(4) = aa
 					qqq2_TVD(2) = bb
 					qqq2_TVD(3) = cc
+					
+					call dekard_skorost(gl_Gran_center2(3, gr, now), gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), &
+                        qqq1_TVD(8), qqq1_TVD(6), qqq1_TVD(7), aa, bb, cc)
+					qqq1_TVD(8) = aa
+					qqq1_TVD(6) = bb
+					qqq1_TVD(7) = cc
+					call dekard_skorost(gl_Gran_center2(3, gr, now), gl_Gran_center2(1, gr, now), gl_Gran_center2(2, gr, now), &
+                        qqq2_TVD(8), qqq2_TVD(6), qqq2_TVD(7), aa, bb, cc)
+					qqq2_TVD(8) = aa
+					qqq2_TVD(6) = bb
+					qqq2_TVD(7) = cc
 				end if
 				
 				qqq1 = qqq1_TVD
@@ -4492,6 +4619,13 @@
 			
 			
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
+			
+			if(gl_Gran_type(gr) == 1) then
+				n_disc = 2 !2
+				ydar = .True.
+				wc = 0.0
+			end if
+			
 			
             if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
 				
@@ -4531,7 +4665,7 @@
 				end if
 			else
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_, n_disc = n_disc, ydar_ = ydar)
 			end if
 			
 	
@@ -4541,7 +4675,7 @@
             gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
-			if (gl_Gran_type(gr) == 2) gl_Gran_POTOK(10, gr) = 0.0
+			if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
 	
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
@@ -4635,6 +4769,13 @@
 					if(gl_Gran_type(j) == 2) then ! Особые потоки для контакта
 						POTOK(2:4) = POTOK(2:4) + (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
 							* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
+						POTOK(10) = POTOK(10) + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+							* gl_Gran_square2(j, now)
+					end if
+					
+					if(gl_Gran_type(j) == 1) then ! Особые потоки для TS
+						POTOK(10) = POTOK(10) + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+							* gl_Gran_square2(j, now)
 					end if
 					
                 else
@@ -4645,6 +4786,13 @@
 					if(gl_Gran_type(j) == 2) then ! Особые потоки для контакта
 						POTOK(2:4) = POTOK(2:4) - (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
 							* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
+						POTOK(10) = POTOK(10) - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+							* gl_Gran_square2(j, now)
+					end if
+					
+					if(gl_Gran_type(j) == 1) then ! Особые потоки для TS
+						POTOK(10) = POTOK(10) - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+							* gl_Gran_square2(j, now)
 					end if
 					
 				end if

@@ -74,6 +74,7 @@ module MY_CUDA
 	 character,  device, allocatable :: dev_gl_Cell_type(:)
 	 integer(4),  device, allocatable :: dev_gl_Cell_number(:, :)
 	 integer(4), device, allocatable :: dev_gl_Gran_neighbour_TVD(:,:)
+	integer(4), device, allocatable :: dev_gl_Cell_A(:,:,:)
 	 real(8), device, allocatable :: dev_gl_x(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_y(:)   ! набор z-координат узлов сетки    !MOVE
      real(8), device, allocatable :: dev_gl_z(:)   ! набор z-координат узлов сетки    !MOVE
@@ -227,6 +228,7 @@ module MY_CUDA
 		 allocate(dev_gl_Cell_number(3,  size(gl_Cell_number(1, :))  ))
 		 
 		 allocate(dev_gl_Gran_neighbour_TVD, mold = gl_Gran_neighbour_TVD)
+		 allocate(dev_gl_Cell_A, mold = gl_Cell_A)
 		 allocate(dev_gl_Cell_par_MK, mold = gl_Cell_par_MK)
 		 
 		 dev_mutex_1 = 0
@@ -383,6 +385,7 @@ module MY_CUDA
 		 dev_gl_Cell_gran = gl_Cell_gran
 		 dev_gl_all_Gran_inner = gl_all_Gran_inner
 		 dev_gl_all_Cell_inner = gl_all_Cell_inner
+		 dev_gl_Cell_A = gl_Cell_A
 		 dev_gl_Cell_type = gl_Cell_type
 		 dev_gl_Cell_number = gl_Cell_number
 		 dev_gl_Gran_neighbour_TVD = gl_Gran_neighbour_TVD
@@ -1189,6 +1192,12 @@ module MY_CUDA
 		write (*,*) 'Error Sinc start 17: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 17: ', cudaGetErrorString(cudaGetLastError())
 	
+	
+	! ќсредн€ем на оси симметрии
+	!Num = size(gl_Cell_A(:, 1, 1))
+	!call Cuda_mean_axis_simmetry<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>()
+	!ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 333: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 333: ', cudaGetErrorString(cudaGetLastError())
+	!
 	
 	
 	! «десь нужно два цикла по внутренней области (сфере) €чеек и граней

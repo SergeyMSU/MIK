@@ -54,7 +54,7 @@
 	    subroutine chlld_Q(n_state, al, be, ge, &
                                  w, qqq1, qqq2, &
                                  dsl, dsp, dsc, &
-                                 qqq, null_bn1, n_disc, p_correct_, konvect_)
+                                 qqq, null_bn1, n_disc, p_correct_, konvect_, ydar_)
       ! Q - маяк, показывающий в какой области мы находимся
       ! n_state = 0-3 - какой метод используем
       ! al,be,ge - нормаль
@@ -63,18 +63,19 @@
       ! dsl,dsp,dsc - поверхности разрывов
       ! qqq - выходные потоки
 		! null_bn1 - если  true, то нужно обнулить поток магнитного поля через поверхность
+		! ydar = .True. Для TS, если нужно попасть в крайнюю левую область
       implicit real*8 (a-h,o-z)
       
       real(8), intent(out) :: dsl, dsp, dsc
       real(8), intent(in) :: al, be, ge, w
       integer(4), intent(in) :: n_state
-	  logical, intent(in), optional :: null_bn1, p_correct_
+	  logical, intent(in), optional :: null_bn1, p_correct_, ydar_
 	  integer, intent(in), optional :: n_disc
 	  real(8), intent(in out), optional :: konvect_(3, 1)  ! (3, :) Для конвективного сноса различных переменных, второй аргумент, это их количество
 	  
-	  real(8) :: phi_p_correct, ksi, p_correct
+	  real(8) :: phi_p_correct, ksi
 	  real(8) :: FR_(1), FL_(1), UZ_(1), FW_(1)
-	  logical :: null_bn
+	  logical :: null_bn, ydar, p_correct
       
       dimension qqq(9),qqq1(9),qqq2(9)
       dimension FR(9),FL(9)
@@ -108,6 +109,12 @@
 		p_correct = .False.
 	else
 		p_correct = p_correct_
+	end if
+	
+	if(.not. present(ydar_)) then
+		ydar = .False.
+	else
+		ydar = ydar_
 	end if
 	
 	
@@ -397,7 +404,7 @@
 
                    TL=SL
                    TR=SR
-                if(SL > wv)then
+                if(SL > wv .or. ydar == .True.)then
                    TL=x0
                    do ik=1, 9
                    FW(ik)=wv*UL(ik)
@@ -525,10 +532,10 @@
 	  endif
 	  
 	  ! Сгладим Скорость     Я добавил, не было изначально !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	    vzR(2)=UZ(3)/UZ(1)
-        vzR(3)=UZ(4)/UZ(1)
-        vzL(2)=vzR(2)
-        vzL(3)=vzR(3)
+	    !vzR(2)=UZ(3)/UZ(1)
+     !   vzR(3)=UZ(4)/UZ(1)
+     !   vzL(2)=vzR(2)
+     !   vzL(3)=vzR(3)
 	! ! ! ! ! ! !
 	  
              UZL(1)=rzL
@@ -545,7 +552,7 @@
 			 enddo
 			 
 
-           if(SL >= wv)then
+           if(SL >= wv  .or. ydar == .True.)then
              qqq(1)=FL(1)-wv*UL(1)
              qqq(9)=FL(9)-wv*UL(9)
              qqq(5)=FL(5)-wv*UL(5)
@@ -796,7 +803,7 @@
 
              j_ccs=-1
 
-           if(SL >= wv)then
+           if(SL >= wv  .or. ydar == .True.)then
              qqq(1)=FL(1)-wv*UL(1)
              qqq(5)=FL(5)-wv*UL(5)
 			 qqq(9)=FL(9)-wv*UL(9)
