@@ -907,13 +907,13 @@ end subroutine Smooth_inverse
 			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 1, j, k))) = 0!1
 			
 			
-			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 2, j, k))) = 1
-			!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) /= 0) then
-			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) ) = 1
-			!end if
-			!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 2, j, k))) = 1
-			!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 2, j, k))) = 1
-			!
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) ) = 0!1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
+			
 			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 3, j, k))) = 1
 			!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) /= 0) then
 			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) ) = 1
@@ -929,13 +929,13 @@ end subroutine Smooth_inverse
 			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP, j, k))) = 0!1
 			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP, j, k))) = 0!1
 			
-			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 1, j, k))) = 1
-			!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k)) /= 0) then
-			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k))) = 1
-			!end if
-			!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 1, j, k))) = 1
-			!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 1, j, k))) = 1
-			!
+			gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
+			if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k)) /= 0) then
+			    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
+			end if
+			gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
+			gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
+			
 			!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 2, j, k))) = 1
 			!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k)) /= 0) then
 			!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k))) = 1
