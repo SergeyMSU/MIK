@@ -984,7 +984,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 1 * 40000! 40000
+	all_step = 40000! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1017,7 +1017,7 @@ module MY_CUDA
 	ierrAsync = cudaDeviceSynchronize()
 
 	
-	if(.True.) then  ! Есть ли вообще движение сетки
+	if(.False.) then  ! Есть ли вообще движение сетки
 	! Сначала вычисляем скорости движения поверхностей
 	
 	
@@ -1086,6 +1086,7 @@ module MY_CUDA
 	end if
 	
 	! Теперь собственно циклы движения точек ---------------------------------------------------------------------------------------------------------
+	
 	
 	nx = size(gl_RAY_A(1, 1, :))
     ny = size(gl_RAY_A(1, :, 1))
@@ -1186,7 +1187,7 @@ module MY_CUDA
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) &
 		write (*,*) 'Error Sinc start 16: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) & 
 		write(*,*) 'Error ASync start 16: ', cudaGetErrorString(cudaGetLastError())
-
+ 
 	
 	Num = size(gl_all_Cell(1, :))
 	call CUF_MGD_cells_MK <<< ceiling(real(Num)/potok_in_block), potok_in_block>>> (dev_now)  ! цикл по ячейкам
