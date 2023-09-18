@@ -6864,7 +6864,9 @@
         c = gl_Cell_center(:, gl_Cell_A(j, 1, 1))
         m = gl_Cell_A(j, 1, 1)
 		
-		call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
+		if(allocated(int2_Moment)) then
+		    call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
+		end if
 		
         write(1,*) norm2(c) * Dr, gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c),&
 			gl_Cell_par(2, m ), gl_Cell_par(3, m ), gl_Cell_par(4, m ), &
@@ -7762,16 +7764,25 @@
     
 	subroutine PRINT_ALL()
 	! Печатает текущую сетку (разные файлы)
+	!print*, "C1"
 	call Print_par_2D()
+	!print*, "C1"
 	call Print_surface_2D()
+	!print*, "C2"
     call Print_Setka_2D()
+	!print*, "C1"
 	call Print_Setka_y_2D()
+	!print*, "C1"
 	call Print_TS_3D()
+	!print*, "C3"
 	call Print_Contact_3D()
+	!print*, "C1"
 	call Print_surface_y_2D()
+	!print*, "C1"
 	call Print_par_y_2D()
+	!print*, "C4"
 	call Print_par_1D()
-	
+	!print*, "C1"
 	
 	! Body of PRINT_ALL
 	
@@ -8075,7 +8086,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 315! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 316! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -8088,7 +8099,7 @@
 		! 315 перед тем, как перестроить сетку
 		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = -2 ! Выбираем шаг, который делаем
+		step = 1 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8152,14 +8163,17 @@
             par_m_O = 20! 17      ! Количество лучей O в плоскости
             par_m_K = 14! 7      ! Количество лучей K в плоскости
             ! Количество точек по лучам A
-            par_n_TS =  52! 26                    ! Количество точек до TS (TS включается)
-            par_n_HP =  82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
-            par_n_BS =  152! 60! 5                 ! Количество точек BS (BS включается)
-            par_n_END = 167! 72! 6                ! Количество точек до конца сетки (конец включается)
+            par_n_TS =  57! 52! 26                    ! Количество точек до TS (TS включается)
+            par_n_HP =  97! 82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
+            par_n_BS =  137! 152! 60! 5                 ! Количество точек BS (BS включается)
+            par_n_END = 152! 167! 72! 6                ! Количество точек до конца сетки (конец включается)
             par_n_IA =  34! 12                   ! Количество точек, которые входят во внутреннюю область
 	        par_n_IB =  36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			par_kk1 = 2.0_8
-			par_kk14 = 2.0_8
+			par_kk14 = 0.5_8
+			par_kk12 = 1.3
+			par_kk13 = 1.7
+			par_kk2 = 1.7
 			
 			call Set_STORAGE()                 ! Выделяем память под все массивы программы
             call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
@@ -8209,9 +8223,13 @@
 			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
+			print*, "A"
 			call Int2_Read_bin(name)
+			print*, "B"
 			call Int2_Re_interpol()
+			print*, "C"
 			call Int2_Dell_interpolate()
+			print*, "D"
 			
 			call PRINT_ALL()
 			print*, "Save"

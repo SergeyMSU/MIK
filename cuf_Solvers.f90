@@ -704,7 +704,7 @@
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
 			!return
-			kkk = 360.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			kkk = 12.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!if(j < 15) kkk = 6.0
 			! Контакт
 			if (.True.) then !(j < N2 - 3) then
@@ -1365,7 +1365,7 @@
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
 		par_kk1 => dev_par_kk1, par_kk2 => dev_par_kk2, par_R_END => dev_par_R_END, par_kk12 => dev_par_kk12, &
-		par_kk13 => dev_par_kk13
+		par_kk13 => dev_par_kk13, par_al1 => dev_par_al1, par_kk14 => dev_par_kk14
 	use GEO_PARAM
 	use cudafor
 	
@@ -1401,7 +1401,7 @@
             
         ! Вычисляем координаты текущего луча в пространстве
         the = (j - 1) * par_pi_8/2.0/(N2 - 1)
-        phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
+        phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
         ! TS
         yzel = gl_RAY_A(par_n_TS, j, k)
@@ -1503,37 +1503,27 @@
             ! до TS
 			if (i <= par_n_IB) then  ! NEW
 					if(i == 2) then
-							r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
-							if(r < 0.0) then
-								print*, "Error iouihjgfdcydygy w324423ewdf "
-								STOP
-							end if
+						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+						if(r < 0.0) then
+							print*, "Error iouihjgfdcydygy  ", r
+							STOP
+						end if
 					else
-                        r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+						r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
 					end if
-                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
 			else if (i <= par_n_TS) then  
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
-            !if (i <= par_n_TS) then  ! До расстояния = R_TS
-            !    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
-            else if (i <= par_n_HP) then  
-                r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-			else if (i == par_n_HP + 1) then 
-				rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-				r = R_HP + (R_HP - rd)
+				r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
+			else if (i <= par_n_HP) then  
+				r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
 			else if (i <= par_n_BS) then 
-				rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-				rd = R_HP + (R_HP - rd)
-				r = rd + (R_BS - rd) * sgushenie_1( 1.0_8 * (i - par_n_HP - 1)/(par_n_BS - par_n_HP - 1), kk13 )
-				!r = R_HP + (R_BS - R_HP) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
-                !r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
-            else
-                r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
+				r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**kk13
+			else
+				r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
 			end if
 			
-			if (i == par_n_TS - 1) then
-					r = R_TS - 0.5               
-			end if
+			!if (i == par_n_TS - 1) then
+			!		r = R_TS - 0.5               
+			!end if
 			
 
             ! Записываем новые координаты
@@ -1568,7 +1558,8 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_triple_point => dev_par_triple_point, &
 		par_n_IA => dev_par_n_IA, par_n_IB => dev_par_n_IB, par_R_inner => dev_par_R_inner, &
-		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12, par_triple_point_2 => dev_par_triple_point_2
+		par_kk1 => dev_par_kk1, par_kk12 => dev_par_kk12, par_triple_point_2 => dev_par_triple_point_2, &
+		par_kk14 => dev_par_kk14
 	use GEO_PARAM
 	use cudafor
 	
@@ -1579,7 +1570,7 @@
     real(8), device :: vel(3), ER(3), ER2(3), KORD(3), ER3(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r, r1, the2
+    real(8), device :: the, phi, r, r1, the2, kk13
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1667,22 +1658,22 @@
 					end if
                     !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
-                !if (i <= par_n_TS) then  ! До расстояния = R_TS
-                !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
                 else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 					
-                    r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+					r1 = R_TS
+                    !r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+                    r =  R_HP * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
 					gl_x2(yzel, now2) = R_TS * cos(the) + r * cos(the2)
 					gl_y2(yzel, now2) = R_TS * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
 					gl_z2(yzel, now2) = R_TS * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
 					CYCLE
 				end if
 				
-				if (i == par_n_TS - 1) then
-					r = R_TS - 0.5               
-				end if
+				!if (i == par_n_TS - 1) then
+				!	r = R_TS - 0.5               
+				!end if
 
                 ! Записываем новые координаты
                 gl_x2(yzel, now2) = r * cos(the)
@@ -1714,7 +1705,7 @@
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_kk2 => dev_par_kk2, &
-		par_R_END => dev_par_R_END
+		par_R_END => dev_par_R_END, par_kk13 => dev_par_kk13
 	use GEO_PARAM
 	use cudafor
 	
@@ -1725,7 +1716,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r,  x, y, z, rr, rd
+    real(8), device :: the, phi, r,  x, y, z, rr, rd, kk13, xx, x2
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1754,10 +1745,10 @@
                 z = gl_z2(gl_RAY_B(par_n_HP, j, k), now2)
                 rr = (y**2 + z**2)**(0.5)
 				
-				y = gl_y2(gl_RAY_B(par_n_HP - 1, j, k), now2)
-                z = gl_z2(gl_RAY_B(par_n_HP - 1, j, k), now2)
-                rd = (y**2 + z**2)**(0.5)
-				rr = rr + (rr - rd)
+				xx = gl_x2(gl_RAY_B(par_n_HP, size(gl_RAY_B(1, :, 1)), k), now2)
+				x2 = gl_x2(gl_RAY_B(par_n_HP, 1, k), now2)
+				
+				kk13 = (par_kk13 - 0.2) * dabs(xx - x)/dabs(xx - x2)  +  (par_kk13 - 0.4) * dabs(x - x2)/dabs(xx - x2)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -1771,10 +1762,8 @@
                 
                 yzel = gl_RAY_C(i, j, k)
 
-				if(i == 2) then
-					r = rr
-				else if (i <= par_n_BS - par_n_HP + 1) then
-                    r = rr + (i - 2) * (R_BS - rr)/(par_n_BS - par_n_HP - 1)
+				if (i <= par_n_BS - par_n_HP + 1) then
+                    r = rr + (R_BS - rr) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**kk13
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
@@ -1809,7 +1798,7 @@
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
 		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_m_BC => dev_par_m_BC, &
 		par_kk2 => dev_par_kk2, par_kk3 => dev_par_kk3, par_R_END => dev_par_R_END, par_R_LEFT => dev_par_R_LEFT, &
-		par_kk31 => dev_par_kk31
+		par_kk31 => dev_par_kk31, par_kk13 => dev_par_kk13
 	use GEO_PARAM
 	use cudafor
 	
@@ -1882,7 +1871,7 @@
                 yzel = gl_RAY_O(i, j, k)
                 
                 if (i <= par_n_BS - par_n_HP + 1) then
-                    r = R_HP + (i - 1) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+                    r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**(par_kk13 - 0.4)
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
@@ -1993,12 +1982,12 @@
 			end if
             !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i)/(par_n_IB))**par_kk1
         else 
-            r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
+            r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3(DBLE(i - par_n_IB)/(par_n_TS - par_n_IB), par_kk12)
 		end if
 		
-		if (i == par_n_TS - 1) then
-					r = R_TS - 0.5               ! UBRAT
-		end if
+		!if (i == par_n_TS - 1) then
+		!			r = R_TS - 0.5               ! UBRAT
+		!end if
 				
         !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
 
@@ -2147,7 +2136,7 @@
 		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
 		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
 		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END
+		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, par_kk14 => dev_par_kk14
 	use GEO_PARAM
 	use cudafor
 	
@@ -2193,9 +2182,9 @@
 
         yzel = gl_RAY_E(i, j, k)
 
-        gl_x2(yzel, now2) = x + (x2 - x) * (i - 1)/(N1 - 1)
-        gl_y2(yzel, now2) = y + (y2 - y) * (i - 1)/(N1 - 1)
-        gl_z2(yzel, now2) = z + (z2 - z) * (i - 1)/(N1 - 1)
+        gl_x2(yzel, now2) = x + (x2 - x) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
+        gl_y2(yzel, now2) = y + (y2 - y) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
+        gl_z2(yzel, now2) = z + (z2 - z) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
                 
     end do
 	
@@ -2798,12 +2787,12 @@
 	!if (gl_Gran_center2(1, gr, now) >= 2.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
-	!if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
-	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
-	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
-	!end if
+	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+		gl_Cell_par(6:8, s1) = qqq1(6:8)
+		gl_Cell_par(6:8, s2) = qqq2(6:8)
+	end if
 	
 	
 	if (.False. .and. par_TVD == .True.) then
@@ -4601,13 +4590,13 @@
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
 	
-	!if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
-	!	!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
-	!	!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
-	!	
-	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
-	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
-	!end if
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+		!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
+		!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
+		
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	end if
 	
             
             ! Нужно вычислить скорость движения грани

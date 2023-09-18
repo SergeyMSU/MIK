@@ -42,6 +42,7 @@ module MY_CUDA
 	real(8), constant ::  dev_par_R_LEFT
 	real(8), constant ::  dev_par_al1
 	real(8), constant ::  dev_par_kk13
+	real(8), constant ::  dev_par_kk14
 	
 	
 	integer(4), device :: dev_mutex_1
@@ -425,6 +426,7 @@ module MY_CUDA
 		 dev_par_R_LEFT = par_R_LEFT
 		 dev_par_al1 = par_al1
 		 dev_par_kk13 = par_kk13
+		 dev_par_kk14 = par_kk14
 		 
 	end subroutine Send_data_to_Cuda
 	

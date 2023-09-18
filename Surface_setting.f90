@@ -372,7 +372,7 @@ module Surface_setting
 	real(8), intent(in) :: dr  ! Шаг движения
 	real(8) :: R_TS, proect, vel(3), R_HP, R_BS, KORD(3), dist, ddt, ER(3)
     integer :: yzel, N1, N2, N3, i, j, k, yzel2
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13, kk14, kk15
 	
 	! Body of Set_surf
 	
@@ -438,7 +438,7 @@ module Surface_setting
                 yzel = gl_RAY_A(i, j, k)
                 ! Вычисляем координаты точки на луче
 				
-				kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * (the/(par_pi_8/2.0))**2
+				kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  (par_kk13 - 0.2) * (the)/(par_pi_8/2.0)
 
                 ! до TS
 				if (i <= par_n_IB) then  ! NEW
@@ -451,29 +451,16 @@ module Surface_setting
 						else
 							r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
 						end if
-						!r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
 				else if (i <= par_n_TS) then  
-						r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
-				!if (i <= par_n_TS) then  ! До расстояния = R_TS
-				!    r =  par_R0 + (R_TS - par_R0) * (DBLE(i)/par_n_TS)**par_kk1
+					r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
 				else if (i <= par_n_HP) then  
-					r = R_TS + (i - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-				else if (i == par_n_HP + 1) then 
-					rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-					r = R_HP + (R_HP - rd)
+					r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
 				else if (i <= par_n_BS) then 
-					rd = R_TS + (par_n_HP - 1 - par_n_TS) * (R_HP - R_TS)/(par_n_HP - par_n_TS)
-					rd = R_HP + (R_HP - rd)
-					r = rd + (R_BS - rd) * sgushenie_1( 1.0_8 * (i - par_n_HP - 1)/(par_n_BS - par_n_HP - 1), kk13 )
-					!r = R_HP + (R_BS - R_HP) * angle_cilindr( 1.0_8 * (i - par_n_HP)/(par_n_BS - par_n_HP), kk13 )
-					!r = R_HP + (i - par_n_HP) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+					r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**kk13
 				else
 					r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
 				end if
 				
-				if (i == par_n_TS - 1) then
-					r = R_TS - 0.5               
-				end if
 
                 ! Записываем новые координаты
                 gl_x(yzel) = r * cos(the)
@@ -546,25 +533,23 @@ module Surface_setting
 					else
                         r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
 					end if
-                    !r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
                 else if (i <= par_n_TS) then  ! До расстояния = R_TS
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
-                !if (i <= par_n_TS) then  ! До расстояния = R_TS
-                !    r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
+                    r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
 				else if (i <= par_n_HP) then  ! До расстояния = par_R_character * 1.3
                     !r = R_TS + (i - par_n_TS) * (R_HP - R_TS) /(par_n_HP - par_n_TS)
 					
-					r1 = par_R_inner + (R_TS - par_R_inner)
-                    r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+					r1 = R_TS
+                    !r =  (i - par_n_TS) * (R_HP) /(par_n_HP - par_n_TS)
+                    r =  R_HP * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
 					gl_x(yzel) = r1 * cos(the) + r * cos(the2)
 					gl_y(yzel) = r1 * sin(the) * cos(phi) + r * sin(the2) * cos(phi)
 					gl_z(yzel) = r1 * sin(the) * sin(phi) + r * sin(the2) * sin(phi)
 					CYCLE
 				end if
 				
-				if (i == par_n_TS - 1) then
-					r = R_TS - 0.5               
-				end if
+				!if (i == par_n_TS - 1) then
+				!	r = R_TS - 0.5               
+				!end if
 
                 ! Записываем новые координаты
                 gl_x(yzel) = r * cos(the)
@@ -594,11 +579,16 @@ module Surface_setting
                 z = gl_z(gl_RAY_B(par_n_HP, j, k))
                 rr = (y**2 + z**2)**(0.5)
 				
+				xx = gl_x(gl_RAY_B(par_n_HP, size(gl_RAY_B(1, :, 1)), k))
+				x2 = gl_x(gl_RAY_B(par_n_HP, 1, k))
 				
-				y = gl_y(gl_RAY_B(par_n_HP - 1, j, k))
-                z = gl_z(gl_RAY_B(par_n_HP - 1, j, k))
-                rd = (y**2 + z**2)**(0.5)
-				rr = rr + (rr - rd)
+				kk13 = (par_kk13 - 0.2) * dabs(xx - x)/dabs(xx - x2)  +  (par_kk13 - 0.4) * dabs(x - x2)/dabs(xx - x2)
+				
+				
+				!y = gl_y(gl_RAY_B(par_n_HP - 1, j, k))
+    !            z = gl_z(gl_RAY_B(par_n_HP - 1, j, k))
+    !            rd = (y**2 + z**2)**(0.5)
+				!rr = rr + (rr - rd)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
@@ -612,10 +602,11 @@ module Surface_setting
                 
                 yzel = gl_RAY_C(i, j, k)
 
-                if(i == 2) then
-					r = rr
-				else if (i <= par_n_BS - par_n_HP + 1) then
-                    r = rr + (i - 2) * (R_BS - rr)/(par_n_BS - par_n_HP - 1)
+    !            if(i == 2) then
+				!	r = rr
+				!else 
+				if (i <= par_n_BS - par_n_HP + 1) then
+                    r = rr + (R_BS - rr) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**kk13
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
@@ -672,7 +663,7 @@ module Surface_setting
                 yzel = gl_RAY_O(i, j, k)
                 
                 if (i <= par_n_BS - par_n_HP + 1) then
-                    r = R_HP + (i - 1) * (R_BS - R_HP)/(par_n_BS - par_n_HP)
+                    r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**(par_kk13 - 0.4)
                 else
                     r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
                 end if
@@ -730,12 +721,12 @@ module Surface_setting
 					end if
 					!r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
                 else 
-                    r =  par_R_inner + (R_TS - par_R_inner) * (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB))**par_kk12
+                    r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3(DBLE(i - par_n_IB)/(par_n_TS - par_n_IB), par_kk12)
 				end if
 				
-				if (i == par_n_TS - 1) then
-					r = R_TS - 0.5              
-				end if
+				!if (i == par_n_TS - 1) then
+				!	r = R_TS - 0.5              
+				!end if
 					
                 !r =  par_R0 + (R_TS - par_R0) * (REAL(i, KIND = 4)/par_n_TS)**par_kk1
 
@@ -826,9 +817,9 @@ module Surface_setting
 
                 yzel = gl_RAY_E(i, j, k)
 
-                gl_x(yzel) = x + (x2 - x) * (i - 1)/(N1 - 1)
-                gl_y(yzel) = y + (y2 - y) * (i - 1)/(N1 - 1)
-                gl_z(yzel) = z + (z2 - z) * (i - 1)/(N1 - 1)
+                gl_x(yzel) = x + (x2 - x) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
+                gl_y(yzel) = y + (y2 - y) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
+                gl_z(yzel) = z + (z2 - z) * sgushenie_2(DBLE(i - 1)/(N1 - 1), par_kk14)
             end do
         end do
 	end do
