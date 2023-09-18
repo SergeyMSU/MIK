@@ -902,10 +902,10 @@
 		
 			if (gl_Point_num(yzel) > 0) then
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-				vel = kkk * par_nat_HP * 0.0002 * ( (Ck + 8.0 * Ek)/9.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+				vel = kkk * par_nat_HP * 0.0002 * ( (5.0 * Ck + 8.0 * Ek)/13.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
 			else
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
-				vel = kkk * par_nat_HP * 0.0002 * ( (Ck + 8.0 * Ek)/9.0 - Ak)/Time   !  0.00006
+				vel = kkk * par_nat_HP * 0.0002 * ( (5.0 * Ck + 8.0 * Ek)/13.0 - Ak)/Time   !  0.00006
 			end if
 			
 			else  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2798,14 +2798,12 @@
 	!if (gl_Gran_center2(1, gr, now) >= 2.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
-	if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
-		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-		gl_Cell_par(6:8, s1) = qqq1(6:8)
-		gl_Cell_par(6:8, s2) = qqq2(6:8)
-		
-		
-	end if
+	!if (gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
+	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
+	!end if
 	
 	
 	if (.False. .and. par_TVD == .True.) then
@@ -4602,13 +4600,14 @@
 	
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
-	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
-		!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
-		!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
-		
-		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
-		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
-	end if
+	
+	!if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= par_null_bn_x .and. par_null_bn == .True.) then
+	!	!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
+	!	!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
+	!	
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	!end if
 	
             
             ! Нужно вычислить скорость движения грани

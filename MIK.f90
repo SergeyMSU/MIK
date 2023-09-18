@@ -85,8 +85,8 @@
 	
 	!@cuf attributes(host, device) & 
     real(8) pure function sgushenie_1(x, par_al1)
-	! Функция для неравномерного распределения сетки по углу
 	! x от 0 до 1 и возвращает функция от 0 до 1
+	! Сгущение точек к обоим концам отрезка
     implicit none
     real(8), intent(in) :: x, par_al1
 
@@ -94,6 +94,30 @@
 	
     return
 	end function sgushenie_1
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function sgushenie_2(x, all)
+	! x от 0 до 1 и возвращает функция от 0 до 1
+	! Сгущение точек к обоим концам отрезка (сильнее, чем предыдущая функция)
+    implicit none
+    real(8), intent(in) :: x, all
+
+	sgushenie_2 = all * x - 10 * (-1 + all) * x**3 + 15 * (-1 + all) * x**4 - 6 * (-1 + all) * x**5
+	
+    return
+	end function sgushenie_2
+	
+	!@cuf attributes(host, device) & 
+    real(8) pure function sgushenie_3(x, all)
+	! x от 0 до 1 и возвращает функция от 0 до 1
+	! Сгущение точек к 1
+    implicit none
+    real(8), intent(in) :: x, all
+
+	sgushenie_3 = -(-x + 1)**all + 1.0
+	
+    return
+	end function sgushenie_3
 	
 	!@cuf attributes(host, device) & 
     integer(4) pure function signum(x)
@@ -8061,9 +8085,10 @@
 		! 288 до того, как увеличили число точек в нуле
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
+		! 315 перед тем, как перестроить сетку
 		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1 ! Выбираем шаг, который делаем
+		step = -2 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8134,6 +8159,7 @@
             par_n_IA =  34! 12                   ! Количество точек, которые входят во внутреннюю область
 	        par_n_IB =  36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			par_kk1 = 2.0_8
+			par_kk14 = 2.0_8
 			
 			call Set_STORAGE()                 ! Выделяем память под все массивы программы
             call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
