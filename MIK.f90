@@ -1729,7 +1729,7 @@
     use GEO_PARAM
     implicit none
 
-    integer(4) :: ncell, gr, N1, N2, N3, j, k
+    integer(4) :: ncell, gr, N1, N2, N3, j, k, ncell2
     real(8) :: qqq(9), dist, dist2
     
     
@@ -1759,6 +1759,14 @@
     N3 = size(gl_Cell_A(1, 1, :))
     N2 = size(gl_Cell_A(1, :, 1))
     N1 = size(gl_Cell_A(:, 1, 1))
+	
+	!do k = 1, N3
+ !       do j = 1, 5
+ !           ncell = gl_Cell_A(par_n_TS, j, k)
+ !           ncell2 = gl_Cell_A(par_n_TS + 1, j, k)
+	!		gl_Cell_par(:, ncell) = gl_Cell_par(:, ncell2)
+ !       end do
+ !   end do
     
     
     do k = 1, N3
@@ -6914,7 +6922,7 @@
             c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
             m = gl_Cell_A(i, j, kk)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -6926,7 +6934,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -6938,7 +6946,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -6954,7 +6962,7 @@
             m = gl_Cell_A(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -6966,7 +6974,7 @@
             m = gl_Cell_B(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -6978,7 +6986,7 @@
             m = gl_Cell_C(i, j, kk)
             c = gl_Cell_center(:, m)
             Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
-            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m )), gl_Cell_Volume(m), Mach, &
+            write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
 				gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
 				gl_Cell_par_MF(:, :, m)
         end do
@@ -8086,7 +8094,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 318! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 335! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC

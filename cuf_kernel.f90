@@ -984,7 +984,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 12 * 40000! 40000
+	all_step = 1 * 26000! 40000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1256,7 +1256,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 55000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
+	if (mod(step, 20000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1285,7 +1285,7 @@ module MY_CUDA
 		call Print_par_1D()
 	end if
 	
-	if (mod(step, 300000) == 0) then
+	if (mod(step, 20000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

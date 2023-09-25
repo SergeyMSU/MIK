@@ -286,7 +286,7 @@
         SR_1=dmax1( (vR(1)+cfR),(vC1+cfC) )
         SL_2=dmin1( (vL(1)-cfL),(vR(1)-cfR) )
         SR_2=dmax1( (vL(1)+cfL),(vR(1)+cfR) )
-              oo = 0.75d0
+              oo = 0.70d0  !0.75
               oo1= 1.d0-oo
           SL= oo*SL_1 + oo1*SL_2
           SR= oo*SR_1 + oo1*SR_2
@@ -625,6 +625,8 @@
 			 end if
 		  else
 			  write(*, *) "ERROR 8903372yhe2ue3wofike"
+			  write(*, *) r1, u1, v1, w1, p1, bx1, by1, bz1
+			  write(*, *) r2, u2, v2, w2, p2, bx2, by2, bz2
 			  stop
 		   endif
 		   

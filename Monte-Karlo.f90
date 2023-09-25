@@ -96,7 +96,8 @@ module Monte_Karlo
 		STOP
 	end if
 	
-	call Get_sensor(mpi_rank) ! —читали датчики случайных чисел
+	!call Get_sensor(mpi_rank) ! —читали датчики случайных чисел
+	call Get_sensor_sdvig()
 	
 	!$omp parallel
 	
@@ -281,6 +282,12 @@ module Monte_Karlo
 	do i = 2, par_n_potok
 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
 	end do
+	
+	! ѕечатаем результаты в файл дл€ последующего суммировани€
+	open(2, file = "M-K_param_1.txt")
+	WRITE (2, MK_N * par_n_claster) 
+	WRITE (2, M_K_Moment(:, :, :, 1)) 
+	close(2)
 	
 	! —ложим все MPI потоки
 	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
@@ -2055,6 +2062,45 @@ end function MK_f2
 	close(1)
 	
 	end subroutine Get_sensor
+	
+	
+	subroutine Get_sensor_sdvig(sdvig)
+	! —читываем датчики случайных чисел из файла
+	! Variables
+	integer, intent(in) :: sdvig
+	logical :: exists
+	integer(4) :: i, a, b, c, j
+    
+	
+    inquire(file="rnd_my.txt", exist=exists)
+    
+    if (exists == .False.) then
+		pause "net faila!!!  345434wertew21313edftr3e"
+        STOP "net faila!!!"
+    end if
+	
+	if (par_n_claster * par_n_potok * 2 > 1021) then
+		print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
+		pause
+	end if
+	
+	open(1, file = "rnd_my.txt", status = 'old')
+    
+	do i = 1, sdvig
+		read(1,*) a, b, c
+		read(1,*) a, b, c
+	end do
+	
+	do i = 1, par_n_potok
+		read(1,*) a, b, c
+		sensor(:, 1, i) = (/ a, b, c /)
+		read(1,*) a, b, c
+		sensor(:, 2, i) = (/ a, b, c /)
+	end do
+	
+	close(1)
+	
+	end subroutine Get_sensor_sdvig
 	
 end module Monte_Karlo 
 	
