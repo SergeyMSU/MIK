@@ -97,7 +97,7 @@ module Monte_Karlo
 	end if
 	
 	!call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
-	call Get_sensor_sdvig()
+	call Get_sensor_sdvig(116)
 	
 	!$omp parallel
 	
@@ -284,11 +284,12 @@ module Monte_Karlo
 	end do
 	
 	! Печатаем результаты в файл для последующего суммирования
-	open(2, file = "M-K_param_1.txt")
-	WRITE (2, MK_N * par_n_claster) 
-	WRITE (2, M_K_Moment(:, :, :, 1)) 
-	close(2)
-	
+	open(3, file = "M-K_param_005.bin", FORM = 'BINARY')
+	no = 1.0_8 * MK_N * par_n_claster
+	WRITE(3) no
+	WRITE(3) M_K_Moment(:, :, :, 1)
+	close(3)
+	no = MK_Mu_mult * MK_N * par_n_claster
 	! Сложим все MPI потоки
 	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
 	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
@@ -436,6 +437,168 @@ module Monte_Karlo
 	end if
 	
 	end subroutine M_K_start
+	
+	subroutine M_K_sum()
+	
+	USE OMP_LIB
+	!$MPI include 'mpif.h'
+	! Variables
+	integer(4) :: num, i, j, pp
+	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
+	character(len=3) :: name
+	real(8) :: no, N, N1
+	logical :: exists
+	
+	call M_K_Set()    ! Создали массивы
+	
+	
+	! Собираем результаты со всех файлов
+	
+	M_K_Moment(:, :, :, 1) = 0.0
+	N = 0
+	
+	do num = 1, 5
+		write(unit = name, fmt='(i3.3)') num
+		inquire(file="M-K_param_" // name // ".bin", exist=exists)
+		if (exists == .False.) then
+			pause "net faila!!!"
+			STOP "net faila!!!"
+		end if
+		open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		read(2)  N1
+		N = N + N1
+		close(2)
+	end do
+	
+	do num = 1, 5
+		write(unit = name, fmt='(i3.3)') num
+    
+		inquire(file="M-K_param_" // name // ".bin", exist=exists)
+    
+		if (exists == .False.) then
+			pause "net faila!!!"
+			STOP "net faila!!!"
+		end if
+    
+		open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+    
+		read(2)  N1
+		read(2)  M_K_Moment(:, :, :, 2)
+		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, 2) * (N1/N)
+		close(2)
+	end do
+	
+	M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1)/N
+	
+	
+	! Бежим по всем тетраэдрам и нормируем моменты
+	do i = 1, size(M_K_Moment(1, 1, :, 1))
+		
+		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+		
+		if( int2_all_Volume(i) <= 0.00000001) then
+			!print*, "Error  dfgdfgdg89346767809098742577"
+			M_K_Moment(:, 4, i, 1) = 0.0
+			continue
+		end if
+		
+		!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
+		no = int2_all_Volume(i)
+		
+		if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
+				print*, "NaN lj098inbh5dgfdfghed"
+				pause
+		end if
+		
+		M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
+		
+		if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
+				print*, "NaN 098uiknhuuyhjh"
+				pause
+		end if
+
+		do j = 1, par_n_sort
+			if(M_K_Moment(1, j, i, 1) > 0.000001) then
+				M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
+				M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
+					kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
+				
+				if(par_n_moment > 9) then
+					M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)**2
+					M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
+					M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
+					M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(3, j, i, 1)**2
+					M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
+					M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+						M_K_Moment(4, j, i, 1)**2
+					M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
+						M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
+						M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
+						M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				end if
+				
+			end if
+		end do
+		
+		M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
+		M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
+	end do
+	
+	! Вне расчётной области нужно заполнить значения в тетраэдрах
+	loop2: do i = 1, size(M_K_Moment(1, 1, :, 1))
+		do j = 1, 4
+			pp = int2_all_tetraendron_point(j, i)
+			if(pp == 0) CYCLE loop2
+			
+			if((int2_coord(1, pp) >= 0.0 .and. norm2(int2_coord(:, pp)) >= par_Rmax)) then
+				M_K_Moment(:, :, i, 1) = 0.0
+				M_K_Moment(1, 4, i, 1) = 1.0
+				M_K_Moment(5, 4, i, 1) = 1.0
+				M_K_Moment(10, 4, i, 1) = 0.5
+				M_K_Moment(13, 4, i, 1) = 0.5
+				M_K_Moment(15, 4, i, 1) = 0.5
+				M_K_Moment(2, 4, i, 1) = par_Velosity_inf
+				CYCLE loop2
+			end if
+		end do
+	end do loop2
+	
+	
+	! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
+	int2_Moment = 0.0
+	allocate(vol_sr(size(int2_Moment(1, 1, :))))
+	vol_sr = 0.0
+	
+	do i = 1, size(M_K_Moment(1, 1, :, 1))        ! Бежим по тетраэрам
+		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+		do j = 1, 4
+			pp = int2_all_tetraendron_point(j, i)
+			vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
+			int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i, 1) * int2_all_Volume(i)
+		end do
+	end do
+	
+	do i = 1, size(int2_Moment(1, 1, :))
+		if(vol_sr(i) <= 0.0000001) then
+			int2_Moment(:, :, i) = 0.0
+			int2_Moment(1, 4, i) = 1.0
+			int2_Moment(5, 4, i) = 1.0
+			int2_Moment(2, 4, i) = par_Velosity_inf
+			CYCLE
+		end if
+		int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
+	end do
+	
+	deallocate(vol_sr)
+	
+	end subroutine M_K_sum
 	
 	subroutine M_K_init()
 	! Variables

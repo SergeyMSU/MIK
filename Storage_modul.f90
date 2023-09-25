@@ -58,7 +58,7 @@
 	real(8), parameter :: par_1ae = 0.197035_8
 	
 	! Параметры для Монте-Карло
-	integer(4), parameter :: par_n_potok = 32! 32  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_potok = 28! 32  ! Число потоков (у каждого потока свой стек)
 	integer(4), parameter :: par_n_parallel = 20  ! Для распараллеливания цикла (т.е. каждый поток будет в среднем обрабатывать
 	integer(4), parameter :: par_n_claster = 1  ! Число компьютеров (для MPI)
 	! такое число итераций
@@ -72,12 +72,13 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_mul1 = 70! 70!108
-	integer(4), parameter :: MK_k_mul2 = 15! 14!15
-	integer(4), parameter :: MK_N1 = MK_k_mul1 * 600/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
-	integer(4), parameter :: MK_N2 = MK_k_mul1 * 200/par_n_parallel  ! 200
-	integer(4), parameter :: MK_N3 = MK_k_mul2 * 200/par_n_parallel     ! (вылет сзади)
-	integer(4), parameter :: MK_N4 = MK_k_mul1 * 200/par_n_parallel   ! (вылет спереди с цилиндра)
+	integer(4), parameter :: MK_k_multiply = 1! 17   ! 1 = 10 минут счёта
+	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 70!108
+	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 14!15
+	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
+	integer(4), parameter :: MK_N2 = MK_k_mul1 * 20/par_n_parallel  ! 200
+	integer(4), parameter :: MK_N3 = MK_k_mul2 * 20/par_n_parallel     ! (вылет сзади)
+	integer(4), parameter :: MK_N4 = MK_k_mul1 * 20/par_n_parallel   ! (вылет спереди с цилиндра)
 	
     
     integer, parameter :: par_R_int = 70  ! Сколько а.е. не считаем внутри
@@ -419,7 +420,7 @@
 	end subroutine Set_STORAGE
 
 	subroutine Dell_STORAGE()
-	
+	use GEO_PARAM
 	deallocate(gl_RAY_A)
     deallocate(gl_RAY_B)
     deallocate(gl_RAY_C)
@@ -446,6 +447,7 @@
 	deallocate(gl_zone_Cell)
     
     deallocate(gl_Cell_par)
+	if(par_helium) deallocate(gl_Cell_par2)
     deallocate(gl_Cell_par_MF)
 	deallocate(gl_Cell_par_MK)
     
@@ -462,8 +464,10 @@
 	deallocate(gl_Gran_type)
 	deallocate(gl_Gran_scheme)
     deallocate(gl_Gran_POTOK)
+	deallocate(gl_Gran_POTOK2)
     deallocate(gl_Gran_POTOK_MF)
     deallocate(gl_Gran_center)
+	
     
     deallocate(gl_Contact)
     deallocate(gl_TS)

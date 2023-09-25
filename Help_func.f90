@@ -92,8 +92,6 @@
     end if
     
     
-    
-    
     open(1, file = "save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
     
     read(1)  par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_n_TS, par_n_HP, &

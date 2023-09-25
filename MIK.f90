@@ -8094,7 +8094,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 335! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 336! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -8107,7 +8107,7 @@
 		! 315 перед тем, как перестроить сетку
 		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1 ! Выбираем шаг, который делаем
+		step = 2 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8351,21 +8351,31 @@
 			call Save_setka_bin(name + 1)
 			print*, "Save 2"
 			!
-			!call Int2_Dell_interpolate()
-			!print*, "Save 3"
-			!call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-			!print*, "Save 4"
-	  !      call Int2_Initial()			     ! Создание сетки интерполяции
-			!print*, "Save 5"
-			!call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			!print*, "Save 6"
-			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
-			!print*, "Save 7"
-			!!! Сохранение сетки для общего пользования
-		 !   call Int2_Save_interpol_for_all_MHD(name + 1)
-			!!
+			call Int2_Dell_interpolate()
+			print*, "Save 3"
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			print*, "Save 4"
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			print*, "Save 5"
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			print*, "Save 6"
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			print*, "Save 7"
+			!! Сохранение сетки для общего пользования
+		    call Int2_Save_interpol_for_all_MHD(name + 1)
+			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
+			! Создаём все необходимые файлы из файла основной сетки
+			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
+			call Int2_Dell_interpolate()
+			call Dell_STORAGE()
+			
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
 			par_l_phi = 40
@@ -8449,13 +8459,13 @@
 			call M_K_start()
 			call Int2_culc_k()
 			call Helium_on()
-			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
-			call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			
 			! Сохраняем интерполяционный файл - мини - сетки
-			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
-			call Int2_Save_interpol_for_all_MK(name2)
-			call Int_2_Print_par_2D_set()
+			!call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
+			!call Int2_Save_interpol_for_all_MK(name2)
+			!call Int_2_Print_par_2D_set()
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Int2_Read_bin(name2)

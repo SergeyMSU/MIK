@@ -4619,7 +4619,7 @@
 			if(gl_Gran_type(gr) == 1) then
 				n_disc = 2 !2
 				!ydar = .True.
-				wc = 0.0
+				!wc = 0.0
 			end if
 			
 			
