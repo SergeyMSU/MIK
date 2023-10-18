@@ -2881,6 +2881,29 @@
 	
 	end subroutine Int_2_Print_par_2D_set
 	
+	subroutine Int_2_Print_par_1D()  ! Печатает 2Д сетку с линиями в Техплот
+		implicit none
+		integer :: i, num
+		real(8) :: x
+		real(8) :: PAR(9), PAR_MOMENT(par_n_moment, par_n_sort)
+	
+		num = 3
+		open(1, file = '_print_par_1D_interpolate.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4'"
+		write(1,*) ", ZONE T= 'HP'"
+			
+		do i = 1, 2000
+			x = i * par_R_END/2001
+			call Int2_Get_par_fast(x, 0.0_8, 0.0_8, num, PAR, PAR_MOMENT)
+			write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4)
+			write(1, *) " "
+		end do
+		
+			
+		close(1)
+	
+	end subroutine Int_2_Print_par_1D
+	
 	subroutine Int_2_Print_par_2D(A, B, C, D, nn)  ! Печатает 2Д сетку с линиями в Техплот
 	
 		real(8), intent(in) :: A, B, C, D

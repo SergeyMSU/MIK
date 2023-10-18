@@ -70,12 +70,14 @@ module Monte_Karlo
 	real(8) :: start_time, end_time
 	integer mpi_process_Rank, mpi_size_Of_Cluster, mpi_ierror, mpi_rank
 	real(8), allocatable :: buff(:, :, :)  ! ДЛЯ MPI
+	real(8), allocatable :: M_K_Moment_print(:, :, :)
 	!$MPI integer :: mpi_status(MPI_STATUS_SIZE)
 	
 	call M_K_Set()    ! Создали массивы
 	call M_K_init()   ! Инициализируем веса и т.д.
 	
 	print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
+	print*, "MK_k_multiply = ", MK_k_multiply
 	end_time = 0.0
 	start_time = 0.0
 	
@@ -97,7 +99,7 @@ module Monte_Karlo
 	end if
 	
 	!call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
-	call Get_sensor_sdvig(116)
+	call Get_sensor_sdvig(192)
 	
 	!$omp parallel
 	
@@ -284,11 +286,14 @@ module Monte_Karlo
 	end do
 	
 	! Печатаем результаты в файл для последующего суммирования
-	open(3, file = "M-K_param_005.bin", FORM = 'BINARY')
+	open(3, file = "M-K_param_007.bin", FORM = 'BINARY')
 	no = 1.0_8 * MK_N * par_n_claster
+	allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
+	M_K_Moment_print = M_K_Moment(:, :, :, 1)
 	WRITE(3) no
-	WRITE(3) M_K_Moment(:, :, :, 1)
+	WRITE(3) M_K_Moment_print
 	close(3)
+	deallocate(M_K_Moment_print)
 	no = MK_Mu_mult * MK_N * par_n_claster
 	! Сложим все MPI потоки
 	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
@@ -318,8 +323,8 @@ module Monte_Karlo
 		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
 		
 		if( int2_all_Volume(i) <= 0.00000001) then
-			print*, "Error  dfgdfgdg89346767809098742577"
-			print*, M_K_Moment(:, 4, i, 1)
+			!print*, "Error  dfgdfgdg89346767809098742577"
+			!print*, M_K_Moment(:, 4, i, 1)
 			print*, int2_all_Volume(i)
 			continue
 		end if
@@ -448,16 +453,19 @@ module Monte_Karlo
 	character(len=3) :: name
 	real(8) :: no, N, N1
 	logical :: exists
+	real(8), allocatable :: M_K_Moment_print(:, :, :)
 	
 	call M_K_Set()    ! Создали массивы
+	call M_K_init()
 	
 	
 	! Собираем результаты со всех файлов
+	allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
 	
 	M_K_Moment(:, :, :, 1) = 0.0
 	N = 0
 	
-	do num = 1, 5
+	do num = 1, 7
 		write(unit = name, fmt='(i3.3)') num
 		inquire(file="M-K_param_" // name // ".bin", exist=exists)
 		if (exists == .False.) then
@@ -468,9 +476,11 @@ module Monte_Karlo
 		read(2)  N1
 		N = N + N1
 		close(2)
+		
+		print*, "N1 = ", N1
 	end do
 	
-	do num = 1, 5
+	do num = 1, 7
 		write(unit = name, fmt='(i3.3)') num
     
 		inquire(file="M-K_param_" // name // ".bin", exist=exists)
@@ -483,13 +493,15 @@ module Monte_Karlo
 		open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
     
 		read(2)  N1
-		read(2)  M_K_Moment(:, :, :, 2)
-		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, 2) * (N1/N)
+		read(2)  M_K_Moment_print
+		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment_print * (N1/N)
+		
+		print*, "(N1/N) = ", (N1/N), M_K_Moment_print(1, 1, 100), M_K_Moment_print(1, 1, 1000)
 		close(2)
 	end do
 	
-	M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1)/N
-	
+	! M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1)/N
+	deallocate(M_K_Moment_print)
 	
 	! Бежим по всем тетраэдрам и нормируем моменты
 	do i = 1, size(M_K_Moment(1, 1, :, 1))

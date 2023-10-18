@@ -28,13 +28,13 @@
 	real(8) :: par_R_inner = 9.0! 5.0_8     ! До какого расстояния внутренняя сфера
 	
 	
-	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
+	real(8), parameter :: lock_move = 0.01_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = lock_move * 0.3 * 0.01_8 ! 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
 	real(8), parameter :: par_nat_HP = lock_move! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = lock_move * 0.5 ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = lock_move * 0.7 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
@@ -58,7 +58,7 @@
 	real(8), parameter :: par_1ae = 0.197035_8
 	
 	! Параметры для Монте-Карло
-	integer(4), parameter :: par_n_potok = 28! 32  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_potok = 16! 32  ! Число потоков (у каждого потока свой стек)
 	integer(4), parameter :: par_n_parallel = 20  ! Для распараллеливания цикла (т.е. каждый поток будет в среднем обрабатывать
 	integer(4), parameter :: par_n_claster = 1  ! Число компьютеров (для MPI)
 	! такое число итераций
@@ -72,9 +72,9 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 1! 17   ! 1 = 10 минут счёта
-	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 70!108
-	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 14!15
+	integer(4), parameter :: MK_k_multiply = 6 * 5! 17   ! 1 = 10 минут счёта
+	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
+	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
 	integer(4), parameter :: MK_N2 = MK_k_mul1 * 20/par_n_parallel  ! 200
 	integer(4), parameter :: MK_N3 = MK_k_mul2 * 20/par_n_parallel     ! (вылет сзади)

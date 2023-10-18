@@ -8094,7 +8094,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 336! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 5! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -8105,9 +8105,9 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 5 ! 2 ! 2 ! Имя мини-сетки для М-К
+		name2 = 7 ! 2 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 2 ! Выбираем шаг, который делаем
+		step = 1 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8162,14 +8162,14 @@
         print*, "Vypolnyaetsya shag nomer ", step
 		print*, "********************************************************************************************"
 		
-		if(step == -2) then
+		if(step == -2) then  ! Меняем структуру сетки
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
-			par_l_phi = 80
-			par_m_A = 40! 30      ! Количество лучей A в плоскости
-            par_m_BC = 35! 18      ! Количество лучей B/C в плоскости
+			par_l_phi = 40
+			par_m_A = 20! 30      ! Количество лучей A в плоскости
+            par_m_BC = 12! 18      ! Количество лучей B/C в плоскости
             par_m_O = 20! 17      ! Количество лучей O в плоскости
-            par_m_K = 14! 7      ! Количество лучей K в плоскости
+            par_m_K = 8! 7      ! Количество лучей K в плоскости
             ! Количество точек по лучам A
             par_n_TS =  57! 52! 26                    ! Количество точек до TS (TS включается)
             par_n_HP =  97! 82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
@@ -8204,19 +8204,19 @@
 	        	call Surf_Set_surf(10.0_8)
 	        end do
 	        
-	        do i = 1, 35
+	        do i = 1, 45
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 20
+	        do i = 1, 40
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 25
+	        do i = 1, 45
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
-			do i = 1, 35
+			do i = 1, 55
 	        	call Surf_Set_surf(0.003_8)
 			end do
 			
@@ -8241,9 +8241,9 @@
 			
 			call PRINT_ALL()
 			print*, "Save"
-			call Save_param(name + 1)
-			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
-			call Save_setka_bin(name + 1)
+			call Save_param(1)
+			call Surf_Save_bin(1)   ! Сохранение поверхностей разрыва
+			call Save_setka_bin(1)
 			print*, "Save 2"
 			
 		else if(step == -1) then  ! Перестройка сетки (когда поменяли структуру)
@@ -8316,12 +8316,14 @@
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
 			
 			!call Int_2_Print_par_2D_set()
+			call Int_2_Print_par_1D()
+			
 			
 			! Перенормируем параметры плазмы в гелиосфере
 			do i = 1, size(gl_Cell_par(1, :))
 				if(gl_zone_Cell(i) <= 2) then
-					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) / (par_chi/par_chi_real)
-				    gl_Cell_par(1, i) = gl_Cell_par(1, i) * (par_chi/par_chi_real)**2
+					!gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) / (par_chi/par_chi_real)
+				    !gl_Cell_par(1, i) = gl_Cell_par(1, i) * (par_chi/par_chi_real)**2
 				end if
 			end do
 			
@@ -8336,8 +8338,8 @@
 			! Перенормируем параметры плазмы обратно
 			do i = 1, size(gl_Cell_par(1, :))
 				if(gl_zone_Cell(i) <= 2) then
-					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) * (par_chi/par_chi_real)
-				    gl_Cell_par(1, i) = gl_Cell_par(1, i) / (par_chi/par_chi_real)**2
+					!gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) * (par_chi/par_chi_real)
+				    !gl_Cell_par(1, i) = gl_Cell_par(1, i) / (par_chi/par_chi_real)**2
 				end if
 			end do
 			
@@ -8409,19 +8411,19 @@
 	        	call Surf_Set_surf(20.0_8)
 	        end do
 	        
-	        do i = 1, 35
+	        do i = 1, 55
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 10
+	        do i = 1, 20
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 20
+	        do i = 1, 30
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
-			do i = 1, 25
+			do i = 1, 35
 	        	call Surf_Set_surf(0.003_8)
 			end do
 			
@@ -8439,7 +8441,7 @@
 			par_n_moment = 19
 			print*, "End Interpolatiya" 
 			! Печатаем сетку (для просмотра)
-			!call PRINT_ALL()
+			call PRINT_ALL()
 			
 			
 			! Делаем файл интерполяции № 2 из мини-сетки
@@ -8450,22 +8452,25 @@
 			call Int2_Print_setka_2()
 		    call Int2_Print_sosed()
 			
+			
 			call Dell_STORAGE()  ! Удаляем основную сетку (т.к. считается только монте-карло - для экономии памяти)
 			
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
 			call Helium_off()
-			call M_K_start()
+			!call M_K_start()
+			call M_K_sum()
 			call Int2_culc_k()
 			call Helium_on()
 			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+			call Int_2_Print_par_1D()
 			
 			! Сохраняем интерполяционный файл - мини - сетки
-			!call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
-			!call Int2_Save_interpol_for_all_MK(name2)
-			!call Int_2_Print_par_2D_set()
+			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_interpol_for_all_MK(name2)
+			call Int_2_Print_par_2D_set()
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Int2_Read_bin(name2)

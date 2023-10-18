@@ -902,10 +902,10 @@
 		
 			if (gl_Point_num(yzel) > 0) then
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-				vel = kkk * par_nat_HP * 0.0002 * ( (1.0 * Ck + 4.0 * Ek)/5.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+				vel = kkk * par_nat_HP * 0.000001 * ( (1.0 * Ck + 4.0 * Ek)/5.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
 			else
 				!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
-				vel = kkk * par_nat_HP * 0.0002 * ( (1.0 * Ck + 4.0 * Ek)/5.0 - Ak)/Time   !  0.00006
+				vel = kkk * par_nat_HP * 0.000001 * ( (1.0 * Ck + 4.0 * Ek)/5.0 - Ak)/Time   !  0.00002
 			end if
 			
 			else  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1269,7 +1269,7 @@
 		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.0012 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		vel = par_nat_HP * 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
 		
 	else
 		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
@@ -1277,7 +1277,7 @@
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.0012 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.0006
+		vel = par_nat_HP * 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00002 0.0012
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -2510,7 +2510,7 @@
 	end if
         
     call chlld(metod, normal(1), normal(2), normal(3), &
-            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 1)
+            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 2) !1
 	
 		
     dsl = dsl * koef1
@@ -4618,7 +4618,7 @@
 			
 			if(gl_Gran_type(gr) == 1) then
 				n_disc = 2 !2
-				!ydar = .True.
+				ydar = .True.
 				!wc = 0.0
 			end if
 			
@@ -4642,7 +4642,7 @@
 						qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 						qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
 						call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-							wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_)
+							wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_)
 					else
 						! Нужно правильно посчитать конвективный снос
 						if(dsc >= wc) then
@@ -4654,7 +4654,7 @@
 				end if
 			else
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .True., konvect_ = konvect_, n_disc = n_disc, ydar_ = ydar)
+                wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_, n_disc = n_disc, ydar_ = ydar)
 			end if
 			
 	
@@ -5306,7 +5306,7 @@
  
  
         call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
-            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .True., konvect_ = konvect_)
+            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .False., konvect_ = konvect_)
         time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
         gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
 		gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square(gr)
