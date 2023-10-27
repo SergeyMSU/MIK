@@ -366,10 +366,10 @@
 		
 		if (gl_Point_num(yzel) > 0) then
 			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-			vel = par_nat_HP * 0.003 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+			vel = par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
 		else
-			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
-			vel = par_nat_HP * 0.003 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
+			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
+			vel = par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
 		end if
 			
 	if(.False.) then ! Старая версия
@@ -693,9 +693,9 @@
 			Ck(1), Ck(2), Ck(3))
 			
 			if (gl_Point_num(yzel) > 0) then
-			    vel = 10.0 * gl_Point_num(yzel) * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
+			    vel = 0.5 * gl_Point_num(yzel) * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt  ! 10.0   ->  1.0
 			else
-				vel = 10.0 * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
+				vel = 0.5 * par_nat_TS * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt
 			end if
 			
 			
@@ -2467,7 +2467,7 @@
 	
 	if (i > Num) return
 	
-	metod = 3 
+	metod = 1 
 	www = 0.0
 	
 		
@@ -2480,7 +2480,7 @@
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
 	
-	if(.True.) then !(gl_Gran_center2(1, gr, now) > -5.0) then
+	if (.True.) then!(gl_Gran_center2(1, gr, now) > -5.0) then
 	
 		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 		df1 = norm2(rast)
@@ -2510,7 +2510,7 @@
 	end if
         
     call chlld(metod, normal(1), normal(2), normal(3), &
-            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 2) !1
+            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 1) !2
 	
 		
     dsl = dsl * koef1
@@ -2773,7 +2773,7 @@
 	
 	if (i > Num) return
 	
-	metod = 3
+	metod = 0!3
 	www = 0.0
 	
 
@@ -2788,12 +2788,12 @@
 	!if (gl_Gran_center2(1, gr, now) >= 2.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
-	if (gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
-		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-		gl_Cell_par(6:8, s1) = qqq1(6:8)
-		gl_Cell_par(6:8, s2) = qqq2(6:8)
-	end if
+	!if (gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
+	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
+	!end if
 	
 	
 	if (.False. .and. par_TVD == .True.) then
@@ -2854,7 +2854,7 @@
         
 	dsc = 0.0_8
 	
-	if (par_null_bn == .True. .and. gl_Gran_center2(1, gr, now) >= 0.0) then
+	if (.False.) then!(par_null_bn == .True. .and. gl_Gran_center2(1, gr, now) >= 0.0) then
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
@@ -4232,8 +4232,8 @@
 	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 	dist = norm2(distant)
 	
-	tvd1 = (gl_zone_Cell(s1) == 1) 
-	!tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
+	!tvd1 = (gl_zone_Cell(s1) == 1) 
+	tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
 	
 	! Попробуем снести плотность пропорционально квадрату
             if (.False.) then !if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -4331,8 +4331,8 @@
                 end if
 	end if
 	
-	tvd2 = (gl_zone_Cell(s2) == 1) !
-	!tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
+	!tvd2 = (gl_zone_Cell(s2) == 1) !
+	tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
 	
 	! Делаем ТВД
 	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
@@ -4353,10 +4353,10 @@
 				qqq11_2 = gl_Cell_par2(:, ss1)
 				qqq22_2 = gl_Cell_par2(:, ss2)
 				
-				tvd3 = (gl_zone_Cell(ss1) == 1) 
-				!tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
-				tvd4 = (gl_zone_Cell(ss2) == 1) !
-				!tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
+				!tvd3 = (gl_zone_Cell(ss1) == 1) 
+				tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
+				!tvd4 = (gl_zone_Cell(ss2) == 1) !
+				tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
 				
 				if(tvd1 == .True. .and. tvd2 == .False.) then
 					rad1 = norm2(gl_Cell_center2(:, s1, now))                              
@@ -4465,15 +4465,15 @@
 						qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1), -df1, konvect_(1, 1), df2, konvect_(2, 1), 0.0_8)
 						qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1), -df2, konvect_(2, 1), df1, konvect_(1, 1), 0.0_8)
 					
-						if(gl_zone_Cell(s2) /= gl_zone_Cell(ss2) .and. gl_zone_Cell(s2) /= 4 .and. gl_zone_Cell(ss2) /= 4) then
-							qqq2_TVD = qqq2
-							qqq2_TVD_2(1) = konvect_(2, 1)
-						end if
-					
-						if(gl_zone_Cell(s1) /= gl_zone_Cell(ss1) .and. gl_zone_Cell(s1) /= 4 .and. gl_zone_Cell(ss1) /= 4) then
-							qqq1_TVD = qqq1
-							qqq1_TVD_2(1) = konvect_(1, 1)
-						end if
+						!if(gl_zone_Cell(s2) /= gl_zone_Cell(ss2) .and. gl_zone_Cell(s2) /= 4 .and. gl_zone_Cell(ss2) /= 4) then
+						!	qqq2_TVD = qqq2
+						!	qqq2_TVD_2(1) = konvect_(2, 1)
+						!end if
+					 !
+						!if(gl_zone_Cell(s1) /= gl_zone_Cell(ss1) .and. gl_zone_Cell(s1) /= 4 .and. gl_zone_Cell(ss1) /= 4) then
+						!	qqq1_TVD = qqq1
+						!	qqq1_TVD_2(1) = konvect_(1, 1)
+						!end if
 					end if
 					
 				else
@@ -4590,7 +4590,7 @@
 	
 	! На ударной волне не делаем снос справа
 	if(gl_Gran_type(gr) == 1) then ! .and. gl_Gran_center2(1, gr, now) <= -5.0) then
-		!qqq1 = gl_Cell_par(:, s1)
+		!qqq1 = gl_Cell_par(:, s1)  !
 		qqq2 = gl_Cell_par(:, s2)
 	end if
 	
@@ -4598,13 +4598,13 @@
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
 	
-	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
-		!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
-		!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
-		
-		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
-		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
-	end if
+	!if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
+	!	!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
+	!	!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
+	!	
+	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	!end if
 	
             
             ! Нужно вычислить скорость движения грани
@@ -4614,16 +4614,25 @@
 			metod = gl_Gran_scheme(gr)
 			
 			
-			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 3 !2
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
 			
-			if(gl_Gran_type(gr) == 1) then
-				n_disc = 2 !2
-				ydar = .True.
-				!wc = 0.0
+			metod = 0
+			
+			if(gl_Gran_center2(1, gr, now) < -200.0) then
+				metod = 1
 			end if
+	
+			
+			!if(gl_Gran_type(gr) == 1) metod = 0 !2
+			
+			!if(gl_Gran_type(gr) == 1) then
+			!	n_disc = 2 !2
+			!	ydar = .True.
+			!	!wc = 0.0
+			!end if
 			
 			
-            if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= 0.0) then ! Для гелиопаузы особая процедура
+            if (.False.) then!(gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= 0.0) then ! Для гелиопаузы особая процедура
 				
 				POTOK = 0.0
 				konvect_(3, 1) = 0.0
@@ -4664,7 +4673,7 @@
             gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
-			if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
+			!if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
 	
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------
@@ -4755,10 +4764,10 @@
                     POTOK2 = POTOK2 + gl_Gran_POTOK2(1, j)
 					sks = sks + gl_Gran_POTOK(10, j)
 					
-					if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
-						POTOK(2:4) = POTOK(2:4) + (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
-							* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
-					end if
+					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
+					!	POTOK(2:4) = POTOK(2:4) + (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
+					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
+					!end if
 					
 					!if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
 					!	sks = sks + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
@@ -4771,10 +4780,10 @@
                     POTOK2 = POTOK2 - gl_Gran_POTOK2(1, j)
 					sks = sks - gl_Gran_POTOK(10, j) !!!!!!!!!!!!!!!!!!!!
 					
-					if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
-						POTOK(2:4) = POTOK(2:4) - (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
-							* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
-					end if
+					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
+					!	POTOK(2:4) = POTOK(2:4) - (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
+					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
+					!end if
 					
 					!if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
 					!	sks = sks - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
@@ -4789,8 +4798,8 @@
  
             ! Определяем зону в которой находимся
             if(qqq(9)/qqq(1) < 50.0) then
-                !if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
-				if(gl_zone_Cell(gr) == 1) then
+                if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
+				!if(gl_zone_Cell(gr) == 1) then
                     zone = 1
                 else
                     zone = 2
@@ -4850,8 +4859,8 @@
 						! qqq(1), time * POTOK(1) / Volume2
 					!write(*, *) qqq(1), Q3
 					!write(*, *) Volume , Volume2
-					ro3 = qqq(1) * 0.8
-					Q3 = (qqq(9)/qqq(1)) * qqq(1) * 0.8
+					ro3 = 0.16
+					Q3 = (qqq(9)/qqq(1)) * 0.16
 				end if
 				
 				if(gl_Cell_par2(1, gr) <= 0.0) then
