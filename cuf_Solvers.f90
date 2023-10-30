@@ -209,6 +209,7 @@
 	
 	
 	 ! Контакт
+	if(.False.) then
 		yzel = gl_RAY_A(par_n_HP, j, k)
 		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 		
@@ -371,8 +372,9 @@
 			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
 			vel = par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
 		end if
+	end if
 			
-	if(.False.) then ! Старая версия
+	if(.True.) then ! Старая версия
 		yzel = gl_RAY_A(par_n_HP, j, k)
 		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 		r = norm2(Ak)
@@ -415,9 +417,24 @@
 	
 		!dist = max(dist, 1.0_8)
 		
-		k1 = 1.0
-		if(j <= 6) k1 = 2.0   ! 0.03
-			
+		k1 = 0.1
+		if(j <= 8) then
+			k1 = 0.8
+		if (gl_Point_num(yzel) > 0) then
+			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+		
+			vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
+		
+			!vel = k1 * par_nat_HP * 0.003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+		else
+			!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+		
+			vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
+		
+			!vel = k1 * par_nat_HP * 0.003 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.001
+		end if
+	
+		else
 		if (gl_Point_num(yzel) > 0) then
 			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		
@@ -429,8 +446,12 @@
 		
 			!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
 		
-			vel = k1 * par_nat_HP * 0.001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.00006
+			vel = k1 * par_nat_HP * 0.001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.001
 		end if
+	end if
+	
+			
+		
 	
 		!if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
 		!	vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
@@ -704,7 +725,7 @@
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
 			!return
-			kkk = 120.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			kkk = 80.0 !0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!if(j < 15) kkk = 6.0
 			! Контакт
 			if (.True.) then !(j < N2 - 3) then
@@ -1277,7 +1298,7 @@
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = par_nat_HP * 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00002 0.0012
+		vel = par_nat_HP * 0.00001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00001 0.0012
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -2773,7 +2794,7 @@
 	
 	if (i > Num) return
 	
-	metod = 0!3
+	metod = 3!3
 	www = 0.0
 	
 
@@ -2788,12 +2809,12 @@
 	!if (gl_Gran_center2(1, gr, now) >= 2.0) k1 = 0.7 !0.14
 	
 	! Вычтем нормальную компоненту магнитного поля для значений в самой ячейке
-	!if (gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
-	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
-	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
-	!	gl_Cell_par(6:8, s1) = qqq1(6:8)
-	!	gl_Cell_par(6:8, s2) = qqq2(6:8)
-	!end if
+	if (gl_Gran_center2(1, gr, now) > 0.0 .and. par_null_bn == .True.) then
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(normal, qqq1(6:8)) * normal
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(normal, qqq2(6:8)) * normal
+		gl_Cell_par(6:8, s1) = qqq1(6:8)
+		gl_Cell_par(6:8, s2) = qqq2(6:8)
+	end if
 	
 	
 	if (.False. .and. par_TVD == .True.) then
@@ -4598,13 +4619,13 @@
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
 	!if (gl_Gran_type(gr) == 2 .and. sqrt(gl_Gran_center2(2, gr, now)**2 + gl_Gran_center2(3, gr, now)**2) <= 15.0 .and. par_null_bn == .True.) then
 	
-	!if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) < 0.0 .and. par_null_bn == .True.) then
-	!	!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
-	!	!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
-	!	
-	!	qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
-	!	qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
-	!end if
+	if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) > 0.0 .and. par_null_bn == .True.) then
+		!write(*, *) " bn1 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8))
+		!write(*, *) " bn2 = ", DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8))
+		
+		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
+		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
+	end if
 	
             
             ! Нужно вычислить скорость движения грани
@@ -4617,6 +4638,10 @@
 			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
 			
 			metod = 0
+			
+			if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !2
+			
+			!if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 1
 			
 			if(gl_Gran_center2(1, gr, now) < -200.0) then
 				metod = 1
@@ -4673,7 +4698,7 @@
             gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 			
 			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
-			!if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
+			if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
 	
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------

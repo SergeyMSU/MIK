@@ -984,7 +984,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 23000 * 12!3 * 23000! 23000
+	all_step = 23000 * 3!3 * 23000! 23000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
