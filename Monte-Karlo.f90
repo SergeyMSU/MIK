@@ -729,11 +729,11 @@ module Monte_Karlo
 				
 				select case (ijk)
 					case(1)
-						ddt = 1.0/6.0                                      ! Безопасный доступ к памяти
+						ddt = 1.0/6.0                                      
 					case(2)
-						ddt = 5.0/6.0                                     ! Безопасный доступ к памяти
+						ddt = 5.0/6.0                                    
 					case(3)
-						ddt = 3.0/6.0                                   ! Безопасный доступ к памяти
+						ddt = 3.0/6.0                                  
 					case default
 						print*, "Error uijkhjgfbnbnn hbuhuefw"
 						STOP
