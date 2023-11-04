@@ -252,19 +252,19 @@
 				
 				
 				! Korolkov
-				if(p_correct == .True.) then
-				    caxL = sqrt(bL(1)**2 / r1)
-				    caxR = sqrt(bR(1)**2 / r2)
-				    caL = sqrt( (bx1**2 + by1**2 + bz1**2)/r1 )
-				    caR = sqrt( (bx2**2 + by2**2 + bz2**2)/r2 )
-				    uuL = u1**2 + v1**2 + w1**2
-				    uuR = u2**2 + v2**2 + w2**2
-				    cuL = sqrt( 0.5 * ( (caL**2 + uuL) + sqrt((caL**2 + uuL)**2 - 4.0 * uuL * caxL**2) ) )
-				    cuR = sqrt( 0.5 * ( (caR**2 + uuR) + sqrt((caR**2 + uuR)**2 - 4.0 * uuR * caxR**2) ) )
-				    cfmax = max(cfL, cfR)
-				    ksi = min(1.0_8, max(cuL, cuR)/cfmax)
-				    phi_p_correct = ksi * (2.0 - ksi)
-				end if
+				!if(p_correct == .True.) then
+				!    caxL = sqrt(bL(1)**2 / r1)
+				!    caxR = sqrt(bR(1)**2 / r2)
+				!    caL = sqrt( (bx1**2 + by1**2 + bz1**2)/r1 )
+				!    caR = sqrt( (bx2**2 + by2**2 + bz2**2)/r2 )
+				!    uuL = u1**2 + v1**2 + w1**2
+				!    uuR = u2**2 + v2**2 + w2**2
+				!    cuL = sqrt( 0.5 * ( (caL**2 + uuL) + sqrt((caL**2 + uuL)**2 - 4.0 * uuL * caxL**2) ) )
+				!    cuR = sqrt( 0.5 * ( (caR**2 + uuR) + sqrt((caR**2 + uuR)**2 - 4.0 * uuR * caxR**2) ) )
+				!    cfmax = max(cfL, cfR)
+				!    ksi = min(1.0_8, max(cuL, cuR)/cfmax)
+				!    phi_p_correct = ksi * (2.0 - ksi)
+				!end if
 				
 
         if(n_disco.eq.1)then
@@ -532,10 +532,10 @@
 	  endif
 	  
 	  ! —гладим —корость     я добавил, не было изначально !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	    vzR(2)=UZ(3)/UZ(1)
-        vzR(3)=UZ(4)/UZ(1)
-        vzL(2)=vzR(2)
-        vzL(3)=vzR(3)
+	    !vzR(2)=UZ(3)/UZ(1)
+     !   vzR(3)=UZ(4)/UZ(1)
+     !   vzL(2)=vzR(2)
+     !   vzL(3)=vzR(3)
 	! ! ! ! ! ! !
 	  
              UZL(1)=rzL
@@ -1181,7 +1181,7 @@
         SR_1=dmax1( (vR(1)+cfR),(vC1+cfC) )
         SL_2=dmin1( (vL(1)-cfL),(vR(1)-cfR) )
         SR_2=dmax1( (vL(1)+cfL),(vR(1)+cfR) )
-              oo = 0.9d0  !0.75
+              oo = 0.75d0  !0.75
               oo1= 1.d0-oo
           SL= oo*SL_1 + oo1*SL_2
           SR= oo*SR_1 + oo1*SR_2

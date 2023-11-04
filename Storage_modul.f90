@@ -7,9 +7,9 @@
     logical, parameter :: par_developer_info = .True.   ! Параметр разработчика для вывода информационных сообщений
 	logical, parameter :: par_TVD = .True.				! Делаем ли ТВД
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
-	logical, parameter :: par_helium = .True.          ! Включаем ои гелий? (под него создаются массивы и т.д.)
+	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
 	
-	 real(8), parameter :: par_null_bn_x = -1200.0_8 !-2500.0_8   ! От какоко расстояния включаем вычитание bn
+	 real(8), parameter :: par_null_bn_x = 0.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
 	
     real(8), parameter :: par_R_character = 35.6505         ! Характерный размер в задаче (расстояние до TS на начальном этапе построения сетки)
@@ -34,7 +34,7 @@
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = lock_move * 0.7 ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = lock_move * 1.0 ! 1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
@@ -88,7 +88,8 @@
     real(8) :: par_kk2 = 2.0_8     ! Степень сгущения в головной области на бесконечности
     real(8) :: par_kk3 = 1.8_8     ! Степень сгущения в хвосте
 	real(8) :: par_kk31 = 1.0_8     ! Степень сгущения в хвосте для точек на контакте (первая точка в О - луче)
-	real(8) :: par_kk13 = 0.5_8     ! Степень сгущения точек в головной области во внешнем ударном слое  от 0 до 1
+	real(8) :: par_kk13 = 1.7_8     ! Степень сгущения точек в головной области во внешнем ударном слое  от 0 до 1
+	                                ! Сгущение куда? 
 	real(8) :: par_kk14 = 1.0_8     ! Степень сгущения точек в головной области во внутреннем ударном слое  от 0 до 1
 	!                                 (сгущение сразу к TS и HP)  
 	real(8) :: par_kk12 = 1.4_8     ! Степень сгущения точек до TS к ударной волне  >= 1
@@ -392,8 +393,8 @@
     gl_Gran_info = 0
     gl_Cell_info = 2
 	gl_Gran_type = 0
-	gl_Gran_scheme = 2
-	!gl_Gran_scheme = 3
+	!gl_Gran_scheme = 2
+	gl_Gran_scheme = 3
 	gl_zone_Cell = 2
 	if(par_helium) gl_Cell_par2 = 0.0
     
