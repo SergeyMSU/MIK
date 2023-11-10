@@ -7,6 +7,7 @@ module Surface_setting
 	USE GEO_PARAM
 	USE STORAGE
 	USE My_func
+	USE MY_CUDA_smooth
 	
 	integer(4) :: Surf_l_phi   ! Количество вращений плоскости 
 	integer(4) :: Surf_m_A      ! Количество лучей A в плоскости
@@ -371,8 +372,9 @@ module Surface_setting
 	! Variables
 	real(8), intent(in) :: dr  ! Шаг движения
 	real(8) :: R_TS, proect, vel(3), R_HP, R_BS, KORD(3), dist, ddt, ER(3)
-    integer :: yzel, N1, N2, N3, i, j, k, yzel2
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13, kk14, kk15
+    integer :: yzel, N1, N2, N3, i, j, k, yzel2, ij
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13, kk14, kk15, dk13
+    real(8) :: yy1, yy2, yy3
 	
 	! Body of Set_surf
 	
@@ -389,7 +391,7 @@ module Surface_setting
             end if
             
             ! Вычисляем координаты текущего луча в пространстве
-            the = (j - 1) * par_pi_8/2.0/(N2 - 1)
+            the = par_pi_8/2.0 * (DBLE(j - 1.0)/(N2 - 1.0))
             phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
             ! TS
@@ -438,29 +440,16 @@ module Surface_setting
                 yzel = gl_RAY_A(i, j, k)
                 ! Вычисляем координаты точки на луче
 				
-				kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  (par_kk13 - 0.2) * (the)/(par_pi_8/2.0)
+				!kk13 = par_kk13 * (1.0 + dabs(the)/18.0)! * (par_pi_8/2.0 - dabs(the))/(par_pi_8/2.0)  +  (par_kk13 - 0.2) * (dabs(the))/(par_pi_8/2.0)
+				!dk13 = 0.1 + (dabs(the)/(par_pi_8/2.0)/2.1)**2
+				
+				dk13 = (R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)) - &
+						(R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - 1 - par_n_TS)/(par_n_HP - par_n_TS), par_kk14))
 
                 ! до TS
-				if (i <= par_n_IB) then  ! NEW
-						if(i == 2) then
-							r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
-							if(r < 0.0) then
-								print*, "Error iouihjgfdcydygy  ", r
-								STOP
-							end if
-						else
-							r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
-						end if
-				else if (i <= par_n_TS) then  
-					r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
-				else if (i <= par_n_HP) then  
-					r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
-				else if (i <= par_n_BS) then 
-					r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**kk13
-				else
-					r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
-				end if
 				
+				r = Setka_A(i, R_TS, R_HP, R_BS, the, dk13, par_R0, par_R_inner, par_n_IB, par_kk1, par_kk12, &
+		par_n_TS, par_n_HP, par_n_BS, par_kk14, par_R_END, par_kk2, par_n_END)
 
                 ! Записываем новые координаты
                 gl_x(yzel) = r * cos(the)
@@ -582,7 +571,7 @@ module Surface_setting
 				xx = gl_x(gl_RAY_B(par_n_HP, size(gl_RAY_B(1, :, 1)), k))
 				x2 = gl_x(gl_RAY_B(par_n_HP, 1, k))
 				
-				kk13 = (par_kk13 - 0.2) * dabs(xx - x)/dabs(xx - x2)  +  (par_kk13 - 0.4) * dabs(x - x2)/dabs(xx - x2)
+				kk13 = (par_kk13 - 0.4) * dabs(xx - x)/dabs(xx - x2)  +  (1.0) * dabs(x - x2)/dabs(xx - x2)
 				
 				
 				!y = gl_y(gl_RAY_B(par_n_HP - 1, j, k))
@@ -601,15 +590,26 @@ module Surface_setting
                 if(i == 1) CYCLE
                 
                 yzel = gl_RAY_C(i, j, k)
+				
+				dk13 = sqrt((gl_x(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k)) - gl_x(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k)))**2 + &
+					(gl_y(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k)) - gl_y(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k)))**2 + &
+					(gl_z(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k)) - gl_z(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k)))**2)
 
     !            if(i == 2) then
 				!	r = rr
 				!else 
-				if (i <= par_n_BS - par_n_HP + 1) then
-                    r = rr + (R_BS - rr) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**kk13
-                else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-                end if
+				
+				!if (i <= 11) then
+    !                r = rr + dk13 * (i - 1)
+				!else if (i <= par_n_BS - par_n_HP + 1) then
+				!	rrr = rr + dk13 * (10)
+				!	r1 = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
+    !                r = rrr + (R_BS - rrr) * (DBLE(i - 11)/(par_n_BS - par_n_HP - 10))**r1
+    !            else
+    !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+				!end if
+				
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr)
                 
                 gl_x(yzel) = x
                 gl_y(yzel) = r * cos(phi)
@@ -629,6 +629,20 @@ module Surface_setting
     do k = 1, N3
         phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
         
+		ij = size(gl_RAY_C(1, :, k))
+		
+		yzel = gl_RAY_C(1, ij, k)
+		yy1 = sqrt(gl_y(yzel)**2 + gl_z(yzel)**2)
+		
+		yzel = gl_RAY_C(2, ij, k)
+		yy2 = sqrt(gl_y(yzel)**2 + gl_z(yzel)**2)
+		
+		yzel = gl_RAY_C(size(gl_RAY_C(:, ij, k)), ij, k)
+		yy3 = sqrt(gl_y(yzel)**2 + gl_z(yzel)**2)
+		
+		dk13 = 2.0 * (yy2 - yy1)/(yy3 - yy1)
+		r1 = log(dk13)/log(1.0/(par_n_BS - par_n_HP - 9))
+		
         do j = 1, N2
             
             yzel = gl_RAY_O(1, j, k)
@@ -658,16 +672,20 @@ module Surface_setting
             R_BS = norm2(KORD)  ! Новое расстояние до BS
 			
 			
-            
+			
             do i = 1, N1
                 yzel = gl_RAY_O(i, j, k)
                 
-                if (i <= par_n_BS - par_n_HP + 1) then
-                    r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**(par_kk13 - 0.4)
-                else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-                end if
-
+				!if (i <= 10) then
+    !                r = R_HP + (i - 1) * dk13 * (R_BS - R_HP)
+				!else if (i <= par_n_BS - par_n_HP + 1) then
+				!	rr = R_HP + 9 * dk13 * (R_BS - R_HP)
+    !                r = rr + (R_BS - rr) * (DBLE(i - 10)/(par_n_BS - par_n_HP - 9))**r1
+    !            else
+    !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+    !            end if
+				
+				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1)
 
                 gl_x(yzel) = x
                 gl_y(yzel) = r * cos(phi)

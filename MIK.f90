@@ -120,6 +120,22 @@
 	end function sgushenie_3
 	
 	!@cuf attributes(host, device) & 
+    real(8) pure function sgushenie_4(x, x0, y0)
+	! x от 0 до 1 и возвращает функция от 0 до 1
+	! Сгущение точек за BS
+    implicit none
+    real(8), intent(in) :: x, x0, y0
+
+	if(x < x0) then
+		sgushenie_4 = (x - x0) * y0/x0 + y0
+	else
+		sgushenie_4 = (1.0 - y0) * (x - x0)/(1.0 - x0) + y0
+	end if
+	
+    return
+	end function sgushenie_4
+	
+	!@cuf attributes(host, device) & 
     integer(4) pure function signum(x)
         implicit none
         real(8), intent(in) :: x
@@ -8090,13 +8106,16 @@
 	    use Interpolate2
 	    use Surface_setting
 	    use Monte_Karlo
-	    integer(4) :: step, name, name2, i
+	    integer(4) :: step, name, name2, i, j, k, ij1, ij2, ij3, ii
 		real(8) :: PAR(9)     ! Выходные параметры
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 151! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 530! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 132 до экспериментов  134  138
+        ! 152 (до того, как поменять сгущение после HP)		
+		! 509 до изменения разрешения на Димино		
+		! 519 до включения газовой динамики на контакте
 		! 249 до фотоионизации
         ! 258 с гелием (только ввёл) до того, как поменять схему	
 		! 259 вторая и третья область HLLC
@@ -8167,22 +8186,22 @@
 		if(step == -2) then  ! Меняем структуру сетки
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
-			par_l_phi = 50
-			par_m_A = 25! 30      ! Количество лучей A в плоскости
-            par_m_BC = 15! 18      ! Количество лучей B/C в плоскости
-            par_m_O = 20! 17      ! Количество лучей O в плоскости
+			par_l_phi = 40
+			par_m_A = 20! 30      ! Количество лучей A в плоскости
+            par_m_BC = 10! 18      ! Количество лучей B/C в плоскости
+            par_m_O = 10! 17      ! Количество лучей O в плоскости
             par_m_K = 8! 7      ! Количество лучей K в плоскости
             ! Количество точек по лучам A
-            par_n_TS =  57! 52! 26                    ! Количество точек до TS (TS включается)
-            par_n_HP =  97! 82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
-            par_n_BS =  137! 152! 60! 5                 ! Количество точек BS (BS включается)
-            par_n_END = 152! 167! 72! 6                ! Количество точек до конца сетки (конец включается)
-            par_n_IA =  34! 12                   ! Количество точек, которые входят во внутреннюю область
-	        par_n_IB =  36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
+            par_n_TS =  33! 57! 52! 26                    ! Количество точек до TS (TS включается)
+            par_n_HP =  63! 87! 82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
+            par_n_BS =  89! 127! 152! 60! 5                 ! Количество точек BS (BS включается)
+            par_n_END = 98! 142! 167! 72! 6                ! Количество точек до конца сетки (конец включается)
+            par_n_IA =  20! 34! 12                   ! Количество точек, которые входят во внутреннюю область
+	        par_n_IB =  22! 36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			par_kk1 = 2.0_8
-			par_kk14 = 0.5_8
-			par_kk12 = 1.3_8
-			par_kk13 = 1.7_8
+			par_kk14 = 1.0_8 !0.5_8
+			par_kk12 = 1.0_8!1.3_8
+			!par_kk13 = 1.7_8
 			par_kk2 = 1.7_8
 			par_al1 = 1.0_8
 			
@@ -8207,19 +8226,19 @@
 	        	call Surf_Set_surf(10.0_8)
 	        end do
 	        
-	        do i = 1, 45
+	        do i = 1, 55
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 40
+	        do i = 1, 50
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 45
+	        do i = 1, 55
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
-			do i = 1, 55
+			do i = 1, 65
 	        	call Surf_Set_surf(0.003_8)
 			end do
 			
@@ -8244,9 +8263,9 @@
 			
 			call PRINT_ALL()
 			print*, "Save"
-			call Save_param(100)
-			call Surf_Save_bin(100)   ! Сохранение поверхностей разрыва
-			call Save_setka_bin(100)
+			call Save_param(510)
+			call Surf_Save_bin(510)   ! Сохранение поверхностей разрыва
+			call Save_setka_bin(510)
 			print*, "Save 2"
 			
 		else if(step == -1) then  ! Перестройка сетки (когда поменяли структуру)
@@ -8320,6 +8339,20 @@
 			
 			!call Int_2_Print_par_2D_set()
 			call Int_2_Print_par_1D()
+			
+			!do ii = 1, 20
+			!    do i = par_n_HP - 6, par_n_HP + 6
+			!	    do j = 1, 20
+			!		    do k = 1, 40
+			!	            ij = gl_Cell_A(i, j, k)
+			!	            ij2 = gl_Cell_A(i-1, j, k)
+			!	            ij3 = gl_Cell_A(i+1, j, k)
+			!			    gl_Cell_par(:, ij) = (gl_Cell_par(:, ij2) + gl_Cell_par(:, ij3))/2.0
+			!		    end do
+			!	    end do
+			!    end do
+			!end do
+			
 			
 			
 			! Перенормируем параметры плазмы в гелиосфере

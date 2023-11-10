@@ -984,7 +984,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! √лавный цикл
-	all_step = 23000 * 7 !3 * 23000! 23000
+	all_step = 23000 * 12 * 4 !3 * 23000! 23000
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1023,6 +1023,7 @@ module MY_CUDA
 
 	
 	if(.True.) then  ! ≈сть ли вообще движение сетки
+	!if(mod(step, 10) == 0) then  ! ≈сть ли вообще движение сетки
 	! —начала вычисл€ем скорости движени€ поверхностей
 	
 	
@@ -1037,10 +1038,10 @@ module MY_CUDA
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
 	
 	
-	Num = size(gl_BS)
-	call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
-	
+	!Num = size(gl_BS)
+	!call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
+	!ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
+	!
 	
 	
 	! ƒелаем три цикла поверхностного нат€жени€ (по разным лучам, как на хосте) -------------------------------------------------------------------------
@@ -1219,7 +1220,7 @@ module MY_CUDA
  !   dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (mod(step, 20000) == 1) then !1
+	if (mod(step, 30000) == 1) then !1
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1261,7 +1262,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 25000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
+	if (mod(step, 20000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

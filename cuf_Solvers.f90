@@ -213,7 +213,7 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	k1 = 1.0
-	if(.True.) then
+	if(.False.) then
 		yzel = gl_RAY_A(par_n_HP, j, k)
 		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 		
@@ -369,20 +369,20 @@
 		!	Ak(1), Ak(2), Ak(3), &
 		!	Dk(1), Dk(2), Dk(3))
 		
-		k1 = 0.1
+		k1 = 0.3  !0.03
 		
-		if(j < 17) k1 = 3.0
+		if(j < 8) k1 = 10.0  ! 3.0
 		
 		if (gl_Point_num(yzel) > 0) then
-			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+			!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
 			vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
 		else
-			!vel = par_nat_HP * 0.006 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
+			!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
 			vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
 		end if
 	end if
 			
-	if(.False.) then ! Старая версия
+	if(.True.) then ! Старая версия
 		yzel = gl_RAY_A(par_n_HP, j, k)
 		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 		r = norm2(Ak)
@@ -425,9 +425,10 @@
 	
 		!dist = max(dist, 1.0_8)
 		
-		k1 = 0.2  ! 0.1
-		if(j <= 8) then
-			k1 = 0.2  !0.001
+		k1 = 0.03  ! 0.1
+		if(j <= 8) k1 = 0.06
+		!	k1 = 0.03  !0.001
+		
 		if (gl_Point_num(yzel) > 0) then
 			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		
@@ -444,21 +445,7 @@
 			
 		end if
 	
-		else
-		if (gl_Point_num(yzel) > 0) then
-			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		
-			!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
-		
-			vel = k1 * par_nat_HP * 0.001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-		else
-			!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		
-			!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
-		
-			vel = k1 * par_nat_HP * 0.001 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.001
-		end if
-	end if
 	
 			
 		
@@ -735,7 +722,7 @@
 			gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 			
 			!return
-			kkk = 65.0 ! 80  0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 45
+			kkk = 130.0 ! 80  0.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 45
 			!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -743,7 +730,7 @@
 			!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			!if(j < 15) kkk = 6.0
 			! Контакт
-			if (.True.) then !(k <= 10.0 .or. k >= 40) then
+			if (.False.) then !(k <= 10.0 .or. k >= 40) then
 			yzel = gl_RAY_B(par_n_HP, j, k)
 			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
 			
@@ -994,10 +981,12 @@
 				!dist = max(dist, 1.0_8)
 				
 				if(j < 9) then
-					kkk = 2.0
-				else
 					kkk = 1.0
+				else
+					kkk = 0.5
 				end if
+				
+				!kkk = 1.0
 			
 				if (gl_Point_num(yzel) > 0) then
 					!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist
@@ -1424,7 +1413,7 @@
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS
     integer:: i, j, k
-    real(8), device :: the, phi, r, kk13, rd
+    real(8), device :: the, phi, r, kk13, rd, dk13
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1448,7 +1437,7 @@
             end if
             
         ! Вычисляем координаты текущего луча в пространстве
-        the = (j - 1) * par_pi_8/2.0/(N2 - 1)
+        the = par_pi_8/2.0 * (DBLE(j - 1.0)/(N2 - 1.0))
         phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
             
         ! TS
@@ -1546,33 +1535,35 @@
             ! Вычисляем координаты точки на луче
 			
 			!kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  1.0 * (the/(par_pi_8/2.0))**2
-			kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  (par_kk13 - 0.2) * (the)/(par_pi_8/2.0)
+			!kk13 = par_kk13 * (par_pi_8/2.0 - the)/(par_pi_8/2.0)  +  (par_kk13 - 0.2) * (the)/(par_pi_8/2.0)
 			
+			dk13 = (R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)) - &
+						(R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - 1 - par_n_TS)/(par_n_HP - par_n_TS), par_kk14))
 
             ! до TS
-			if (i <= par_n_IB) then  ! NEW
-					if(i == 2) then
-						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
-						if(r < 0.0) then
-							print*, "Error iouihjgfdcydygy  ", r
-							STOP
-						end if
-					else
-						r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
-					end if
-			else if (i <= par_n_TS) then  
-				r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
-			else if (i <= par_n_HP) then  
-				r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
-			else if (i <= par_n_BS) then 
-				r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**kk13
-			else
-				r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
-			end if
-			
-			!if (i == par_n_TS - 1) then
-			!		r = R_TS - 0.5               
+			!if (i <= par_n_IB) then  ! NEW
+			!		if(i == 2) then
+			!			r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+			!			if(r < 0.0) then
+			!				print*, "Error iouihjgfdcydygy  ", r
+			!				STOP
+			!			end if
+			!		else
+			!			r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+			!		end if
+			!else if (i <= par_n_TS) then  
+			!	r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
+			!else if (i <= par_n_HP) then  
+			!	r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
+			!else if (i <= par_n_BS) then 
+			!	r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**kk13
+			!else
+			!	r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
 			!end if
+			
+			r = Setka_A(i, R_TS, R_HP, R_BS, the, dk13, par_R0, par_R_inner, par_n_IB, par_kk1, par_kk12, &
+		par_n_TS, par_n_HP, par_n_BS, par_kk14, par_R_END, par_kk2, par_n_END)
+			
 			
 
             ! Записываем новые координаты
@@ -1763,7 +1754,7 @@
 	
 	real(8), device :: Time
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
-	real(8) :: R_TS, proect, R_HP, R_BS
+	real(8) :: R_TS, proect, R_HP, R_BS, dk13
     integer:: i, j, k
     real(8), device :: the, phi, r,  x, y, z, rr, rd, kk13, xx, x2
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
@@ -1804,6 +1795,9 @@
 				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
                 R_BS = norm2(ER)  ! Новое расстояние до BS
 				
+				dk13 = sqrt((gl_x2(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k), now2) - gl_x2(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k), now2))**2 + &
+					(gl_y2(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k), now2) - gl_y2(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k), now2))**2 + &
+					(gl_z2(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k), now2) - gl_z2(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k), now2))**2)
             
             do i = 1, N1
                 
@@ -1811,11 +1805,13 @@
                 
                 yzel = gl_RAY_C(i, j, k)
 
-				if (i <= par_n_BS - par_n_HP + 1) then
-                    r = rr + (R_BS - rr) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**kk13
-                else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-                end if
+				!if (i <= par_n_BS - par_n_HP + 1) then
+    !                r = rr + (R_BS - rr) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**kk13
+    !            else
+    !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+    !            end if
+				
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr)
                 
                 gl_x2(yzel, now2) = x
                 gl_y2(yzel, now2) = r * cos(phi)
@@ -1856,9 +1852,9 @@
 	
 	real(8), device :: Time
     real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
-	real(8) :: R_TS, proect, R_HP, R_BS
-    integer:: i, j, k
-    real(8), device :: the, phi, r, x, xx
+	real(8) :: R_TS, proect, R_HP, R_BS, r1, dk13
+    integer:: i, j, k, ij
+    real(8), device :: the, phi, r, x, xx, yy1, yy2, yy3
     integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1878,6 +1874,22 @@
 	if(k > N3 .or. j > N2) return
 	
 	phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
+	
+	ij = size(gl_RAY_C(1, :, k))
+		
+		yzel = gl_RAY_C(1, ij, k)
+		yy1 = sqrt(gl_y2(yzel, now2)**2 + gl_z2(yzel, now2)**2)
+		
+		yzel = gl_RAY_C(2, ij, k)
+		yy2 = sqrt(gl_y2(yzel, now2)**2 + gl_z2(yzel, now2)**2)
+		
+		yzel = gl_RAY_C(size(gl_RAY_C(:, ij, k)), ij, k)
+		yy3 = sqrt(gl_y2(yzel, now)**2 + gl_z2(yzel, now2)**2)
+		
+		dk13 = 2.0 * (yy2 - yy1)/(yy3 - yy1)
+		r1 = log(dk13)/log(1.0/(par_n_BS - par_n_HP - 9))
+	
+	
             yzel = gl_RAY_O(1, j, k)
             if(gl_Point_num(yzel) == 0) then
                 vel = 0.0
@@ -1919,11 +1931,13 @@
             do i = 1, N1
                 yzel = gl_RAY_O(i, j, k)
                 
-                if (i <= par_n_BS - par_n_HP + 1) then
-                    r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**(par_kk13 - 0.4)
-                else
-                    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-                end if
+                !if (i <= par_n_BS - par_n_HP + 1) then
+                !    r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**(par_kk13 - 0.4)
+                !else
+                !    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+                !end if
+				
+				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1)
 
 
                 gl_x2(yzel, now2) = x
@@ -2522,20 +2536,20 @@
     gr = gl_TS(i)
     s1 = gl_Gran_neighbour(1, gr)
     s2 = gl_Gran_neighbour(2, gr)
-	ss1 = gl_Gran_neighbour_TVD(1, gr)
-	ss2 = gl_Gran_neighbour_TVD(2, gr)
+	!ss1 = gl_Gran_neighbour_TVD(1, gr)
+	!ss2 = gl_Gran_neighbour_TVD(2, gr)
     normal = gl_Gran_normal2(:, gr, now)
     qqq1 = gl_Cell_par(1:8, s1)
     qqq2 = gl_Cell_par(1:8, s2)
 	
 	if (.True.) then!(gl_Gran_center2(1, gr, now) > -5.0) then
 	
-		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
-		df1 = norm2(rast)
-		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
-		df2 = norm2(rast)
-		rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss2, now)
-		dff2 = norm2(rast)
+		!rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
+		!df1 = norm2(rast)
+		!rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s2, now)
+		!df2 = norm2(rast)
+		!rast = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, ss2, now)
+		!dff2 = norm2(rast)
 	
 	
 		rad1 = norm2(gl_Cell_center2(:, s1, now))                                
@@ -2558,7 +2572,7 @@
 	end if
         
     call chlld(metod, normal(1), normal(2), normal(3), &
-            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 1) !2
+            www, qqq1, qqq2, dsl, dsp, dsc, POTOK, n_disc = 2) !2
 	
 		
     dsl = dsl * koef1
@@ -2902,7 +2916,7 @@
         
 	dsc = 0.0_8
 	
-	if (.False.) then!(par_null_bn == .True. .and. gl_Gran_center2(1, gr, now) >= 10.0) then
+	if  (par_null_bn == .True. .and. gl_Gran_center2(1, gr, now) >= -50.0) then
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
@@ -2927,8 +2941,10 @@
 		call chlld(metod, normal(1), normal(2), normal(3), &
 				www, qqq1, qqq2, dsl, dsp, dsc, POTOK)
 	end if
+	
+	dsc = dsc * koef2
         
-    dsc = dsc * koef2
+	
 	
 	!if (gl_Gran_center2(1, gr, now) < -40.0 .and. gl_Cell_par(9, s1) > 50.0) then
 	!		!print*, gl_Gran_center2(:, gr, now) 
@@ -2949,14 +2965,15 @@
 	
 	do j = 1, 4
             yzel = gl_all_Gran(j, gr)
-			center2(1) = gl_x2(yzel, now)
-			center2(2) = gl_y2(yzel, now)
-			center2(3) = gl_z2(yzel, now)
 			
-			if ( sqrt(center2(2)**2 + center2(3)**2) > 5.0) then
-			!if ( center2(1) < -40.0) then
-			    if( DOT_PRODUCT(vec, center2 - center) < 0.0) CYCLE
-			end if
+			!center2(1) = gl_x2(yzel, now)
+			!center2(2) = gl_y2(yzel, now)
+			!center2(3) = gl_z2(yzel, now)
+			
+			!if ( sqrt(center2(2)**2 + center2(3)**2) > 5.0) then
+			!!if ( center2(1) < -40.0) then
+			!    if( DOT_PRODUCT(vec, center2 - center) < 0.0) CYCLE
+			!end if
 			
 			! Блок безопасного доступа
 			select case (mod(yzel, 4))
@@ -4280,8 +4297,8 @@
 	distant = gl_Gran_center2(:, gr, now) - gl_Cell_center2(:, s1, now)
 	dist = norm2(distant)
 	
-	!tvd1 = (gl_zone_Cell(s1) == 1) 
-	tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
+	tvd1 = (gl_zone_Cell(s1) == 1) 
+	!tvd1 = (norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2)
 	
 	! Попробуем снести плотность пропорционально квадрату
             if (.False.) then !if(norm2(qqq1(2:4))/sqrt(ggg*qqq1(5)/qqq1(1)) > 2.2) then
@@ -4379,8 +4396,8 @@
                 end if
 	end if
 	
-	!tvd2 = (gl_zone_Cell(s2) == 1) !
-	tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
+	tvd2 = (gl_zone_Cell(s2) == 1) !
+	!tvd2 = (norm2(qqq2(2:4))/sqrt(ggg*qqq2(5)/qqq2(1)) > 2.2)
 	
 	! Делаем ТВД
 	if (s2 >= 1 .and. par_TVD == .True. .and. gl_Gran_type(gr) /= 2) then
@@ -4401,10 +4418,10 @@
 				qqq11_2 = gl_Cell_par2(:, ss1)
 				qqq22_2 = gl_Cell_par2(:, ss2)
 				
-				!tvd3 = (gl_zone_Cell(ss1) == 1) 
-				tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
-				!tvd4 = (gl_zone_Cell(ss2) == 1) !
-				tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
+				tvd3 = (gl_zone_Cell(ss1) == 1) 
+				!tvd3 = (norm2(qqq11(2:4))/sqrt(ggg*qqq11(5)/qqq11(1)) > 2.2)
+				tvd4 = (gl_zone_Cell(ss2) == 1) !
+				!tvd4 = (norm2(qqq22(2:4))/sqrt(ggg*qqq22(5)/qqq22(1)) > 2.2)
 				
 				if(tvd1 == .True. .and. tvd2 == .False.) then
 					rad1 = norm2(gl_Cell_center2(:, s1, now))                              
@@ -4637,10 +4654,10 @@
 	end if
 	
 	! На ударной волне не делаем снос справа
-	!if(gl_Gran_type(gr) == 1) then ! .and. gl_Gran_center2(1, gr, now) <= -5.0) then
-	!	!qqq1 = gl_Cell_par(:, s1)  !
-	!	qqq2 = gl_Cell_par(:, s2)
-	!end if
+	if(gl_Gran_type(gr) == 1) then ! .and. gl_Gran_center2(1, gr, now) <= -5.0) then
+		!qqq1 = gl_Cell_par(:, s1)  !
+		qqq2 = gl_Cell_par(:, s2)
+	end if
 	
 	
 	! Вычитаем для снесённых значений нормальною компоненту магнитного поля
@@ -4659,7 +4676,7 @@
             wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 			
 			
-			metod = gl_Gran_scheme(gr)
+			metod = 0!gl_Gran_scheme(gr)
 			
 			
 			!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
@@ -4667,32 +4684,36 @@
 			!metod = 0
 			
 			!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !2
-			!if(gl_Gran_type(gr) == 2) metod = 3 !2
+			if(gl_Gran_type(gr) == 2) metod = 3 !2
 			
-			!if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = gl_Gran_scheme(gr)
+			if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 3
 			
-			!if(gl_Gran_center2(1, gr, now) < -150.0) then
-			!	metod = 3
+			!if(gl_Gran_center2(1, gr, now) <= 25.0 .and. gl_Gran_center2(1, gr, now) >= 18.0) then
+			!	metod = 0
 			!end if
 	
 			
-			!if(gl_Gran_type(gr) == 1) metod = 0 !2
+			if(gl_Gran_type(gr) == 1) metod = 3
 			
-			!if(gl_Gran_type(gr) == 1) then
-			!	n_disc = 2 !2
-			!	!ydar = .True.
-			!	wc = 0.0  ! было закоменченно
-			!end if
+			if(gl_Gran_type(gr) == 1) then
+				!n_disc = 2 !2
+				ydar = .True.
+				!wc = 0.0  ! было закоменченно
+			end if
 			
 			
-            if (.False.) then!(gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= 10.0) then ! Для гелиопаузы особая процедура
+            if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -50.0) then ! Для гелиопаузы особая процедура
 				
 				POTOK = 0.0
 				konvect_(3, 1) = 0.0
 				
-				if (.False.) then
+				if (.True.) then
 					qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 					qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
+					
+					!qqq1(2:4) = 0.0
+					!qqq2(2:4) = 0.0
+					
 					call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
 											 gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
 											 wc, qqq1(1:8), qqq2(1:8), &
@@ -4818,14 +4839,9 @@
                     POTOK2 = POTOK2 + gl_Gran_POTOK2(1, j)
 					sks = sks + gl_Gran_POTOK(10, j)
 					
-					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 10.0) then ! Особые потоки для контакта
+					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
 					!	POTOK(2:4) = POTOK(2:4) + (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
 					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
-					!end if
-					
-					!if(gl_Gran_type(j) == 1 .or. gl_Gran_type(j) == 2) then ! Особые потоки для контакта
-					!	sks = sks + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
-					!		* gl_Gran_square2(j, now)
 					!end if
 					
 					if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
@@ -4833,26 +4849,31 @@
 							* gl_Gran_square2(j, now)
 					end if
 					
+					!if(gl_Gran_type(j) == 1) then ! Особые потоки для
+					!	sks = sks + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+					!		* gl_Gran_square2(j, now)
+					!end if
+					
 					
                 else
                     POTOK = POTOK - gl_Gran_POTOK(1:9, j)
                     POTOK2 = POTOK2 - gl_Gran_POTOK2(1, j)
 					sks = sks - gl_Gran_POTOK(10, j) !!!!!!!!!!!!!!!!!!!!
 					
-					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 10.0) then ! Особые потоки для контакта
+					!if(gl_Gran_type(j) == 2 .and. gl_Gran_center2(1, j, now) >= 0.0) then ! Особые потоки для контакта
 					!	POTOK(2:4) = POTOK(2:4) - (qqq(5) + (norm2(qqq(6:8))**2)/(8.0 * par_pi_8)) &
 					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
-					!end if
-					
-					!if(gl_Gran_type(j) == 1 .or. gl_Gran_type(j) == 2) then ! Особые потоки для контакта
-					!	sks = sks - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
-					!		* gl_Gran_square2(j, now)
 					!end if
 					
 					if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
 						sks = sks - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
 							* gl_Gran_square2(j, now)
 					end if
+					
+					!if(gl_Gran_type(j) == 1) then ! Особые потоки 
+					!	sks = sks - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
+					!		* gl_Gran_square2(j, now)
+					!end if
 					
 					
 				end if
