@@ -981,9 +981,9 @@
 				!dist = max(dist, 1.0_8)
 				
 				if(j < 9) then
-					kkk = 1.0
-				else
 					kkk = 0.5
+				else
+					kkk = 0.2 !0.5
 				end if
 				
 				!kkk = 1.0
@@ -1242,11 +1242,11 @@
 	
 	ddt = Time/0.000127
 	
-	kk = 1.0  ! 0.05
+	kk = 0.5  ! 1.0
 	
-	if(k > 6 .and. kk < 19) kk = 3.0  !  1.0
+	if(k > 6 .and. kk < 19) kk = 1.5  !  3.0
 	
-	if(k > 31 .and. kk < 44) kk = 3.0 !
+	if(k > 31 .and. kk < 44) kk = 1.5 !
 			
 	! Контакт
 	yzel = gl_RAY_O(1, j, k)
@@ -2916,7 +2916,7 @@
         
 	dsc = 0.0_8
 	
-	if  (par_null_bn == .True. .and. gl_Gran_center2(1, gr, now) >= -50.0) then
+	if  (par_null_bn == .True.) then !gl_Gran_center2(1, gr, now) >= -50.0
 		! Теперь сделаем для газовой динамики
 		qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
 		qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
@@ -4701,8 +4701,8 @@
 				!wc = 0.0  ! было закоменченно
 			end if
 			
-			
-            if (gl_Gran_type(gr) == 2 .and. gl_Gran_center2(1, gr, now) >= -50.0) then ! Для гелиопаузы особая процедура
+			!.and. gl_Gran_center2(1, gr, now) >= -50.0
+            if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
 				
 				POTOK = 0.0
 				konvect_(3, 1) = 0.0
