@@ -669,11 +669,11 @@
 			do i = par_n_TS + 1, par_n_TS + 1
 				
 				int2_Cell_A(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+				int2_all_Cell(1, N) = int2_Point_A(i + 1, j, k)
 				int2_all_Cell(2, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
 				int2_all_Cell(3, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
 				int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+				int2_all_Cell(5, N) = int2_Point_A(i + 1, j, kk)
 				int2_all_Cell(6, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
 				int2_all_Cell(7, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
 				int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
@@ -2961,21 +2961,21 @@
 
 		open(1, file = name // '_print_par_2D_interpolate.txt')
 		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
-		write(1,*) "'bx', 'by', 'bz', 'Q', 'n_H', 'u_H',"
-		write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', 'MK9'"
-		write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'p_T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
-		write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'p_T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
-		write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'p_T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
-		write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'p_T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
-		write(1,*) ",'k2', k3', 'k4', 'k5'"
+		write(1,*) "'bx', 'by', 'bz', 'Q'" !, 'n_H', 'u_H',"
+		!write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', 'MK9'"
+		!write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'p_T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
+		!write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'p_T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
+		!write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'p_T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
+		!write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'p_T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
+		!write(1,*) ",'k2', k3', 'k4', 'k5'"
 		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
 
 		do i = 1, (n - 1)
 			do j = 1, 4
 				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK, PAR_K)
-				call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
+				!call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
 				if(num < 1) num = 3
-				write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(1:9, 1), PAR_MK(1:9, 2), PAR_MK(1:9, 3), PAR_MK(1:9, 4), PAR_K(2:5)
+				write(1,*) CUT(:, j, i), PAR!, PAR_MK_SUM, PAR_MK(1:9, 1), PAR_MK(1:9, 2), PAR_MK(1:9, 3), PAR_MK(1:9, 4), PAR_K(2:5)
 			end do
 		end do
 
@@ -3214,8 +3214,8 @@
 		N = size(int2_Cell_A(1, :, 1)) * size(int2_Cell_A(:, 1, 1)) + size(int2_Cell_B(1, :, 1)) * size(int2_Cell_B(:, 1, 1)) + &
 			size(int2_Cell_C(1, :, 1)) * size(int2_Cell_C(:, 1, 1))
 		
-		open(1, file = 'Int2_setka.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Q'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", 4 * N , ", F=FEPOINT, ET=LINESEG "
+		open(1, file = 'Int2_Print_setka_2.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Q', 'ro'  ZONE T= 'HP', N= ", 4 * N, ", E =  ", N , ", F=FEPOINT, ET=quadrilateral "
 		
 		N1 = size(int2_Cell_A(:, 1, 1))
 		N2 = size(int2_Cell_A(1, :, 1))
@@ -3225,15 +3225,15 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_A(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0, 1
-						write(1,*) 0.0, 0.0, 0.0, 1
-						write(1,*) 0.0, 0.0, 0.0, 1
-						write(1,*) 0.0, 0.0, 0.0, 1
+						write(1,*) 0.0, 0.0, 0.0, 1, 0
+						write(1,*) 0.0, 0.0, 0.0, 1, 0
+						write(1,*) 0.0, 0.0, 0.0, 1, 0
+						write(1,*) 0.0, 0.0, 0.0, 1, 0
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_A(i, j, k))), 1
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_A(i, j, k))), 1
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_A(i, j, k))), 1
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_A(i, j, k))), 1
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_A(i, j, k))), 1, int2_Cell_par(1, int2_all_Cell(1, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_A(i, j, k))), 1, int2_Cell_par(1, int2_all_Cell(2, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_A(i, j, k))), 1, int2_Cell_par(1, int2_all_Cell(3, int2_Cell_A(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_A(i, j, k))), 1, int2_Cell_par(1, int2_all_Cell(4, int2_Cell_A(i, j, k)))
 					end if
 					
 				end do
@@ -3248,15 +3248,15 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_B(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0, 2
-						write(1,*) 0.0, 0.0, 0.0, 2
-						write(1,*) 0.0, 0.0, 0.0, 2
-						write(1,*) 0.0, 0.0, 0.0, 2
+						write(1,*) 0.0, 0.0, 0.0, 2, 0
+						write(1,*) 0.0, 0.0, 0.0, 2, 0
+						write(1,*) 0.0, 0.0, 0.0, 2, 0
+						write(1,*) 0.0, 0.0, 0.0, 2, 0
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_B(i, j, k))), 2
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_B(i, j, k))), 2
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_B(i, j, k))), 2
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_B(i, j, k))), 2
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_B(i, j, k))), 2, int2_Cell_par(1, int2_all_Cell(1, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_B(i, j, k))), 2, int2_Cell_par(1, int2_all_Cell(2, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_B(i, j, k))), 2, int2_Cell_par(1, int2_all_Cell(3, int2_Cell_B(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_B(i, j, k))), 2, int2_Cell_par(1, int2_all_Cell(4, int2_Cell_B(i, j, k)))
 					end if
 				end do
 			end do
@@ -3270,26 +3270,26 @@
 			do j = 1, N2
 				do i = 1, N1
 					if (int2_Cell_C(i, j, k) <= 0) then
-						write(1,*) 0.0, 0.0, 0.0, 3
-						write(1,*) 0.0, 0.0, 0.0, 3
-						write(1,*) 0.0, 0.0, 0.0, 3
-						write(1,*) 0.0, 0.0, 0.0, 3
+						write(1,*) 0.0, 0.0, 0.0, 3, 0
+						write(1,*) 0.0, 0.0, 0.0, 3, 0
+						write(1,*) 0.0, 0.0, 0.0, 3, 0
+						write(1,*) 0.0, 0.0, 0.0, 3, 0
 					else
-						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_C(i, j, k))), 3
-						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_C(i, j, k))), 3
-						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_C(i, j, k))), 3
-						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_C(i, j, k))), 3
+						write(1,*) int2_coord(:, int2_all_Cell(1, int2_Cell_C(i, j, k))), 3, int2_Cell_par(1, int2_all_Cell(1, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(2, int2_Cell_C(i, j, k))), 3, int2_Cell_par(1, int2_all_Cell(2, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(3, int2_Cell_C(i, j, k))), 3, int2_Cell_par(1, int2_all_Cell(3, int2_Cell_C(i, j, k)))
+						write(1,*) int2_coord(:, int2_all_Cell(4, int2_Cell_C(i, j, k))), 3, int2_Cell_par(1, int2_all_Cell(4, int2_Cell_C(i, j, k)))
 					end if
 				end do
 			end do
 		end do
 		
 		! Connectivity list
-    do j = 0, N
-        write(1,*) 4 * j + 1, 4 * j + 2
-        write(1,*) 4 * j + 2, 4 * j + 3
-        write(1,*) 4 * j + 3, 4 * j + 4
-        write(1,*) 4 * j + 4, 4 * j + 1
+    do j = 0, N - 1
+        write(1,*) 4 * j + 1, 4 * j + 2, 4 * j + 3, 4 * j + 4
+        !write(1,*) 4 * j + 2, 4 * j + 3
+        !write(1,*) 4 * j + 3, 4 * j + 4
+        !write(1,*) 4 * j + 4, 4 * j + 1
     end do
 		
 		
@@ -3426,7 +3426,7 @@
 	
 	integer(4) :: i, j, k, N1, N2, N3
 	
-	open(1, file = 'Int2_print.txt')
+	open(1, file = 'Int2_Print_point_plane.txt')
 	write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z' , 'T' ZONE T= 'HP'"
 	
 	N1 = size(int2_Point_A(:, 1, 1))

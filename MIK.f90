@@ -230,6 +230,7 @@
 	include "TVD.f90"
 	include "Surface_setting.f90"
 	include "Monte-Karlo.f90"
+	include "PUI.f90"
 	
 	
 	!@cuf include "cuf_kernel.cuf"
@@ -8111,7 +8112,7 @@
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
-		name = 532! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
+		name = 533! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 132 до экспериментов  134  138
         ! 152 (до того, как поменять сгущение после HP)		
 		! 509 до изменения разрешения на Димино		
@@ -8364,6 +8365,7 @@
 			end do
 			
 			call PRINT_ALL()
+			!return
 			!go to 101
 			
 		    !@cuf call CUDA_info()
@@ -8384,9 +8386,9 @@
 			call PRINT_ALL()
 			! СОХРАНЕНИЕ
 			print*, "Save"
-			call Save_param(name + 1)
-			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
-			call Save_setka_bin(name + 1)
+			call Save_param(name + 1) ! + 1
+			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва  + 1
+			call Save_setka_bin(name + 1) !  + 1
 			print*, "Save 2"
 			!
 			call Int2_Dell_interpolate()
@@ -8397,10 +8399,10 @@
 			print*, "Save 5"
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			print*, "Save 6"
-			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
-		    call Int2_Save_interpol_for_all_MHD(name + 1)
+		    call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
 			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
@@ -8417,10 +8419,10 @@
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
 			par_l_phi = 40
-			par_m_A = 30! 30      ! Количество лучей A в плоскости
-            par_m_BC = 13! 18      ! Количество лучей B/C в плоскости
-            par_m_O = 7! 17      ! Количество лучей O в плоскости
-            par_m_K = 7! 7      ! Количество лучей K в плоскости
+			par_m_A = 20! 30      ! Количество лучей A в плоскости
+            par_m_BC = 10! 18      ! Количество лучей B/C в плоскости
+            par_m_O = 10! 17      ! Количество лучей O в плоскости
+            par_m_K = 8! 7      ! Количество лучей K в плоскости
             ! Количество точек по лучам A
             par_n_TS =  27! 26                    ! Количество точек до TS (TS включается)
             par_n_HP =  37! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
@@ -8451,11 +8453,11 @@
 	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
-	        do i = 1, 20
+	        do i = 1, 35
 	        	call Surf_Set_surf(0.2_8)
 	        end do
 	        
-	        do i = 1, 30
+	        do i = 1, 35
 	        	call Surf_Set_surf(0.03_8)
 			end do
 			
@@ -8479,7 +8481,6 @@
 			! Печатаем сетку (для просмотра)
 			call PRINT_ALL()
 			
-			
 			! Делаем файл интерполяции № 2 из мини-сетки
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 		    call Int2_Initial()			     ! Создание сетки интерполяции
@@ -8490,15 +8491,19 @@
 			
 			
 			call Dell_STORAGE()  ! Удаляем основную сетку (т.к. считается только монте-карло - для экономии памяти)
-			
+			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+			call Int2_Print_center()
+			call Int2_Print_point_plane()
+			call Int2_Print_setka_2()
+			return
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
-			call Helium_off()
-			!call M_K_start()
-			call M_K_sum()
-			call Int2_culc_k()
-			call Helium_on()
+			!call Helium_off()
+			!!call M_K_start()
+			!call M_K_sum()
+			!call Int2_culc_k()
+			!call Helium_on()
 			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			call Int_2_Print_par_1D()
