@@ -8,6 +8,7 @@
 	logical, parameter :: par_TVD = .True.				! Делаем ли ТВД
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
 	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
+	logical, parameter :: par_PUI = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
 	
 	 real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
@@ -58,7 +59,7 @@
 	real(8), parameter :: par_1ae = 0.197035_8
 	
 	! Параметры для Монте-Карло
-	integer(4), parameter :: par_n_potok = 16! 32  ! Число потоков (у каждого потока свой стек)
+	integer(4), parameter :: par_n_potok = 32! 32  ! Число потоков (у каждого потока свой стек)
 	integer(4), parameter :: par_n_parallel = 20  ! Для распараллеливания цикла (т.е. каждый поток будет в среднем обрабатывать
 	integer(4), parameter :: par_n_claster = 1  ! Число компьютеров (для MPI)
 	! такое число итераций
@@ -72,7 +73,7 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 6 * 5! 17   ! 1 = 10 минут счёта
+	integer(4), parameter :: MK_k_multiply = 6 * 21! 17   ! 1 = 10 минут счёта
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)

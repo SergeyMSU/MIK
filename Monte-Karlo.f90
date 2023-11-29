@@ -7,6 +7,7 @@ module Monte_Karlo
 	USE Interpolate2
 	USE My_func
 	USE ieee_arithmetic 
+	USE PUI
 	
 	implicit none
 	
@@ -65,7 +66,7 @@ module Monte_Karlo
 	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
 	logical :: bb
 	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no, ksi1, ksi2, ksi3, ksi4, ksi5
-	real(8) :: ll, rr, Vphi, Vr
+	real(8) :: ll, rr, Vphi, Vr, pui_w2, pui_w1
 	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
 	real(8) :: start_time, end_time
 	integer mpi_process_Rank, mpi_size_Of_Cluster, mpi_ierror, mpi_rank
@@ -75,6 +76,8 @@ module Monte_Karlo
 	
 	call M_K_Set()    ! Создали массивы
 	call M_K_init()   ! Инициализируем веса и т.д.
+	
+	call PUI_Set()
 	
 	print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
 	print*, "MK_k_multiply = ", MK_k_multiply
@@ -280,10 +283,17 @@ module Monte_Karlo
 	
 	no = MK_Mu_mult * MK_N * par_n_claster
 	M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
+	pui_Sm(:, :) = pui_Sm(:, :) / no
+	do i = 1, pui_nW
+		pui_w1 = (i - 1) * pui_wR/pui_nW 
+		pui_w2 = i * pui_wR/pui_nW 
+		pui_Sp(i, :) = pui_Sp(i, :) / (no * 4.0 * par_pi_8 * (1.0/3.0) * (pui_w2**3 - pui_w1**3))
+	end do
 	
 	do i = 2, par_n_potok
 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
 	end do
+	
 	
 	! Печатаем результаты в файл для последующего суммирования
 	open(3, file = "M-K_param_007.bin", FORM = 'BINARY')
@@ -295,6 +305,8 @@ module Monte_Karlo
 	close(3)
 	deallocate(M_K_Moment_print)
 	no = MK_Mu_mult * MK_N * par_n_claster
+	
+	
 	! Сложим все MPI потоки
 	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
 	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
@@ -338,6 +350,12 @@ module Monte_Karlo
 		end if
 		
 		M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
+		
+		j = pui_num_tetr(i)
+		if(j > 0) then
+			pui_Sm(:, j) = sqv * pui_Sm(:, j) / no
+			pui_Sp(:, j) = sqv * pui_Sp(:, j) / no
+		end if
 		
 		if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
 				print*, "NaN 098uiknhuuyhjh"
@@ -442,6 +460,8 @@ module Monte_Karlo
 	end if
 	
 	end subroutine M_K_start
+	
+	
 	
 	subroutine M_K_sum()
 	
@@ -722,7 +742,7 @@ module Monte_Karlo
 		
 			call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
 			
-			time = max(0.00000001_8, time * 1.001) ! Увеличим время, чтобы частица точно вышла из ячейки
+			time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
 			
 			kappa = 0.0
 			do ijk = 1, 3
@@ -786,7 +806,7 @@ module Monte_Karlo
 			
 			call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
 			
-			t_ex = -(time / kappa) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
+			t_ex = -(time / kappa_all) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
 			t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
 			mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
 			mu2 = mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома
@@ -900,7 +920,14 @@ module Monte_Karlo
 			M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
 				mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 			
+			! Добавляем для расчёта PUI
+			if(area2 <= 2) then
+				call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
+			end if
+			
 			!_________________________________________________________________________________________
+			
+			
 			
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
 			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
@@ -2168,15 +2195,15 @@ real(8) pure function MK_H_Wr_2(gam1, gam2, V, ur, ut, p, ksi)
 	MK_H_Wr_2 =  MK_for_Wr_2(V, gam2, ur, ut) - MK_for_Wr_2(V, gam1, ur, ut) - ksi * p
 end function MK_H_Wr_2
 
-real(8) pure function MK_sigma(x)
-	real(8), intent (in) :: x
-	MK_sigma = (1.0 - par_a_2 * log(x))**2
-end function MK_sigma
-
-real(8) pure function MK_sigma2(x, y)
-	real(8), intent (in) :: x, y
-	MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
-end function MK_sigma2
+!real(8) pure function MK_sigma(x)
+!	real(8), intent (in) :: x
+!	MK_sigma = (1.0 - par_a_2 * log(x))**2
+!end function MK_sigma
+!
+!real(8) pure function MK_sigma2(x, y)
+!	real(8), intent (in) :: x, y
+!	MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
+!end function MK_sigma2
 
 
 real(8) pure function MK_f2(V, gam, ur, ut)

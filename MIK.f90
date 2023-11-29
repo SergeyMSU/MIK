@@ -217,7 +217,18 @@
     Vz = Vr * sin(phi) + Vphi * cos(phi)
 
 	end subroutine dekard_polyar_skorost
+	
+	real(8) pure function MK_sigma(x)
+	    USE GEO_PARAM
+	    real(8), intent (in) :: x
+	    MK_sigma = (1.0 - par_a_2 * log(x))**2
+    end function MK_sigma
 
+    real(8) pure function MK_sigma2(x, y)
+	    USE GEO_PARAM
+	    real(8), intent (in) :: x, y
+	    MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
+end function MK_sigma2
 
 	end module My_func
 	
@@ -229,8 +240,9 @@
     include "Move_func.f90"
 	include "TVD.f90"
 	include "Surface_setting.f90"
-	include "Monte-Karlo.f90"
 	include "PUI.f90"
+	include "Monte-Karlo.f90"
+	
 	
 	
 	!@cuf include "cuf_kernel.cuf"
@@ -6909,6 +6921,174 @@
 	print*, "****   HP = ", (norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP - 1, 1, 1))) + norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP, 1, 1))))/2.0
 	
 	end subroutine Print_par_1D
+	
+	subroutine Print_tok_layer()
+	    use GEO_PARAM
+        use STORAGE
+		USE Interpolate2
+        implicit none
+		
+		real(8) :: n1, n2, n3, phi0, the0, t, phi, the
+		real(8) :: x, y, z
+		real(8) :: Matr(3, 3), Matr2(3, 3), cc(3), a(3), b(3)
+		integer :: num, i, j, ii, k, NN1, NN2, jj, m
+		real(8) :: PAR(9), dt     ! Выходные параметры
+		real(8), allocatable :: SLOY(:, :, :)     ! Выходные параметры
+		
+		
+		NN1 = 180
+		NN2 = 20000
+		allocate(SLOY(3, NN1, NN2))
+
+		SLOY = 0.0
+	    num = 3
+		
+	    Matr(1,1) = -0.995868
+        Matr(1,2) = 0.0177307
+        Matr(1,3) = 0.0890681
+        Matr(2,1) = 0.0730412
+        Matr(2,2) = 0.739193
+        Matr(2,3) = 0.669521
+        Matr(3,1) = -0.0539675
+        Matr(3,2) = 0.67326
+        Matr(3,3) = -0.737434
+	
+		
+		
+		t = 0.0
+		dt = 0.0001
+		
+		do i = 1, NN2
+		    if (mod(i, 100) == 0) print*, "i = ", i, " from", NN2
+			t =	t + dt
+			
+			
+			
+			phi0 = cos(t * 2.0 * par_pi_8/0.013) * 2.0 * par_pi_8
+		    the0 = cos(t * 2.0 * par_pi_8/9.4837) * par_pi_8/30.0
+		
+		    n1 = par_R0 * sin(the0) * cos(phi0)
+		    n2 = par_R0 * sin(the0) * sin(phi0)
+		    n3 = par_R0 * cos(the0)
+			
+			if (i <= NN2) then
+			    do j = 1, NN1
+		            phi = (j) * 2.0 * par_pi_8/(NN1 - 1)
+		            the = par_pi_8/2.0 - atan((n1 * cos(phi) + n2 * sin(phi))/(-n3))
+					!print*, i, j, phi/par_pi_8 * 180, the/par_pi_8 * 180
+		
+		            x = par_R0 * sin(the) * cos(phi)
+		            y = par_R0 * sin(the) * sin(phi)
+		            z = par_R0 * cos(the)
+	
+		            cc = MATMUL(Matr, (/ x, y, z /) )
+				    SLOY(:, j, i) = cc
+			    end do
+			end if
+			
+			do ii = 1, min(NN2, i)
+				do j = 1, NN1
+					call Int2_Get_par_fast(SLOY(1, j, ii), SLOY(2, j, ii), SLOY(3, j, ii), num, PAR)
+					SLOY(:, j, ii) = SLOY(:, j, ii) + dt * PAR(2:4)
+				end do
+			end do
+		
+		end do
+		
+		
+		open(1, file = 'Print_Tokoviy_sloy.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", (NN2 - 1) * (NN1) * 4  , ", E =  ", (NN2 - 1) * (NN1) , ", F=FEPOINT, ET=quadrilateral "
+	    
+		do i = 1, NN2 - 1
+			do j = 1, NN1
+				jj = j + 1
+				if(jj > NN1) jj = 1
+				write(1,*) SLOY(:, j, i)
+				write(1,*) SLOY(:, j, i + 1)
+				write(1,*) SLOY(:, jj, i + 1)
+				write(1,*) SLOY(:, jj, i)
+			end do
+		end do
+		
+		do k = 1, (NN2 - 1) * (NN1)
+		    write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+		end do
+		
+		close(1)
+		
+		open(2, file = 'Print_Tokoviy_sloy_mini.txt')
+        write(2,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'  ZONE T= 'HP', N= ", (NN2 - 1) * (NN1 - 1) * 4  , ", E =  ", (NN2 - 1) * (NN1 - 1) , ", F=FEPOINT, ET=quadrilateral "
+	    
+		do i = 1, NN2 - 1
+			do j = 1, NN1 - 1
+				jj = j + 1
+				write(2,*) SLOY(:, j, i)
+				write(2,*) SLOY(:, j, i + 1)
+				write(2,*) SLOY(:, jj, i + 1)
+				write(2,*) SLOY(:, jj, i)
+			end do
+		end do
+		
+		do k = 1, (NN2 - 1) * (NN1 - 1)
+		    write(2,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+		end do
+		close(2)
+		
+		open(3, file = '2D_Print_Tokoviy_sloy.txt')
+        write(3,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y'  ZONE T= 'HP', N= ", 0 , ", E =  ", 0 , ", F=FEPOINT, ET=LINESEG "
+	    m = 0
+		do i = 1, NN2 - 1
+			do j = 1, NN1
+				jj = j + 1
+				if(jj > NN1) jj = 1
+				
+				a = SLOY(:, j, i)
+				b = SLOY(:, j, i + 1)
+				t = -a(3)/(b(3) - a(3))
+				if(t > 0.0 .and. t < 1.0) then
+					write(3,*) a(1) + (b(1) - a(1)) * t, a(2) + (b(2) - a(2)) * t
+					m = m + 1
+				end if
+				
+				a = SLOY(:, j, i + 1)
+				b = SLOY(:, jj, i + 1)
+				t = -a(3)/(b(3) - a(3))
+				if(t > 0.0 .and. t < 1.0) then
+					write(3,*) a(1) + (b(1) - a(1)) * t, a(2) + (b(2) - a(2)) * t
+					m = m + 1
+				end if
+				
+				a = SLOY(:, jj, i + 1)
+				b = SLOY(:, jj, i)
+				t = -a(3)/(b(3) - a(3))
+				if(t > 0.0 .and. t < 1.0) then
+					write(3,*) a(1) + (b(1) - a(1)) * t, a(2) + (b(2) - a(2)) * t
+					m = m + 1
+				end if
+				
+				a = SLOY(:, jj, i)
+				b = SLOY(:, j, i)
+				t = -a(3)/(b(3) - a(3))
+				if(t > 0.0 .and. t < 1.0) then
+					write(3,*) a(1) + (b(1) - a(1)) * t, a(2) + (b(2) - a(2)) * t
+					m = m + 1
+				end if
+				
+			end do
+		end do
+		
+		print*, "N = ", m
+		print*, "E = ", m/2
+		
+		do k = 1, m/2
+		    write(3,*) 2 * k - 1, 2 * k
+		end do
+		
+		close(3)
+		
+		deallocate(SLOY)
+	
+	end subroutine Print_tok_layer
 
     subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
     use GEO_PARAM
@@ -8127,9 +8307,9 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 7 ! 7 ! 2 ! Имя мини-сетки для М-К
+		name2 = 8 ! 7 ! 2 ! Имя мини-сетки для М-К
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1 ! Выбираем шаг, который делаем
+		step = 2 ! Выбираем шаг, который делаем
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8368,6 +8548,9 @@
 			!return
 			!go to 101
 			
+			call Print_tok_layer()
+			return
+			
 		    !@cuf call CUDA_info()
 			print*, "Start"
 			!@cuf call CUDA_START_MGD_move_MK() ! РАСЧЁТЫ
@@ -8495,15 +8678,14 @@
 			call Int2_Print_center()
 			call Int2_Print_point_plane()
 			call Int2_Print_setka_2()
-			return
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
-			!call Helium_off()
-			!!call M_K_start()
+			call Helium_off()
+			call M_K_start()
 			!call M_K_sum()
-			!call Int2_culc_k()
-			!call Helium_on()
+			call Int2_culc_k()
+			call Helium_on()
 			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			call Int_2_Print_par_1D()
@@ -8511,16 +8693,26 @@
 			! Сохраняем интерполяционный файл - мини - сетки
 			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
 			call Int2_Save_interpol_for_all_MK(name2)
-			call Int_2_Print_par_2D_set()
+			call Int_2_Print_par_2D_set()	
+	        call PUI_Save_bin(name2)
+			call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
+			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 			call Int2_Read_bin(name2)
-			call Int2_culc_k()
-			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
-			call Int2_Save_bin(name2)
+			call PUI_Set()
+			call PUI_f_Set()
+			call PUI_Read_bin(name2)
+			call PUI_calc_Sm()
+			call Culc_f_pui()
+			call PUI_print(1, 8.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(2, 10.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(3, 13.0_8, 0.00001_8, 0.00001_8)
+			!call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
+			!call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
 			
-	
-		
 		end if !----------------------------------------------------------------------------------------
 		
 101     continue
