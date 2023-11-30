@@ -1,6 +1,6 @@
 
     
-    module GEO_PARAM                     ! Модуль геометрических - сеточных параметров - констант программы
+module GEO_PARAM                     ! Модуль геометрических - сеточных параметров - констант программы
     
     implicit none
     
@@ -73,7 +73,7 @@
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 6 * 21! 17   ! 1 = 10 минут счёта
+	integer(4), parameter :: MK_k_multiply = 6 * 11! 17   ! 1 = 10 минут счёта
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -141,11 +141,10 @@
 		5.646527, 5.289991, 4.630639, 3.855446, 3.386001, &
 		3.594525/)  ! / 0.04
     
-	end module GEO_PARAM
+end module GEO_PARAM
     
-	
-    
-    module STORAGE                       ! Модуль глобальных данных и типов (все переменные начинаются на gl - global)
+	 
+module STORAGE                       ! Модуль глобальных данных и типов (все переменные начинаются на gl - global)
     implicit none
 
     ! Если нужно поменять точность, то это нужно ещё сделать в функции выделения памяти и инициализации, но лучше не менять
@@ -480,4 +479,4 @@
 	
 	end subroutine Dell_STORAGE
 	
-	end module STORAGE
+end module STORAGE

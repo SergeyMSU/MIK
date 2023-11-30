@@ -2881,7 +2881,7 @@
 	
 	end subroutine Int_2_Print_par_2D_set
 	
-	subroutine Int_2_Print_par_1D()  ! Печатает 2Д сетку с линиями в Техплот
+	subroutine Int_2_Print_par_1D()  ! Печатает 1Д сетку с линиями в Техплот
 		implicit none
 		integer :: i, num
 		real(8) :: x

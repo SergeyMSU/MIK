@@ -8264,7 +8264,7 @@
 		! 315 перед тем, как перестроить сетку
 		name2 = 8 !? Номер интерполяционного файла сетки с источниками
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 3  !? Номер алгоритма
+		step = 2  !? Номер алгоритма
 		
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8650,9 +8650,9 @@
 			call Int2_Save_interpol_for_all_MK(name2)
 			call Int_2_Print_par_2D_set()	
 	        call PUI_Save_bin(name2)
-			call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
+			! call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -8662,9 +8662,11 @@
 			call PUI_Read_bin(name2)
 			call PUI_calc_Sm()
 			call Culc_f_pui()
-			call PUI_print(1, 8.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(2, 10.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(3, 13.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
+            call Int_2_Print_par_1D()
 			!call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			!call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
 			

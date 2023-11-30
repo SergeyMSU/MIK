@@ -10,8 +10,8 @@ module PUI
 	USE OMP_LIB
 	implicit none
 	
-	integer :: pui_nW = 50      ! 50
-	real(8) :: pui_wR = 150.0    ! 150.0
+	integer :: pui_nW = 40      ! 50
+	real(8) :: pui_wR = 100.0    ! 150.0
 	
 	integer, allocatable :: pui_num_tetr(:)        ! По номеру интерполяционного тетраэдра определяем номер S
 	integer, allocatable :: pui_num_tetr_2(:)	   ! Обратно по номеру S определяем номер интерполяционного тетраэдра
@@ -25,7 +25,7 @@ module PUI
 	contains
 	
 	subroutine PUI_Set()
-	! Выделяем память под все массивы
+		! Выделяем память под все массивы
 		integer :: N, i, k, j, N2
 		! Сначала нужно понять, сколько у нас внутренних точек, в которых мы считаем PUI
 		! Для этого пробегаемся по массивам тетраэдров
@@ -76,7 +76,7 @@ module PUI
 	end subroutine PUI_Set
 	
 	subroutine PUI_f_Set()
-	! Создаём массивы для функции распределения
+		! Создаём массивы для функции распределения
 		integer :: N, i, k, j, N2
 		
 		allocate(f_pui_num2(size(int2_Cell_par2(1, :))))
@@ -113,6 +113,12 @@ module PUI
 		real(8) :: PAR_k(5), normal(3)
 		real(8) :: f0_pui(pui_nW)
 		logical :: find_n
+
+		pui_Sm = pui_Sm * par_n_p_LISM
+		pui_Sp = pui_Sp * par_n_p_LISM
+
+		!!pui_Sp = pui_Sp * 5.70892E-41
+		!!pui_Sm = pui_Sm * 8.73898E41
 		
 		f0_pui = 0.0
 		print*, "START Culc_f_pui"
@@ -142,12 +148,12 @@ module PUI
 					q1 = PAR_k(1)
 					rho_do = rho
 					rho = PAR(1)
-					qInt = 0.0!qInt + dt * q1/rho
+					qInt = 0.0!qInt + dt * q1/rho                                              !TODO
 					r = r - PAR(2:4) * dt
 					tetraedron = pui_num_tetr(num) ! Номер тетраэдра в массиве источников
 					numw = min(INT(w/pui_wR * pui_nW) + 1, pui_nW)
 					if(w < pui_wR .and. w > 0) then
-						Sm = Sm + pui_Sm(numw, tetraedron) * dt
+						Sm = Sm + 0.0!pui_Sm(numw, tetraedron) * dt                               !TODO
 						Sp = Sp + pui_Sp(numw, tetraedron) * dt * exp(-Sm)
 					end if
 					
@@ -249,7 +255,7 @@ module PUI
 	end subroutine Culc_f_pui
 	
 	subroutine PUI_Add(cell, wr, nu_ex, nu_ph, mu_ex, mu_ph, time_ex, time_ph)
-	! wr - скорость атома в СК, связанной со средней скоростью плазмы (модуль этой скорости)
+		! wr - скорость атома в СК, связанной со средней скоростью плазмы (модуль этой скорости)
 		integer, intent(in) :: cell
 		real(8), intent(in) :: wr, nu_ex, nu_ph, mu_ex, mu_ph, time_ex, time_ph
 		integer i, j
@@ -272,7 +278,7 @@ module PUI
 	end subroutine PUI_Add
 	
 	subroutine PUI_calc_Sm()
-	! Расчёт Sm - он не считается "на лету" в Монте-карло и нужна постобработка
+		! Расчёт Sm - он не считается "на лету" в Монте-карло и нужна постобработка
 		USE OMP_LIB
 		real(8) :: pui_Sm2(pui_nW)           ! (pui_nW, :, potok) 
 		integer :: ij, i, j, k, num_all
@@ -281,9 +287,9 @@ module PUI
 		dthe = par_pi_8/40.0
 		num_all = 0
 		
-	 !$omp parallel
+	 	!$omp parallel
         
-	 !$omp do private(pui_Sm2, ij, j, k, ff, Vh, the, d, w)
+	 	!$omp do private(pui_Sm2, ij, j, k, ff, Vh, the, d, w)
 		do i = 1, size(pui_Sm(1, :))
 
 			!$omp critical
@@ -304,14 +310,14 @@ module PUI
 						the = dthe * k
 						d = sqrt(Vh**2 + w**2 - 2.0 * w * Vh * cos(the))
 						if (d > 0.000000001) then
-							pui_Sm2(ij) = pui_Sm2(ij) + ff * d * MK_sigma(d) * sin(the) * dthe * 2.0 * par_pi_8 * par_Kn
+							pui_Sm2(ij) = pui_Sm2(ij) + ff * d * MK_sigma(d) * sin(the) * dthe * 2.0 * par_pi_8
 						end if
 					end do
 				end do
 				pui_Sm2(ij) = pui_Sm2(ij) / (4.0 * par_pi_8)
 			end do
 			
-			pui_Sm(:, i) = pui_Sm2
+			pui_Sm(:, i) = pui_Sm2/par_Kn
 		end do	
 		!$omp end do
 		!$omp end parallel
@@ -323,7 +329,7 @@ module PUI
 		implicit none
 		integer, intent(in) :: num
 		real(8), intent(in) :: x, y, z
-		real(8) :: w
+		real(8) :: w, S, SS
 		character(len=5) :: name
 		integer(4) :: n1, i, n2
     
@@ -335,7 +341,7 @@ module PUI
 		n2 = pui_num_tetr(n1)
 		if(n2 > 0) then
 			do i = 1, pui_nW
-				w = (i-1) * pui_wR/pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
 				write(1,*) w, pui_Sp(i, n2)
 			end do
 		end if
@@ -345,7 +351,7 @@ module PUI
 		open(2, file = "S-_" // name // ".txt")
 		if(n2 > 0) then
 			do i = 1, pui_nW
-				w = (i-1) * pui_wR/pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
 				write(2,*) w, pui_Sm(i, n2)
 			end do
 		end if
@@ -358,49 +364,74 @@ module PUI
 		open(3, file = "f_PUI_" // name // ".txt")
 		if(n2 > 0) then
 			do i = 1, pui_nW
-				w = (i-1) * pui_wR/pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
 				write(3,*) w, f_pui(i, n2)
 			end do
 		end if
 		
 		close(3)
+
+		S = 0.0
+		!? Печатаем концентрацию пикапов (в виде графика от скорости, чтобы посмотреть, на каких скоростях накапливается максимум)
+		open(4, file = "n_pui_" // name // ".txt")
+		if(n2 > 0) then
+			do i = 1, pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
+				S = S + f_pui(i, n2) * 4 * par_pi_8 * w**2
+				write(4,*) w, S
+			end do
+		end if
+		
+		close(4)
+
+		SS = 0.0
+		open(5, file = "T_pui_" // name // ".txt")
+		if(n2 > 0) then
+			do i = 1, pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
+				SS = SS + f_pui(i, n2) * 4 * par_pi_8 * w**4 /(3.0 * S)
+				write(5,*) w, SS
+			end do
+		end if
+		
+		close(5)
 	
 	end subroutine PUI_print
 	
 	
 	subroutine PUI_Save_bin(num)
-	implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-    
-    write(unit=name,fmt='(i5.5)') num
-    
-    open(1, file = "pui_save_" // name // ".bin", FORM = 'BINARY')
-	
-	write(1) size(pui_num_tetr_2)
-	write(1) pui_nW
-	write(1) pui_wR
-	
-	write(1) size(pui_Sm(:, 1)), size(pui_Sm(1, :))
-	write(1) pui_Sm(:, :)
-	
-	write(1) size(pui_Sp(:, 1)), size(pui_Sp(1, :))
-	write(1) pui_Sp(:, :)
-	
-	
-    
-    write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-    write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-	write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
-    
-	close(1)
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		
+		write(unit=name,fmt='(i5.5)') num
+		
+		open(1, file = "pui_save_" // name // ".bin", FORM = 'BINARY')
+		
+		write(1) size(pui_num_tetr_2)
+		write(1) pui_nW
+		write(1) pui_wR
+		
+		write(1) size(pui_Sm(:, 1)), size(pui_Sm(1, :))
+		write(1) pui_Sm(:, :)
+		
+		write(1) size(pui_Sp(:, 1)), size(pui_Sp(1, :))
+		write(1) pui_Sp(:, :)
+		
+		
+		
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		
+		close(1)
 	
 	end subroutine PUI_Save_bin
 	

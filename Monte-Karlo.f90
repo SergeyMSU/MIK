@@ -58,406 +58,406 @@ module Monte_Karlo
 	
 	
 	subroutine M_K_start()
-	
-	USE OMP_LIB
-	!$MPI include 'mpif.h'
-	! Variables
-	integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step, k
-	real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
-	logical :: bb
-	real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no, ksi1, ksi2, ksi3, ksi4, ksi5
-	real(8) :: ll, rr, Vphi, Vr, pui_w2, pui_w1
-	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
-	real(8) :: start_time, end_time
-	integer mpi_process_Rank, mpi_size_Of_Cluster, mpi_ierror, mpi_rank
-	real(8), allocatable :: buff(:, :, :)  ! ДЛЯ MPI
-	real(8), allocatable :: M_K_Moment_print(:, :, :)
-	!$MPI integer :: mpi_status(MPI_STATUS_SIZE)
-	
-	call M_K_Set()    ! Создали массивы
-	call M_K_init()   ! Инициализируем веса и т.д.
-	
-	call PUI_Set()
-	
-	print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
-	print*, "MK_k_multiply = ", MK_k_multiply
-	end_time = 0.0
-	start_time = 0.0
-	
-	! Запускаем каждый поток в параллельном цикле
 
-	 call omp_set_num_threads(par_n_potok)
-	 start_time = omp_get_wtime()
-	step = 1
-	
-	mpi_size_Of_Cluster = par_n_claster
-	mpi_rank = 0
-	!$MPI call MPI_INIT(mpi_ierror)
-	!$MPI call MPI_COMM_SIZE(MPI_COMM_WORLD, mpi_size_Of_Cluster, mpi_ierror)
-	!$MPI call MPI_COMM_RANK(MPI_COMM_WORLD, mpi_rank, mpi_ierror)
-	if(mpi_size_Of_Cluster /= par_n_claster) then
-		print*, "MPI error par_n_claster  789tyuighjbnmp;edzxcvrertgd  ", mpi_size_Of_Cluster, par_n_claster
-		!$MPI call MPI_Abort(MPI_COMM_WORLD, 102, mpi_ierror)
-		STOP
-	end if
-	
-	!call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
-	call Get_sensor_sdvig(192)
-	
-	!$omp parallel
-	
-	!$omp do private(potok, num, mu_, Wt_, Wp_, Wr_, X_, bb, i, Vx, Vy, Vz, cell, sin_, x, phi, y, z, ksi, r_peregel, no, to_i, to_j, ksi1, ksi2, ksi3, ksi4, ksi5, ll, rr, Vphi, Vr)
-	do iter = 1, par_n_potok * par_n_parallel
-	
-		potok = (omp_get_thread_num() + 1) 
+		USE OMP_LIB
+		!$MPI include 'mpif.h'
+		! Variables
+		integer(4) :: potok, num, i, cell, to_i, to_j, j, pp, iter, step, k
+		real(8) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
+		logical :: bb
+		real(8) :: sin_, x, phi, y, z, ksi, Vx, Vy, Vz, r_peregel, no, ksi1, ksi2, ksi3, ksi4, ksi5
+		real(8) :: ll, rr, Vphi, Vr, pui_w2, pui_w1
+		real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
+		real(8) :: start_time, end_time
+		integer mpi_process_Rank, mpi_size_Of_Cluster, mpi_ierror, mpi_rank
+		real(8), allocatable :: buff(:, :, :)  ! ДЛЯ MPI
+		real(8), allocatable :: M_K_Moment_print(:, :, :)
+		!$MPI integer :: mpi_status(MPI_STATUS_SIZE)
 		
-		!$omp critical
-		print*, "start potok = ", potok, " iter = ", iter, "   step = ", step, "from = ", par_n_potok * par_n_parallel, &
-		  "  computer № ", mpi_rank
-		step = step + 1
-		!$omp end critical
+		call M_K_Set()    ! Создали массивы
+		call M_K_init()   ! Инициализируем веса и т.д.
 		
-		cell = 3
-		! Запускаем частицы первого типа (с полусферы)
-		do num = 1, MK_N1
-			!if( mod(num, 100000) == 0) then
-			!	print*, "num = ", num, "  from ", MK_N1, "  potok = ", potok, "  computer № ", mpi_rank
-			!	!print*, sensor(:, 1, potok), sensor(:, 2, potok)
-			!end if
-			
-			! sensor(:, 1, potok) = (/  730   ,    18493      ,    61 /)
-			! sensor(:, 2, potok) = (/  21338   ,    11299    ,     833/)
+		call PUI_Set()
+		
+		print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
+		print*, "MK_k_multiply = ", MK_k_multiply
+		end_time = 0.0
+		start_time = 0.0
+		
+		! Запускаем каждый поток в параллельном цикле
 
+		call omp_set_num_threads(par_n_potok)
+		start_time = omp_get_wtime()
+		step = 1
+		
+		mpi_size_Of_Cluster = par_n_claster
+		mpi_rank = 0
+		!$MPI call MPI_INIT(mpi_ierror)
+		!$MPI call MPI_COMM_SIZE(MPI_COMM_WORLD, mpi_size_Of_Cluster, mpi_ierror)
+		!$MPI call MPI_COMM_RANK(MPI_COMM_WORLD, mpi_rank, mpi_ierror)
+		if(mpi_size_Of_Cluster /= par_n_claster) then
+			print*, "MPI error par_n_claster  789tyuighjbnmp;edzxcvrertgd  ", mpi_size_Of_Cluster, par_n_claster
+			!$MPI call MPI_Abort(MPI_COMM_WORLD, 102, mpi_ierror)
+			STOP
+		end if
+		
+		!call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
+		call Get_sensor_sdvig(192)
+		
+		!$omp parallel
+		
+		!$omp do private(potok, num, mu_, Wt_, Wp_, Wr_, X_, bb, i, Vx, Vy, Vz, cell, sin_, x, phi, y, z, ksi, r_peregel, no, to_i, to_j, ksi1, ksi2, ksi3, ksi4, ksi5, ll, rr, Vphi, Vr)
+		do iter = 1, par_n_potok * par_n_parallel
+		
+			potok = (omp_get_thread_num() + 1) 
 			
-			call MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
+			!$omp critical
+			print*, "start potok = ", potok, " iter = ", iter, "   step = ", step, "from = ", par_n_potok * par_n_parallel, &
+			"  computer № ", mpi_rank
+			step = step + 1
+			!$omp end critical
 			
+			cell = 3
+			! Запускаем частицы первого типа (с полусферы)
+			do num = 1, MK_N1
+				!if( mod(num, 100000) == 0) then
+				!	print*, "num = ", num, "  from ", MK_N1, "  potok = ", potok, "  computer № ", mpi_rank
+				!	!print*, sensor(:, 1, potok), sensor(:, 2, potok)
+				!end if
+				
+				! sensor(:, 1, potok) = (/  730   ,    18493      ,    61 /)
+				! sensor(:, 2, potok) = (/  21338   ,    11299    ,     833/)
+
+				
+				call MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
+				
+				
+				do i = 1, par_n_zone + 1
+					sin_ = sqrt(1.0 - (X_(i)**2))
+					x = (par_Rmax) * X_(i)
+					call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
+					phi = 2.0 * par_pi_8 * ksi
+					y = (par_Rmax) * sin_ * cos(phi)
+					z = (par_Rmax) * sin_ * sin(phi)
+					
+					call Int2_Get_tetraedron( x, y, z, cell)
+					call dekard_skorost(x, y, z, Wr_(i), Wp_(i), Wt_(i), Vx, Vy, Vz)
+				
+					if(cell < 1) then
+						!$MPI call MPI_Abort(MPI_COMM_WORLD, 103, mpi_ierror)
+						STOP "Error 0lhy976yihko  "
+					end if
+					
+					
+					if(i /= par_n_zone + 1 .or. bb == .True.) then
+						! Добавляем частицу в стек
+						stek(potok) = stek(potok) + 1
+						M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) * MK_mu1 * MK_Mu_mult /)
+						M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
+						M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
+						call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
+							to_i, to_j, r_peregel)
+						M_K_particle(8, stek(potok), potok) = r_peregel
+						M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
+						M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+				
+					end if
+				end do
+
+				call M_K_Fly(potok)
+				
+			end do
 			
-			do i = 1, par_n_zone + 1
-				sin_ = sqrt(1.0 - (X_(i)**2))
-				x = (par_Rmax) * X_(i)
-				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
-				phi = 2.0 * par_pi_8 * ksi
-				y = (par_Rmax) * sin_ * cos(phi)
-				z = (par_Rmax) * sin_ * sin(phi)
+			! Запускаем частицы второго типа (вылет сверху)
+			do num = 1, MK_N2
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
+				
+				ll = par_Rleft
+				rr = -0.001;
+				x = ll + ksi1 * (rr - ll)
+				phi = ksi2 * 2.0 * par_pi_8
+				Vphi = cos(2.0 * par_pi_8 * ksi3) * sqrt(-log(1.0 - ksi4))
+				Vx = par_Velosity_inf + sin(2.0 * par_pi_8 * ksi3) * sqrt(-log(1.0 - ksi4))
+				Vr = -sqrt(-log(ksi5))
+				y = par_Rup * cos(phi)
+				z = par_Rup * sin(phi)
 				
 				call Int2_Get_tetraedron( x, y, z, cell)
-				call dekard_skorost(x, y, z, Wr_(i), Wp_(i), Wt_(i), Vx, Vy, Vz)
-			
+				
 				if(cell < 1) then
-					!$MPI call MPI_Abort(MPI_COMM_WORLD, 103, mpi_ierror)
-					STOP "Error 0lhy976yihko  "
+					print*, x, y, z, cell
+					!$MPI call MPI_Abort(MPI_COMM_WORLD, 104, mpi_ierror)
+					STOP "Error 0lhy976yihkoqwewqdqwd  "
 				end if
 				
 				
-				if(i /= par_n_zone + 1 .or. bb == .True.) then
-					! Добавляем частицу в стек
-					stek(potok) = stek(potok) + 1
-					M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, Vy, Vz, mu_(i) * MK_mu1 * MK_Mu_mult /)
-					M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
-					M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
-					call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
-						to_i, to_j, r_peregel)
-					M_K_particle(8, stek(potok), potok) = r_peregel
-					M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
-					M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+				stek(potok) = stek(potok) + 1
+				M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, cos(phi) * Vr - sin(phi) * Vphi,&
+					sin(phi) * Vr + cos(phi) * Vphi,  MK_mu2 * MK_Mu_mult /)
+				M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
+				M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
+				call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
+					to_i, to_j, r_peregel)
+				M_K_particle(8, stek(potok), potok) = r_peregel
+				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
+				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+
+				call M_K_Fly(potok)
+
+			end do
 			
+			! Запускаем частицы третьего типа (вылет сзади)
+			do num = 1, MK_N3
+				call MK_Velosity_initial2(potok, Vx, Vy, Vz)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				rr = sqrt(ksi1 * (par_Rup) * (par_Rup))
+				phi = ksi2 * 2.0 * par_pi_8
+				y = rr * cos(phi)
+				z = rr * sin(phi)
+				
+				call Int2_Get_tetraedron(par_Rleft, y, z, cell)
+				if(cell < 1) then
+					!$MPI call MPI_Abort(MPI_COMM_WORLD, 105, mpi_ierror)
+					STOP "Error 0lhy976yihkodfresdfre  "
+				end if
+				
+				stek(potok) = stek(potok) + 1
+				M_K_particle(1:7, stek(potok), potok) = (/ par_Rleft, y, z, Vx, Vy, Vz,  MK_mu3 * MK_Mu_mult /)
+				M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
+				M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
+				call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
+					to_i, to_j, r_peregel)
+				M_K_particle(8, stek(potok), potok) = r_peregel
+				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
+				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+
+				call M_K_Fly(potok)
+			end do
+			
+			! Запускаем частицы четвёрного типа (вылет спереди с части плоскости)
+			do num = 1, MK_N4
+				call MK_Velosity_initial(potok, Vx, Vy, Vz)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				rr = sqrt(ksi1 * ((par_Rup**2) - (par_Rmax**2)) + (par_Rmax**2))
+				phi = ksi2 * 2.0 * par_pi_8
+				y = rr * cos(phi)
+				z = rr * sin(phi)
+				
+				call Int2_Get_tetraedron(-0.001_8, y, z, cell)
+				if(cell < 1) then
+					!$MPI call MPI_Abort(MPI_COMM_WORLD, 106, mpi_ierror)
+					STOP "Error 0lhy976yihko133131312  "
+				end if
+				
+				stek(potok) = stek(potok) + 1
+				M_K_particle(1:7, stek(potok), potok) = (/ -0.001_8, y, z, Vx, Vy, Vz,  MK_mu4 * MK_Mu_mult /)
+				M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
+				M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
+				call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
+					to_i, to_j, r_peregel)
+				M_K_particle(8, stek(potok), potok) = r_peregel
+				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
+				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
+
+				call M_K_Fly(potok)
+				
+			end do
+			
+			
+			
+			
+		end do
+		!$omp end do
+
+		!$omp end parallel
+		
+		end_time = omp_get_wtime()
+		
+		if(mpi_rank == 0) print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
+		
+		no = MK_Mu_mult * MK_N * par_n_claster
+		M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
+		pui_Sm(:, :) = sqv * pui_Sm(:, :) / no
+		do i = 1, pui_nW
+			pui_w1 = (i - 1) * pui_wR/pui_nW 
+			pui_w2 = i * pui_wR/pui_nW 
+			pui_Sp(i, :) = sqv * pui_Sp(i, :) / (no * 4.0 * par_pi_8 * (1.0/3.0) * (pui_w2**3 - pui_w1**3))
+		end do
+		
+		do i = 2, par_n_potok
+			M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
+		end do
+		
+		
+		! Печатаем результаты в файл для последующего суммирования
+		open(3, file = "M-K_param_007.bin", FORM = 'BINARY')
+		no = 1.0_8 * MK_N * par_n_claster
+		allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
+		M_K_Moment_print = M_K_Moment(:, :, :, 1)
+		WRITE(3) no
+		WRITE(3) M_K_Moment_print
+		close(3)
+		deallocate(M_K_Moment_print)
+		no = MK_Mu_mult * MK_N * par_n_claster
+		
+		
+		! Сложим все MPI потоки
+		!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
+		!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
+		
+		!$MPI do i = 1, par_n_claster - 1
+		!$MPI 	if(mpi_rank == i) call MPI_SEND(M_K_Moment(:, :, :, 1), size(buff), MPI_DOUBLE_PRECISION, 0, &
+		!$MPI 		100, MPI_COMM_WORLD, mpi_ierror)
+		!$MPI 	if(mpi_rank == 0) then
+		!$MPI 		call MPI_RECV(buff, size(buff), MPI_DOUBLE_PRECISION, i, 100, MPI_COMM_WORLD, mpi_status, mpi_ierror)
+		!$MPI 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + buff
+		!$MPI 	end if
+		!$MPI end do
+		
+		!$MPI if(mpi_rank  == 0) deallocate(buff)
+		!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
+		!$MPI call MPI_FINALIZE(mpi_ierror)
+		
+		!$MPI if(mpi_rank  /= 0) then
+		!$MPI print*, "Process  ", mpi_rank, "  zavershon"
+		!$MPI STOP 
+		!$MPI end if
+		
+		! Бежим по всем тетраэдрам и нормируем моменты
+		do i = 1, size(M_K_Moment(1, 1, :, 1))
+			
+			if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+			
+			if( int2_all_Volume(i) <= 0.00000001) then
+				!print*, "Error  dfgdfgdg89346767809098742577"
+				!print*, M_K_Moment(:, 4, i, 1)
+				print*, int2_all_Volume(i)
+				continue
+			end if
+			
+			!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
+			no = int2_all_Volume(i)
+			
+			if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
+					print*, "NaN lj098inbh5dgfdfghed"
+					pause
+			end if
+			
+			M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
+			
+			j = pui_num_tetr(i)
+			if(j > 0) then
+				pui_Sm(:, j) = pui_Sm(:, j) / no
+				pui_Sp(:, j) = pui_Sp(:, j) / no
+			end if
+			
+			if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
+					print*, "NaN 098uiknhuuyhjh"
+					pause
+			end if
+
+			do j = 1, par_n_sort
+				if(M_K_Moment(1, j, i, 1) > 0.000001) then
+					M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
+					M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
+						kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
+					
+					if(par_n_moment > 9) then
+						M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)**2
+						M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
+						M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
+						M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(3, j, i, 1)**2
+						M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
+						M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(4, j, i, 1)**2
+						M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
+							M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
+						M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
+							M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
+						M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
+							M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					end if
+					
 				end if
 			end do
-
-			call M_K_Fly(potok)
 			
+			M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
+			M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
 		end do
 		
-		! Запускаем частицы второго типа (вылет сверху)
-		do num = 1, MK_N2
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
-			
-			ll = par_Rleft
-			rr = -0.001;
-			x = ll + ksi1 * (rr - ll)
-			phi = ksi2 * 2.0 * par_pi_8
-			Vphi = cos(2.0 * par_pi_8 * ksi3) * sqrt(-log(1.0 - ksi4))
-			Vx = par_Velosity_inf + sin(2.0 * par_pi_8 * ksi3) * sqrt(-log(1.0 - ksi4))
-			Vr = -sqrt(-log(ksi5))
-			y = par_Rup * cos(phi)
-			z = par_Rup * sin(phi)
-			
-			call Int2_Get_tetraedron( x, y, z, cell)
-			
-			if(cell < 1) then
-				print*, x, y, z, cell
-				!$MPI call MPI_Abort(MPI_COMM_WORLD, 104, mpi_ierror)
-				STOP "Error 0lhy976yihkoqwewqdqwd  "
-			end if
-			
-			
-			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ x, y, z, Vx, cos(phi) * Vr - sin(phi) * Vphi,&
-				sin(phi) * Vr + cos(phi) * Vphi,  MK_mu2 * MK_Mu_mult /)
-			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
-			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
-			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
-				to_i, to_j, r_peregel)
-			M_K_particle(8, stek(potok), potok) = r_peregel
-			M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
-			M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
-
-			call M_K_Fly(potok)
-
-		end do
-		
-		! Запускаем частицы третьего типа (вылет сзади)
-		do num = 1, MK_N3
-			call MK_Velosity_initial2(potok, Vx, Vy, Vz)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-			rr = sqrt(ksi1 * (par_Rup) * (par_Rup))
-			phi = ksi2 * 2.0 * par_pi_8
-			y = rr * cos(phi)
-			z = rr * sin(phi)
-			
-			call Int2_Get_tetraedron(par_Rleft, y, z, cell)
-			if(cell < 1) then
-				!$MPI call MPI_Abort(MPI_COMM_WORLD, 105, mpi_ierror)
-				STOP "Error 0lhy976yihkodfresdfre  "
-			end if
-			
-			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ par_Rleft, y, z, Vx, Vy, Vz,  MK_mu3 * MK_Mu_mult /)
-			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
-			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
-			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
-				to_i, to_j, r_peregel)
-			M_K_particle(8, stek(potok), potok) = r_peregel
-			M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
-			M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
-
-			call M_K_Fly(potok)
-		end do
-		
-		! Запускаем частицы четвёрного типа (вылет спереди с части плоскости)
-		do num = 1, MK_N4
-			call MK_Velosity_initial(potok, Vx, Vy, Vz)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-			rr = sqrt(ksi1 * ((par_Rup**2) - (par_Rmax**2)) + (par_Rmax**2))
-			phi = ksi2 * 2.0 * par_pi_8
-			y = rr * cos(phi)
-			z = rr * sin(phi)
-			
-			call Int2_Get_tetraedron(-0.001_8, y, z, cell)
-			if(cell < 1) then
-				!$MPI call MPI_Abort(MPI_COMM_WORLD, 106, mpi_ierror)
-				STOP "Error 0lhy976yihko133131312  "
-			end if
-			
-			stek(potok) = stek(potok) + 1
-			M_K_particle(1:7, stek(potok), potok) = (/ -0.001_8, y, z, Vx, Vy, Vz,  MK_mu4 * MK_Mu_mult /)
-			M_K_particle_2(1, stek(potok), potok) = cell       ! В какой ячейке находится
-			M_K_particle_2(2, stek(potok), potok) = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Сорт
-			call MK_Distination( M_K_particle(1:3, stek(potok), potok), M_K_particle(4:6, stek(potok), potok),&
-				to_i, to_j, r_peregel)
-			M_K_particle(8, stek(potok), potok) = r_peregel
-			M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
-			M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
-
-			call M_K_Fly(potok)
-			
-		end do
-		
-		
-		
-		
-	end do
-	!$omp end do
-
-	!$omp end parallel
-	
-	 end_time = omp_get_wtime()
-	
-	if(mpi_rank == 0) print *, "Time work: ", (end_time-start_time)/60.0, "   in minutes"
-	
-	no = MK_Mu_mult * MK_N * par_n_claster
-	M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
-	pui_Sm(:, :) = pui_Sm(:, :) / no
-	do i = 1, pui_nW
-		pui_w1 = (i - 1) * pui_wR/pui_nW 
-		pui_w2 = i * pui_wR/pui_nW 
-		pui_Sp(i, :) = pui_Sp(i, :) / (no * 4.0 * par_pi_8 * (1.0/3.0) * (pui_w2**3 - pui_w1**3))
-	end do
-	
-	do i = 2, par_n_potok
-		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
-	end do
-	
-	
-	! Печатаем результаты в файл для последующего суммирования
-	open(3, file = "M-K_param_007.bin", FORM = 'BINARY')
-	no = 1.0_8 * MK_N * par_n_claster
-	allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
-	M_K_Moment_print = M_K_Moment(:, :, :, 1)
-	WRITE(3) no
-	WRITE(3) M_K_Moment_print
-	close(3)
-	deallocate(M_K_Moment_print)
-	no = MK_Mu_mult * MK_N * par_n_claster
-	
-	
-	! Сложим все MPI потоки
-	!$MPI if(mpi_rank  == 0) allocate(buff(par_n_moment, par_n_sort, size(int2_all_tetraendron(1, :))))
-	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
-	
-	!$MPI do i = 1, par_n_claster - 1
-	!$MPI 	if(mpi_rank == i) call MPI_SEND(M_K_Moment(:, :, :, 1), size(buff), MPI_DOUBLE_PRECISION, 0, &
-	!$MPI 		100, MPI_COMM_WORLD, mpi_ierror)
-	!$MPI 	if(mpi_rank == 0) then
-	!$MPI 		call MPI_RECV(buff, size(buff), MPI_DOUBLE_PRECISION, i, 100, MPI_COMM_WORLD, mpi_status, mpi_ierror)
-	!$MPI 		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + buff
-	!$MPI 	end if
-	!$MPI end do
-	
-	!$MPI if(mpi_rank  == 0) deallocate(buff)
-	!$MPI call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierror)
-	!$MPI call MPI_FINALIZE(mpi_ierror)
-	
-	!$MPI if(mpi_rank  /= 0) then
-	!$MPI print*, "Process  ", mpi_rank, "  zavershon"
-	!$MPI STOP 
-	!$MPI end if
-	
-	! Бежим по всем тетраэдрам и нормируем моменты
-	do i = 1, size(M_K_Moment(1, 1, :, 1))
-		
-		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
-		
-		if( int2_all_Volume(i) <= 0.00000001) then
-			!print*, "Error  dfgdfgdg89346767809098742577"
-			!print*, M_K_Moment(:, 4, i, 1)
-			print*, int2_all_Volume(i)
-			continue
-		end if
-		
-		!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
-		no = int2_all_Volume(i)
-		
-		if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
-				print*, "NaN lj098inbh5dgfdfghed"
-				pause
-		end if
-		
-		M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
-		
-		j = pui_num_tetr(i)
-		if(j > 0) then
-			pui_Sm(:, j) = sqv * pui_Sm(:, j) / no
-			pui_Sp(:, j) = sqv * pui_Sp(:, j) / no
-		end if
-		
-		if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
-				print*, "NaN 098uiknhuuyhjh"
-				pause
-		end if
-
-		do j = 1, par_n_sort
-			if(M_K_Moment(1, j, i, 1) > 0.000001) then
-				M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
-				M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
-					kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
+		! Вне расчётной области нужно заполнить значения в тетраэдрах
+		loop2: do i = 1, size(M_K_Moment(1, 1, :, 1))
+			do j = 1, 4
+				pp = int2_all_tetraendron_point(j, i)
+				if(pp == 0) CYCLE loop2
 				
-				if(par_n_moment > 9) then
-					M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)**2
-					M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
-					M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
-					M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(3, j, i, 1)**2
-					M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
-					M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(4, j, i, 1)**2
-					M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
-						M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
-					M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
-						M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
-					M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
-						M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+				if((int2_coord(1, pp) >= 0.0 .and. norm2(int2_coord(:, pp)) >= par_Rmax)) then
+					M_K_Moment(:, :, i, 1) = 0.0
+					M_K_Moment(1, 4, i, 1) = 1.0
+					M_K_Moment(5, 4, i, 1) = 1.0
+					M_K_Moment(10, 4, i, 1) = 0.5
+					M_K_Moment(13, 4, i, 1) = 0.5
+					M_K_Moment(15, 4, i, 1) = 0.5
+					M_K_Moment(2, 4, i, 1) = par_Velosity_inf
+					CYCLE loop2
 				end if
-				
-			end if
+			end do
+		end do loop2
+		
+		
+		! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
+		int2_Moment = 0.0
+		allocate(vol_sr(size(int2_Moment(1, 1, :))))
+		vol_sr = 0.0
+		
+		do i = 1, size(M_K_Moment(1, 1, :, 1))        ! Бежим по тетраэрам
+			if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+			do j = 1, 4
+				pp = int2_all_tetraendron_point(j, i)
+				vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
+				int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i, 1) * int2_all_Volume(i)
+			end do
 		end do
 		
-		M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
-		M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
-	end do
-	
-	! Вне расчётной области нужно заполнить значения в тетраэдрах
-	loop2: do i = 1, size(M_K_Moment(1, 1, :, 1))
-		do j = 1, 4
-			pp = int2_all_tetraendron_point(j, i)
-			if(pp == 0) CYCLE loop2
+		do i = 1, size(int2_Moment(1, 1, :))
+			if(vol_sr(i) <= 0.0000001) then
+				int2_Moment(:, :, i) = 0.0
+				int2_Moment(1, 4, i) = 1.0
+				int2_Moment(5, 4, i) = 1.0
+				int2_Moment(2, 4, i) = par_Velosity_inf
+				CYCLE
+			end if
+			int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
+		end do
+		
+		deallocate(vol_sr)
+		! ******************************************************************************************************************
+		! Собираем статистику по весам
+		if(MK_Mu_stat) then
+			open(1, file = "MK_Mu_statistic_.txt")
 			
-			if((int2_coord(1, pp) >= 0.0 .and. norm2(int2_coord(:, pp)) >= par_Rmax)) then
-				M_K_Moment(:, :, i, 1) = 0.0
-				M_K_Moment(1, 4, i, 1) = 1.0
-				M_K_Moment(5, 4, i, 1) = 1.0
-				M_K_Moment(10, 4, i, 1) = 0.5
-				M_K_Moment(13, 4, i, 1) = 0.5
-				M_K_Moment(15, 4, i, 1) = 0.5
-				M_K_Moment(2, 4, i, 1) = par_Velosity_inf
-				CYCLE loop2
-			end if
-		end do
-	end do loop2
-	
-	
-	! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
-	int2_Moment = 0.0
-	allocate(vol_sr(size(int2_Moment(1, 1, :))))
-	vol_sr = 0.0
-	
-	do i = 1, size(M_K_Moment(1, 1, :, 1))        ! Бежим по тетраэрам
-		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
-		do j = 1, 4
-			pp = int2_all_tetraendron_point(j, i)
-			vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
-			int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i, 1) * int2_all_Volume(i)
-		end do
-	end do
-	
-	do i = 1, size(int2_Moment(1, 1, :))
-		if(vol_sr(i) <= 0.0000001) then
-			int2_Moment(:, :, i) = 0.0
-			int2_Moment(1, 4, i) = 1.0
-			int2_Moment(5, 4, i) = 1.0
-			int2_Moment(2, 4, i) = par_Velosity_inf
-			CYCLE
-		end if
-		int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
-	end do
-	
-	deallocate(vol_sr)
-	! ******************************************************************************************************************
-	! Собираем статистику по весам
-	if(MK_Mu_stat) then
-		open(1, file = "MK_Mu_statistic_.txt")
-		
-		do k = 1, par_n_sort
-			do j = 1, par_m_zone + 1
-				do i = 1, par_n_zone + 1
-					write(1, *) i, j, k, MK_Mu_statistic(i, j, k) * &
-						(par_Rmax/MK_R_zone( min(i, par_n_zone) ))**2 * (par_m_zone + 1)/ MK_N
+			do k = 1, par_n_sort
+				do j = 1, par_m_zone + 1
+					do i = 1, par_n_zone + 1
+						write(1, *) i, j, k, MK_Mu_statistic(i, j, k) * &
+							(par_Rmax/MK_R_zone( min(i, par_n_zone) ))**2 * (par_m_zone + 1)/ MK_N
+					end do
 				end do
 			end do
-		end do
-		
-		close(1)
-	end if
+			
+			close(1)
+		end if
 	
 	end subroutine M_K_start
 	
@@ -922,9 +922,11 @@ module Monte_Karlo
 			
 			! Добавляем для расчёта PUI
 			if(area2 <= 2) then
-				call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
+				!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
+				call PUI_Add(cell, u, kappa/time, nu_ph, mu, mu, t_ex, t_ex)
+				call PUI_Add(cell, u, kappa/time, nu_ph, mu2, mu2, t2, t2)
 			end if
-			
+			!!(t_ex * mu + t2 * mu2)
 			!_________________________________________________________________________________________
 			
 			
