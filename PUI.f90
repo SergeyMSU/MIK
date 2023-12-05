@@ -112,16 +112,105 @@ module PUI
 		real(8) :: s, cospsi, C, A, B, Sm2, Sp2, qInt2
 		real(8) :: PAR_k(5), normal(3)
 		real(8) :: f0_pui(pui_nW)
+		real(8) :: mas_w(pui_nW)
+		real(8) :: mas_w0(pui_nW)
+		real(8) :: mas_Sm(pui_nW)
 		logical :: find_n
 
 		pui_Sm = pui_Sm * par_n_p_LISM
 		pui_Sp = pui_Sp * par_n_p_LISM
 
-		!!pui_Sp = pui_Sp * 5.70892E-41
-		!!pui_Sm = pui_Sm * 8.73898E41
 		
-		f0_pui = 0.0
 		print*, "START Culc_f_pui"
+
+		dt = 0.0005
+		do iw = 1, pui_nW
+				mas_w0(iw) = ((iw - 0.5) * pui_wR / pui_nW)
+		end do
+
+		! Находим функцию распределения для ячеек перед ударной волной
+		do i = 1, size(f_pui_num)
+			if(mod(i, 5000) == 0) print*, "i = ", i, " from", size(f_pui_num)
+			k = f_pui_num(i)      ! Номер узла сетки интерполяции, в которой считаем PUI
+			if(int2_Cell_par2(1, k) == 2) CYCLE
+			rho0 = int2_Cell_par(1, k)
+			f0_pui = 0.0
+			mas_Sm = 0.0
+
+			r = int2_coord(:, k)  ! Координаты этого узла
+			mas_w = mas_w0
+
+			num = 3
+			qInt = 0.0            ! Интеграл от источника массы при ионизации
+				
+			! Бежим до Солнца
+			do while (.TRUE.)
+				call Int2_Get_par_fast(r(1), r(2), r(3), num, PAR, PAR_k = PAR_k)
+				q1 = PAR_k(1)
+				rho = PAR(1)
+				qInt = qInt + dt * q1/rho                                    
+				r = r - PAR(2:4) * dt
+				tetraedron = pui_num_tetr(num) ! Номер тетраэдра в массиве источников
+				
+				do iw = 1, pui_nW
+					!print*, iw, mas_w(iw)
+					numw = min(INT(mas_w(iw)/pui_wR * pui_nW) + 1, pui_nW)
+					!print*, iw, f0_pui(iw), pui_Sp(numw, tetraedron), dt
+					if(mas_w(iw) < pui_wR .and. mas_w(iw) > 0) then
+						mas_Sm(iw) = mas_Sm(iw) + pui_Sm(numw, tetraedron) * dt                         
+						f0_pui(iw) = f0_pui(iw) + pui_Sp(numw, tetraedron) * dt * exp(-mas_Sm(iw))  ! Это S+, просто сразу накапливаем в функцию распределения
+					end if
+					!print*, iw, f0_pui(iw)
+					mas_w(iw) = mas_w0(iw) / ( (rho0/rho)**(1.0/3.0) * exp(-1.0/3.0 * qInt) )
+					!print*, iw, mas_w(iw)
+					!pause
+				end do
+				
+				if(norm2(r) <= par_R0) EXIT
+			end do
+
+			f_pui(:, i) = f0_pui(:)
+
+			! do iw = 1, pui_nW
+			! 	r = int2_coord(:, k)  ! Координаты этого узла
+			! 	w0 = ((iw - 0.5) * pui_wR / pui_nW)
+			! 	w = w0				
+			! 	num = 3
+			! 	dt = 0.0005
+			! 	Sm = 0.0
+			! 	Sp = 0.0
+			! 	qInt = 0.0            ! Интеграл от источника массы при ионизации
+			! 	! Бежим до Солнца
+			! 	do while (.TRUE.)
+			! 		num_do = num
+			! 		!print*, r, num
+			! 		!pause
+			! 		call Int2_Get_par_fast(r(1), r(2), r(3), num, PAR, PAR_k = PAR_k)
+			! 		q1 = PAR_k(1)
+			! 		rho_do = rho
+			! 		rho = PAR(1)
+			! 		qInt = qInt + dt * q1/rho                                              !TODO
+			! 		r = r - PAR(2:4) * dt
+			! 		tetraedron = pui_num_tetr(num) ! Номер тетраэдра в массиве источников
+			! 		numw = min(INT(w/pui_wR * pui_nW) + 1, pui_nW)
+			! 		if(w < pui_wR .and. w > 0) then
+			! 			Sm = Sm + pui_Sm(numw, tetraedron) * dt                               !TODO
+			! 			Sp = Sp + pui_Sp(numw, tetraedron) * dt * exp(-Sm)
+			! 		end if
+					
+			! 		w = w0 / ( (rho0/rho)**(1.0/3.0) * exp(-1.0/3.0 * qInt) )
+			! 		!w = w + dt * w/3.0 * 2.0 * norm2(PAR(2:4))/norm2(r)
+					
+			! 		if(norm2(r) <= par_R0) EXIT
+			! 	end do
+				
+			! 	f_pui(iw, i) = Sp
+				
+			! end do
+		end do
+		
+		return
+
 		! Находим функцию распределения для ячеек перед ударной волной
 		do i = 1, size(f_pui_num)
 			if(mod(i, 5000) == 0) print*, "i = ", i, " from", size(f_pui_num)
@@ -148,12 +237,12 @@ module PUI
 					q1 = PAR_k(1)
 					rho_do = rho
 					rho = PAR(1)
-					qInt = 0.0!qInt + dt * q1/rho                                              !TODO
+					qInt = qInt + dt * q1/rho                                              !TODO
 					r = r - PAR(2:4) * dt
 					tetraedron = pui_num_tetr(num) ! Номер тетраэдра в массиве источников
 					numw = min(INT(w/pui_wR * pui_nW) + 1, pui_nW)
 					if(w < pui_wR .and. w > 0) then
-						Sm = Sm + 0.0!pui_Sm(numw, tetraedron) * dt                               !TODO
+						Sm = Sm + pui_Sm(numw, tetraedron) * dt                               !TODO
 						Sp = Sp + pui_Sp(numw, tetraedron) * dt * exp(-Sm)
 					end if
 					
@@ -254,10 +343,10 @@ module PUI
 	
 	end subroutine Culc_f_pui
 	
-	subroutine PUI_Add(cell, wr, nu_ex, nu_ph, mu_ex, mu_ph, time_ex, time_ph)
+	subroutine PUI_Add(cell, wr, nu_ex, nu_ph, mu, time)
 		! wr - скорость атома в СК, связанной со средней скоростью плазмы (модуль этой скорости)
 		integer, intent(in) :: cell
-		real(8), intent(in) :: wr, nu_ex, nu_ph, mu_ex, mu_ph, time_ex, time_ph
+		real(8), intent(in) :: wr, nu_ex, nu_ph, mu, time
 		integer i, j
 		
 		j = pui_num_tetr(cell)
@@ -265,11 +354,11 @@ module PUI
 			i = min(INT(wr/pui_wR * pui_nW) + 1, pui_nW)
 			
 			call omp_set_lock(pui_lock(j))
-			pui_Sm(i, j) = pui_Sm(i, j) + mu_ex * time_ex
-			pui_Sp(i, j) = pui_Sp(i, j) + mu_ex * time_ex * nu_ex
+			pui_Sm(i, j) = pui_Sm(i, j) + mu * time
+			pui_Sp(i, j) = pui_Sp(i, j) + mu * time * nu_ex
 		
-			pui_Sm(i, j) = pui_Sm(i, j) + mu_ph * time_ph
-			pui_Sp(i, j) = pui_Sp(i, j) + mu_ph * time_ph * nu_ph
+			!pui_Sm(i, j) = pui_Sm(i, j) + mu * time
+			pui_Sp(i, j) = pui_Sp(i, j) + mu * time * nu_ph
 			call omp_unset_lock(pui_lock(j))
 			
 		end if
@@ -317,13 +406,12 @@ module PUI
 				pui_Sm2(ij) = pui_Sm2(ij) / (4.0 * par_pi_8)
 			end do
 			
-			pui_Sm(:, i) = pui_Sm2/par_Kn
+			pui_Sm(:, i) = pui_Sm2/par_Kn/2.0  !TODO НУЖНО БУДЕТ УБРАТЬ ДЕЛЕНИЕ НА ДВА В СЛЕДУЮЩИЙ РАЗ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		end do	
 		!$omp end do
 		!$omp end parallel
 		
 	end subroutine PUI_calc_Sm
-	
 	
 	subroutine PUI_print(num, x, y, z)
 		implicit none
@@ -398,7 +486,6 @@ module PUI
 	
 	end subroutine PUI_print
 	
-	
 	subroutine PUI_Save_bin(num)
 		implicit none
 		integer, intent(in) :: num
@@ -434,7 +521,6 @@ module PUI
 		close(1)
 	
 	end subroutine PUI_Save_bin
-	
 	
 	subroutine PUI_Read_bin(num)
 		implicit none

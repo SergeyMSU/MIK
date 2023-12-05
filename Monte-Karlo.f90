@@ -923,8 +923,8 @@ module Monte_Karlo
 			! Добавляем для расчёта PUI
 			if(area2 <= 2) then
 				!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
-				call PUI_Add(cell, u, kappa/time, nu_ph, mu, mu, t_ex, t_ex)
-				call PUI_Add(cell, u, kappa/time, nu_ph, mu2, mu2, t2, t2)
+				call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
+				call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
 			end if
 			!!(t_ex * mu + t2 * mu2)
 			!_________________________________________________________________________________________
