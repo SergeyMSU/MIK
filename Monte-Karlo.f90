@@ -461,219 +461,214 @@ module Monte_Karlo
 	
 	end subroutine M_K_start
 	
-	
-	
 	subroutine M_K_sum()
 	
-	USE OMP_LIB
-	!$MPI include 'mpif.h'
-	! Variables
-	integer(4) :: num, i, j, pp
-	real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
-	character(len=3) :: name
-	real(8) :: no, N, N1
-	logical :: exists
-	real(8), allocatable :: M_K_Moment_print(:, :, :)
-	
-	call M_K_Set()    ! Создали массивы
-	call M_K_init()
-	
-	
-	! Собираем результаты со всех файлов
-	allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
-	
-	M_K_Moment(:, :, :, 1) = 0.0
-	N = 0
-	
-	do num = 1, 7
-		write(unit = name, fmt='(i3.3)') num
-		inquire(file="M-K_param_" // name // ".bin", exist=exists)
-		if (exists == .False.) then
-			pause "net faila!!!"
-			STOP "net faila!!!"
-		end if
-		open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
-		read(2)  N1
-		N = N + N1
-		close(2)
+		USE OMP_LIB
+		!$MPI include 'mpif.h'
+		! Variables
+		integer(4) :: num, i, j, pp
+		real(8), allocatable :: vol_sr(:)                                    ! Для осреднения в узлах
+		character(len=3) :: name
+		real(8) :: no, N, N1
+		logical :: exists
+		real(8), allocatable :: M_K_Moment_print(:, :, :)
 		
-		print*, "N1 = ", N1
-	end do
-	
-	do num = 1, 7
-		write(unit = name, fmt='(i3.3)') num
-    
-		inquire(file="M-K_param_" // name // ".bin", exist=exists)
-    
-		if (exists == .False.) then
-			pause "net faila!!!"
-			STOP "net faila!!!"
-		end if
-    
-		open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
-    
-		read(2)  N1
-		read(2)  M_K_Moment_print
-		M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment_print * (N1/N)
+		call M_K_Set()    ! Создали массивы
+		call M_K_init()
 		
-		print*, "(N1/N) = ", (N1/N), M_K_Moment_print(1, 1, 100), M_K_Moment_print(1, 1, 1000)
-		close(2)
-	end do
-	
-	! M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1)/N
-	deallocate(M_K_Moment_print)
-	
-	! Бежим по всем тетраэдрам и нормируем моменты
-	do i = 1, size(M_K_Moment(1, 1, :, 1))
 		
-		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+		! Собираем результаты со всех файлов
+		allocate(M_K_Moment_print, mold = M_K_Moment(:, :, :, 1))
 		
-		if( int2_all_Volume(i) <= 0.00000001) then
-			!print*, "Error  dfgdfgdg89346767809098742577"
-			M_K_Moment(:, 4, i, 1) = 0.0
-			continue
-		end if
+		M_K_Moment(:, :, :, 1) = 0.0
+		N = 0
 		
-		!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
-		no = int2_all_Volume(i)
-		
-		if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
-				print*, "NaN lj098inbh5dgfdfghed"
-				pause
-		end if
-		
-		M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
-		
-		if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
-				print*, "NaN 098uiknhuuyhjh"
-				pause
-		end if
-
-		do j = 1, par_n_sort
-			if(M_K_Moment(1, j, i, 1) > 0.000001) then
-				M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
-				M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
-					kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
-				
-				if(par_n_moment > 9) then
-					M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)**2
-					M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
-					M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
-					M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(3, j, i, 1)**2
-					M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
-					M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
-						M_K_Moment(4, j, i, 1)**2
-					M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
-						M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
-					M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
-						M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
-					M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
-						M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
-				end if
-				
+		do num = 1, 7
+			write(unit = name, fmt='(i3.3)') num
+			inquire(file="M-K_param_" // name // ".bin", exist=exists)
+			if (exists == .False.) then
+				pause "net faila!!!"
+				STOP "net faila!!!"
 			end if
-		end do
-		
-		M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
-		M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
-	end do
-	
-	! Вне расчётной области нужно заполнить значения в тетраэдрах
-	loop2: do i = 1, size(M_K_Moment(1, 1, :, 1))
-		do j = 1, 4
-			pp = int2_all_tetraendron_point(j, i)
-			if(pp == 0) CYCLE loop2
+			open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+			read(2)  N1
+			N = N + N1
+			close(2)
 			
-			if((int2_coord(1, pp) >= 0.0 .and. norm2(int2_coord(:, pp)) >= par_Rmax)) then
-				M_K_Moment(:, :, i, 1) = 0.0
-				M_K_Moment(1, 4, i, 1) = 1.0
-				M_K_Moment(5, 4, i, 1) = 1.0
-				M_K_Moment(10, 4, i, 1) = 0.5
-				M_K_Moment(13, 4, i, 1) = 0.5
-				M_K_Moment(15, 4, i, 1) = 0.5
-				M_K_Moment(2, 4, i, 1) = par_Velosity_inf
-				CYCLE loop2
+			print*, "N1 = ", N1
+		end do
+		
+		do num = 1, 7
+			write(unit = name, fmt='(i3.3)') num
+		
+			inquire(file="M-K_param_" // name // ".bin", exist=exists)
+		
+			if (exists == .False.) then
+				pause "net faila!!!"
+				STOP "net faila!!!"
 			end if
+		
+			open(2, file = "M-K_param_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		
+			read(2)  N1
+			read(2)  M_K_Moment_print
+			M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment_print * (N1/N)
+			
+			print*, "(N1/N) = ", (N1/N), M_K_Moment_print(1, 1, 100), M_K_Moment_print(1, 1, 1000)
+			close(2)
 		end do
-	end do loop2
-	
-	
-	! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
-	int2_Moment = 0.0
-	allocate(vol_sr(size(int2_Moment(1, 1, :))))
-	vol_sr = 0.0
-	
-	do i = 1, size(M_K_Moment(1, 1, :, 1))        ! Бежим по тетраэрам
-		if(int2_all_tetraendron_point(1, i) == 0) CYCLE
-		do j = 1, 4
-			pp = int2_all_tetraendron_point(j, i)
-			vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
-			int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i, 1) * int2_all_Volume(i)
+		
+		! M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1)/N
+		deallocate(M_K_Moment_print)
+		
+		! Бежим по всем тетраэдрам и нормируем моменты
+		do i = 1, size(M_K_Moment(1, 1, :, 1))
+			
+			if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+			
+			if( int2_all_Volume(i) <= 0.00000001) then
+				!print*, "Error  dfgdfgdg89346767809098742577"
+				M_K_Moment(:, 4, i, 1) = 0.0
+				continue
+			end if
+			
+			!no = MK_Mu_mult * MK_N * int2_all_Volume(i)
+			no = int2_all_Volume(i)
+			
+			if(MK_is_NaN == .True. .and. ieee_is_nan(no)) then
+					print*, "NaN lj098inbh5dgfdfghed"
+					pause
+			end if
+			
+			M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
+			
+			if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
+					print*, "NaN 098uiknhuuyhjh"
+					pause
+			end if
+
+			do j = 1, par_n_sort
+				if(M_K_Moment(1, j, i, 1) > 0.000001) then
+					M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
+					M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
+						kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
+					
+					if(par_n_moment > 9) then
+						M_K_Moment(10, j, i, 1) = M_K_Moment(10, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)**2
+						M_K_Moment(11, j, i, 1) = M_K_Moment(11, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)*M_K_Moment(3, j, i, 1)
+						M_K_Moment(12, j, i, 1) = M_K_Moment(12, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(2, j, i, 1)*M_K_Moment(4, j, i, 1)
+						M_K_Moment(13, j, i, 1) = M_K_Moment(13, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(3, j, i, 1)**2
+						M_K_Moment(14, j, i, 1) = M_K_Moment(14, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(3, j, i, 1)*M_K_Moment(4, j, i, 1)
+						M_K_Moment(15, j, i, 1) = M_K_Moment(15, j, i, 1) / M_K_Moment(1, j, i, 1) - &
+							M_K_Moment(4, j, i, 1)**2
+						M_K_Moment(16, j, i, 1) = 2.0 * M_K_Moment(2, j, i, 1)**3 + 3.0 * M_K_Moment(2, j, i, 1) * M_K_Moment(10, j, i, 1) - &
+							M_K_Moment(16, j, i, 1) / M_K_Moment(1, j, i, 1) 
+						M_K_Moment(17, j, i, 1) = 2.0 * M_K_Moment(3, j, i, 1)**3 + 3.0 * M_K_Moment(3, j, i, 1) * M_K_Moment(13, j, i, 1) - &
+							M_K_Moment(17, j, i, 1) / M_K_Moment(1, j, i, 1) 
+						M_K_Moment(18, j, i, 1) = 2.0 * M_K_Moment(4, j, i, 1)**3 + 3.0 * M_K_Moment(4, j, i, 1) * M_K_Moment(15, j, i, 1) - &
+							M_K_Moment(18, j, i, 1) / M_K_Moment(1, j, i, 1) 
+					end if
+					
+				end if
+			end do
+			
+			M_K_Moment(6:9, :, i, 1) = M_K_Moment(6:9, :, i, 1) * par_n_p_LISM
+			M_K_Moment(19, :, i, 1) = M_K_Moment(19, :, i, 1) * par_n_p_LISM
 		end do
-	end do
-	
-	do i = 1, size(int2_Moment(1, 1, :))
-		if(vol_sr(i) <= 0.0000001) then
-			int2_Moment(:, :, i) = 0.0
-			int2_Moment(1, 4, i) = 1.0
-			int2_Moment(5, 4, i) = 1.0
-			int2_Moment(2, 4, i) = par_Velosity_inf
-			CYCLE
-		end if
-		int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
-	end do
-	
-	deallocate(vol_sr)
+		
+		! Вне расчётной области нужно заполнить значения в тетраэдрах
+		loop2: do i = 1, size(M_K_Moment(1, 1, :, 1))
+			do j = 1, 4
+				pp = int2_all_tetraendron_point(j, i)
+				if(pp == 0) CYCLE loop2
+				
+				if((int2_coord(1, pp) >= 0.0 .and. norm2(int2_coord(:, pp)) >= par_Rmax)) then
+					M_K_Moment(:, :, i, 1) = 0.0
+					M_K_Moment(1, 4, i, 1) = 1.0
+					M_K_Moment(5, 4, i, 1) = 1.0
+					M_K_Moment(10, 4, i, 1) = 0.5
+					M_K_Moment(13, 4, i, 1) = 0.5
+					M_K_Moment(15, 4, i, 1) = 0.5
+					M_K_Moment(2, 4, i, 1) = par_Velosity_inf
+					CYCLE loop2
+				end if
+			end do
+		end do loop2
+		
+		
+		! Теперь нужно сохранить моменты не в тетраэдрах, а в их вершинах (с осреднением в вершине) ************************
+		int2_Moment = 0.0
+		allocate(vol_sr(size(int2_Moment(1, 1, :))))
+		vol_sr = 0.0
+		
+		do i = 1, size(M_K_Moment(1, 1, :, 1))        ! Бежим по тетраэрам
+			if(int2_all_tetraendron_point(1, i) == 0) CYCLE
+			do j = 1, 4
+				pp = int2_all_tetraendron_point(j, i)
+				vol_sr(pp) = vol_sr(pp) + int2_all_Volume(i)
+				int2_Moment(:, :, pp) = int2_Moment(:, :, pp) + M_K_Moment(:, :, i, 1) * int2_all_Volume(i)
+			end do
+		end do
+		
+		do i = 1, size(int2_Moment(1, 1, :))
+			if(vol_sr(i) <= 0.0000001) then
+				int2_Moment(:, :, i) = 0.0
+				int2_Moment(1, 4, i) = 1.0
+				int2_Moment(5, 4, i) = 1.0
+				int2_Moment(2, 4, i) = par_Velosity_inf
+				CYCLE
+			end if
+			int2_Moment(:, :, i) = int2_Moment(:, :, i) / vol_sr(i)
+		end do
+		
+		deallocate(vol_sr)
 	
 	end subroutine M_K_sum
 	
 	subroutine M_K_init()
-	! Variables
-	real(8) :: Y, betta
-	real(8) :: PAR(9) 
-	integer :: cell
-	
-	! Инициализация некоторых параметров
-	par_n_moment = 19
-	betta = 2.0 * par_pi_8/(par_l_phi - 2)
-	par_Rleft = par_R_LEFT + 0.0001
-	par_Rup = 298.0! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
-	print*, "par_Rup = ", par_Rup
-	
-	Y = dabs(par_Velosity_inf)
-	sqv_1 = (par_Rmax) * (0.5 * (par_Rmax) * par_pi_8 * Y * &
-		(erf(Y) * (1.0 + 1.0 / (2.0 * (Y**2))) + 1.0 + exp(-(Y**2)) / (Y * par_sqrtpi)))  ! Запуск с полусферы
-	sqv_2 = par_sqrtpi * (par_Rup) * dabs(par_Rleft) ! Верхняя стенка
-	sqv_3 = par_pi_8 * (par_Rup**2) * exp(-(par_Velosity_inf**2)) * &
-	(1.0 + exp(par_Velosity_inf**2) * par_sqrtpi * par_Velosity_inf * (1.0 + erf(par_Velosity_inf))) / (2.0 * par_sqrtpi)
-	sqv_4 = (par_sqrtpi / 2.0) * ((par_Rmax**2) - (par_Rup**2)) * &
-		exp(-(par_Velosity_inf**2)) * (par_sqrtpi * par_Velosity_inf * erfc(par_Velosity_inf) * exp(par_Velosity_inf**2) - 1.0) ! Передняя стенка (выше полусферы)
-	sqv = sqv_1 + sqv_2 + sqv_3 + sqv_4
-	
-	
-	
-	MK_N = MK_N1 + MK_N2 + MK_N3 + MK_N4  
-	MK_mu1 = (sqv_1/ sqv) * (1.0 * MK_N / MK_N1)
-	MK_mu2 = (sqv_2/ sqv) * (1.0 * MK_N / MK_N2)
-	MK_mu3 = (sqv_3/ sqv) * (1.0 * MK_N / MK_N3)
-	MK_mu4 = (sqv_4/ sqv) * (1.0 * MK_N / MK_N4)
-	! Body of M_K_init
-	MK_N = MK_N * par_n_potok * par_n_parallel
-	
-	
-	! Проверка параметров
-	cell = 3
-	call Int2_Get_par_fast(260.0_8, 1.0_8, 1.0_8, cell, PAR)
-	print*, "Proverka MK, 745465635", "must be 1 = ", sqrt(PAR(5)/PAR(1))
-	
+		! Variables
+		real(8) :: Y, betta
+		real(8) :: PAR(9) 
+		integer :: cell
+		
+		! Инициализация некоторых параметров
+		par_n_moment = 19
+		betta = 2.0 * par_pi_8/(par_l_phi - 2)
+		par_Rleft = par_R_LEFT + 0.0001
+		par_Rup = 298.0! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
+		print*, "par_Rup = ", par_Rup
+		
+		Y = dabs(par_Velosity_inf)
+		sqv_1 = (par_Rmax) * (0.5 * (par_Rmax) * par_pi_8 * Y * &
+			(erf(Y) * (1.0 + 1.0 / (2.0 * (Y**2))) + 1.0 + exp(-(Y**2)) / (Y * par_sqrtpi)))  ! Запуск с полусферы
+		sqv_2 = par_sqrtpi * (par_Rup) * dabs(par_Rleft) ! Верхняя стенка
+		sqv_3 = par_pi_8 * (par_Rup**2) * exp(-(par_Velosity_inf**2)) * &
+		(1.0 + exp(par_Velosity_inf**2) * par_sqrtpi * par_Velosity_inf * (1.0 + erf(par_Velosity_inf))) / (2.0 * par_sqrtpi)
+		sqv_4 = (par_sqrtpi / 2.0) * ((par_Rmax**2) - (par_Rup**2)) * &
+			exp(-(par_Velosity_inf**2)) * (par_sqrtpi * par_Velosity_inf * erfc(par_Velosity_inf) * exp(par_Velosity_inf**2) - 1.0) ! Передняя стенка (выше полусферы)
+		sqv = sqv_1 + sqv_2 + sqv_3 + sqv_4
+		
+		
+		
+		MK_N = MK_N1 + MK_N2 + MK_N3 + MK_N4  
+		MK_mu1 = (sqv_1/ sqv) * (1.0 * MK_N / MK_N1)
+		MK_mu2 = (sqv_2/ sqv) * (1.0 * MK_N / MK_N2)
+		MK_mu3 = (sqv_3/ sqv) * (1.0 * MK_N / MK_N3)
+		MK_mu4 = (sqv_4/ sqv) * (1.0 * MK_N / MK_N4)
+		! Body of M_K_init
+		MK_N = MK_N * par_n_potok * par_n_parallel
+		
+		
+		! Проверка параметров
+		cell = 3
+		call Int2_Get_par_fast(260.0_8, 1.0_8, 1.0_8, cell, PAR)
+		print*, "Proverka MK, 745465635", "must be 1 = ", sqrt(PAR(5)/PAR(1))
 	end subroutine M_K_init
-	
-
 	
 	subroutine M_K_Fly(n_potok)
 	! Функция запускает все частицы в стеке потока + все дочерние частицы
@@ -1160,6 +1155,50 @@ module Monte_Karlo
 		
 	
 	end subroutine M_K_Set
+
+	subroutine MK_pui_charge_exchange_velocity(potok, Upx, Upy, Upz, UHx, UHy, UHz, num, VHx, VHy, VHz)
+		!? Функция перезарядки - получает новые скорости атома после перезарядки
+		USE PUI
+		implicit none
+		real(8), intent(in) :: Upx, Upy, Upz, UHx, UHy, UHz
+		integer, intent(in) :: potok, num ! В какой ячейке сейчас находимся (чтобы брать эту f_pui)
+		real(8), intent(out) :: VHx, VHy, VHz
+		
+		real(8) :: ksi1, ksi2, ksi3
+		real(8) :: UH, w, the, u, h0, phi
+		real(8) :: ex(3), ey(3), ez(3), vx, vy, vz
+
+		ez(1) = UHx - Upx
+		ez(2) = UHy - Upy
+		ez(3) = UHz - Upz
+
+		UH = sqrt((Upx - UHx)**2 + (Upy - UHy)**2 + (Upz - UHz)**2)
+		ez = ez/UH
+		h0 = PUI_get_h0(UH)
+
+		call get_bazis(ez, ex, ey)
+
+		do while(.True.)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi2)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi3)
+			w = PUI_get_F_integer(ksi, num)
+			the = acos(1.0 - 2.0 * ksi2)
+			u = sqrt(w**2 * sin(the)**2 + (w * cos(the) - UH)**2)
+			if(u * MK_sigma(u)/( (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc) * h0) >= ksi3) EXIT
+		end do
+
+		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
+		phi = ksi1 * 2.0 * par_pi_8
+
+		vx = w * sin(the) * cos(phi)
+		vy = w * sin(the) * sin(phi)
+		vz = w * cos(the)
+
+		VHx = Upx + vx * ex(1) + vy * ey(1) + vz * ez(1)
+		VHy = Upy + vx * ex(2) + vy * ey(2) + vz * ez(2)
+		VHz = Upz + vx * ex(3) + vy * ey(3) + vz * ez(3)
+	end subroutine MK_pui_charge_exchange_velocity
 	
 	subroutine M_K_Change_Velosity4(potok, Ur, Uthe, Uphi, Vr, Vthe, Vphi, Wr_, Wthe_, Wphi_, mu_, cp, r, I_, x_ex, y_ex, z_ex, bb)
 	! Как первая часть, но розыгрышь идёт по-частям

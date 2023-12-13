@@ -33,201 +33,232 @@
         end interface
         
         contains 
+
+        subroutine get_bazis(ex, ey, ez)
+            ! По заданному вектору ex подбирает ey, ez ему перпендикулярные, образующие правую тройку
+            !! ex - должен быть единичным
+            real(8), intent(in) :: ex(3)
+            real(8), intent(out) :: ey(3)
+            real(8), intent(out) :: ez(3)
+            real(8) :: norm
+
+            ez(1) = 1.0
+            ez(2) = 0.0
+            ez(3) = 0.0
+
+            if( 1.0 - fabs(DOT_PRODUCT(ex, ez)) < 0.001) then
+                ez(1) = 0.0
+                ez(2) = 1.0
+                ez(3) = 0.0
+            end if
+
+            ey(1) = ex(2) * ez(3) - ex(3) * ez(2)
+            ey(2) = ex(3) * ez(1) - ex(1) * ez(3)
+            ey(3) = ex(1) * ez(2) - ex(2) * ez(1)
+            norm = sqrt(ey(1)**2 + ey(2)**2 + ey(3)**2)
+            ey = ey/norm
+
+            ez(1) = ex(2) * ey(3) - ex(3) * ey(2)
+            ez(2) = ex(3) * ey(1) - ex(1) * ey(3)
+            ez(3) = ex(1) * ey(2) - ex(2) * ey(1)
+            norm = sqrt(ez(1)**2 + ez(2)**2 + ez(3)**2)
+            ez = ez/norm
+        end subroutine get_bazis
         
-            real(8) pure function kvv(x, y, z)
-                real(8), intent (in) :: x, y, z
-                kvv = x**2 + y**2 + z**2
-            end function kvv
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function polar_angle(x, y)
-                use GEO_PARAM
-                implicit none
-                real(8), intent(in) :: x, y
+        real(8) pure function kvv(x, y, z)
+            real(8), intent (in) :: x, y, z
+            kvv = x**2 + y**2 + z**2
+        end function kvv
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function polar_angle(x, y)
+            use GEO_PARAM
+            implicit none
+            real(8), intent(in) :: x, y
 
-                if (dabs(x) + dabs(y) < 0.00001 / par_R_character) then
-                    polar_angle = 0.0_8
-                    return
-                end if
-
-
-                if (x < 0) then
-                    polar_angle = atan(y / x) + 1.0 * par_pi_8
-                elseif (x > 0 .and. y >= 0) then
-                    polar_angle = atan(y / x)
-                elseif (x > 0 .and. y < 0) then
-                    polar_angle = atan(y / x) + 2.0 * par_pi_8
-                elseif (y > 0 .and. x >= 0 .and. x <= 0) then
-                    polar_angle = par_pi_8 / 2.0
-                elseif (y < 0 .and. x >= 0 .and. x <= 0) then
-                    polar_angle =  3.0 * par_pi_8 / 2.0
-                end if
-
+            if (dabs(x) + dabs(y) < 0.00001 / par_R_character) then
+                polar_angle = 0.0_8
                 return
-            end function polar_angle
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function angle_cilindr(x, par_al1)
-                ! Функция для неравномерного распределения сетки по углу
-                ! x от 0 до 1 и возвращает функция от 0 до 1
-                implicit none
-                real(8), intent(in) :: x, par_al1
+            end if
 
-                if (x < 0.5) then
-                    angle_cilindr = x * (par_al1 - 6 * (-1 + par_al1) * x + 8 * (-1 + par_al1) * x**2)
-                else
-                    angle_cilindr = 3 + par_al1 * (-1 + x) * (-1 + 2 * x) * (-3 + 4 *x) - 2 * x * (6 + x *(-9 + 4 * x))
-                end if
-                
-                return
-            end function angle_cilindr
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function sgushenie_1(x, par_al1)
+
+            if (x < 0) then
+                polar_angle = atan(y / x) + 1.0 * par_pi_8
+            elseif (x > 0 .and. y >= 0) then
+                polar_angle = atan(y / x)
+            elseif (x > 0 .and. y < 0) then
+                polar_angle = atan(y / x) + 2.0 * par_pi_8
+            elseif (y > 0 .and. x >= 0 .and. x <= 0) then
+                polar_angle = par_pi_8 / 2.0
+            elseif (y < 0 .and. x >= 0 .and. x <= 0) then
+                polar_angle =  3.0 * par_pi_8 / 2.0
+            end if
+
+            return
+        end function polar_angle
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function angle_cilindr(x, par_al1)
+            ! Функция для неравномерного распределения сетки по углу
             ! x от 0 до 1 и возвращает функция от 0 до 1
-            ! Сгущение точек к обоим концам отрезка
             implicit none
             real(8), intent(in) :: x, par_al1
 
-            sgushenie_1 = x * (par_al1 - 3.0 * (par_al1 - 1.0) * x + 2.0 * (par_al1 - 1.0)*x*x)
-            
-            return
-            end function sgushenie_1
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function sgushenie_2(x, all)
-            ! x от 0 до 1 и возвращает функция от 0 до 1
-            ! Сгущение точек к обоим концам отрезка (сильнее, чем предыдущая функция)
-            implicit none
-            real(8), intent(in) :: x, all
-
-            sgushenie_2 = all * x - 10 * (-1 + all) * x**3 + 15 * (-1 + all) * x**4 - 6 * (-1 + all) * x**5
-            
-            return
-            end function sgushenie_2
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function sgushenie_3(x, all)
-            ! x от 0 до 1 и возвращает функция от 0 до 1
-            ! Сгущение точек к 1
-            implicit none
-            real(8), intent(in) :: x, all
-
-            sgushenie_3 = -(-x + 1)**all + 1.0
-            
-            return
-            end function sgushenie_3
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function sgushenie_4(x, x0, y0)
-            ! x от 0 до 1 и возвращает функция от 0 до 1
-            ! Сгущение точек за BS
-            implicit none
-            real(8), intent(in) :: x, x0, y0
-
-            if(x < x0) then
-                sgushenie_4 = (x - x0) * y0/x0 + y0
+            if (x < 0.5) then
+                angle_cilindr = x * (par_al1 - 6 * (-1 + par_al1) * x + 8 * (-1 + par_al1) * x**2)
             else
-                sgushenie_4 = (1.0 - y0) * (x - x0)/(1.0 - x0) + y0
+                angle_cilindr = 3 + par_al1 * (-1 + x) * (-1 + 2 * x) * (-3 + 4 *x) - 2 * x * (6 + x *(-9 + 4 * x))
             end if
             
             return
-            end function sgushenie_4
-            
-            !@cuf attributes(host, device) & 
-            integer(4) pure function signum(x)
-                implicit none
-                real(8), intent(in) :: x
-                
-                if (x > 0) then
-                    signum = 1
-                    return
-                else if (x < 0) then
-                    signum = -1
-                    return
-                else 
-                    signum = 0
-                    return
-                end if
-            end function signum
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function minmod(x, y)
-                implicit none
-                real(8), intent(in) :: x, y
-                
-                if (signum(x) + signum(y) == 0) then
-                    minmod = 0.0_8
-                    return
-                else
-                    minmod = ((signum(x) + signum(y)) / 2.0) * min(dabs(x), dabs(y)) ! minmod
-                    return   
-                end if
-            end function minmod
-            
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function  linear(x1, t1, x2, t2, x3, t3, y)
-                ! Главное значение с параметрами 2
-                ! Строим линии между 1 и 2,  2 и 3, потом находим минмодом значение в y
-                implicit none
-                real(8), intent(in) :: x1, x2, x3, y, t1, t2, t3
-                real(8) :: d
+        end function angle_cilindr
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function sgushenie_1(x, par_al1)
+        ! x от 0 до 1 и возвращает функция от 0 до 1
+        ! Сгущение точек к обоим концам отрезка
+        implicit none
+        real(8), intent(in) :: x, par_al1
 
-                d = minmod((t1 - t2) / (x1 - x2), (t2 - t3) / (x2 - x3))
-                linear =  (d * (y - x2) + t2)
-                return
-                
-            end function linear
-            
-            !@cuf attributes(host, device) & 
-            real(8) pure function  linear2(x1, t1, x2, t2, y)
-                ! Просто строим линию по параметрам 1 и 2
-                implicit none
-                real(8), intent(in) :: x1, x2, y, t1, t2
-                real(8) :: d
+        sgushenie_1 = x * (par_al1 - 3.0 * (par_al1 - 1.0) * x + 2.0 * (par_al1 - 1.0)*x*x)
+        
+        return
+        end function sgushenie_1
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function sgushenie_2(x, all)
+        ! x от 0 до 1 и возвращает функция от 0 до 1
+        ! Сгущение точек к обоим концам отрезка (сильнее, чем предыдущая функция)
+        implicit none
+        real(8), intent(in) :: x, all
 
-                d = (t1 - t2) / (x1 - x2)
-                linear2 =  (d * (y - x2) + t2)
-                return
-                
-            end function linear2
-            
-            !@cuf attributes(host, device) & 
-            subroutine polyar_skorost(phi, Vy, Vz, Vr, Vphi)
-            ! Variables
+        sgushenie_2 = all * x - 10 * (-1 + all) * x**3 + 15 * (-1 + all) * x**4 - 6 * (-1 + all) * x**5
+        
+        return
+        end function sgushenie_2
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function sgushenie_3(x, all)
+        ! x от 0 до 1 и возвращает функция от 0 до 1
+        ! Сгущение точек к 1
+        implicit none
+        real(8), intent(in) :: x, all
+
+        sgushenie_3 = -(-x + 1)**all + 1.0
+        
+        return
+        end function sgushenie_3
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function sgushenie_4(x, x0, y0)
+        ! x от 0 до 1 и возвращает функция от 0 до 1
+        ! Сгущение точек за BS
+        implicit none
+        real(8), intent(in) :: x, x0, y0
+
+        if(x < x0) then
+            sgushenie_4 = (x - x0) * y0/x0 + y0
+        else
+            sgushenie_4 = (1.0 - y0) * (x - x0)/(1.0 - x0) + y0
+        end if
+        
+        return
+        end function sgushenie_4
+        
+        !@cuf attributes(host, device) & 
+        integer(4) pure function signum(x)
             implicit none
-            real(8), intent(in) :: phi, Vy, Vz
-            real(8), intent(out) :: Vr, Vphi
-
-            Vr = Vy * cos(phi) + Vz * sin(phi)
-            Vphi = Vz * cos(phi) - Vy * sin(phi)
-
-            end subroutine polyar_skorost
+            real(8), intent(in) :: x
             
-            !@cuf attributes(host, device) & 
-            subroutine dekard_polyar_skorost(phi, Vr, Vphi, Vy, Vz)
-            ! Variables
+            if (x > 0) then
+                signum = 1
+                return
+            else if (x < 0) then
+                signum = -1
+                return
+            else 
+                signum = 0
+                return
+            end if
+        end function signum
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function minmod(x, y)
             implicit none
-            real(8), intent(in) :: phi, Vr, Vphi 
-            real(8), intent(out) :: Vy, Vz
-
-            Vy = Vr * cos(phi) - Vphi * sin(phi)
-            Vz = Vr * sin(phi) + Vphi * cos(phi)
-
-            end subroutine dekard_polyar_skorost
+            real(8), intent(in) :: x, y
             
-            real(8) pure function MK_sigma(x)
-                USE GEO_PARAM
-                real(8), intent (in) :: x
-                MK_sigma = (1.0 - par_a_2 * log(x))**2
-            end function MK_sigma
+            if (signum(x) + signum(y) == 0) then
+                minmod = 0.0_8
+                return
+            else
+                minmod = ((signum(x) + signum(y)) / 2.0) * min(dabs(x), dabs(y)) ! minmod
+                return   
+            end if
+        end function minmod
+        
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function  linear(x1, t1, x2, t2, x3, t3, y)
+            ! Главное значение с параметрами 2
+            ! Строим линии между 1 и 2,  2 и 3, потом находим минмодом значение в y
+            implicit none
+            real(8), intent(in) :: x1, x2, x3, y, t1, t2, t3
+            real(8) :: d
 
-            real(8) pure function MK_sigma2(x, y)
-                USE GEO_PARAM
-                real(8), intent (in) :: x, y
-                MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
-            end function MK_sigma2
+            d = minmod((t1 - t2) / (x1 - x2), (t2 - t3) / (x2 - x3))
+            linear =  (d * (y - x2) + t2)
+            return
+            
+        end function linear
+        
+        !@cuf attributes(host, device) & 
+        real(8) pure function  linear2(x1, t1, x2, t2, y)
+            ! Просто строим линию по параметрам 1 и 2
+            implicit none
+            real(8), intent(in) :: x1, x2, y, t1, t2
+            real(8) :: d
+
+            d = (t1 - t2) / (x1 - x2)
+            linear2 =  (d * (y - x2) + t2)
+            return
+            
+        end function linear2
+        
+        !@cuf attributes(host, device) & 
+        subroutine polyar_skorost(phi, Vy, Vz, Vr, Vphi)
+        ! Variables
+        implicit none
+        real(8), intent(in) :: phi, Vy, Vz
+        real(8), intent(out) :: Vr, Vphi
+
+        Vr = Vy * cos(phi) + Vz * sin(phi)
+        Vphi = Vz * cos(phi) - Vy * sin(phi)
+
+        end subroutine polyar_skorost
+        
+        !@cuf attributes(host, device) & 
+        subroutine dekard_polyar_skorost(phi, Vr, Vphi, Vy, Vz)
+        ! Variables
+        implicit none
+        real(8), intent(in) :: phi, Vr, Vphi 
+        real(8), intent(out) :: Vy, Vz
+
+        Vy = Vr * cos(phi) - Vphi * sin(phi)
+        Vz = Vr * sin(phi) + Vphi * cos(phi)
+
+        end subroutine dekard_polyar_skorost
+        
+        real(8) pure function MK_sigma(x)
+            USE GEO_PARAM
+            real(8), intent (in) :: x
+            MK_sigma = (1.0 - par_a_2 * log(x))**2
+        end function MK_sigma
+
+        real(8) pure function MK_sigma2(x, y)
+            USE GEO_PARAM
+            real(8), intent (in) :: x, y
+            MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
+        end function MK_sigma2
 
 	end module My_func
 	
@@ -262,8 +293,6 @@
         Vtheta = Vx * cos(the_1) * cos(phi_1) + Vy * cos(the_1) * sin(phi_1) - Vz * sin(the_1);
         Vphi = -Vx * sin(phi_1) + Vy * cos(phi_1);
 	end subroutine spherical_skorost
-	
-	
 
 	!@cuf attributes(host, device) & 
     subroutine dekard_skorost(z, x, y, Vr, Vphi, Vtheta, Vz, Vx, Vy)
@@ -8656,17 +8685,38 @@
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+            call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
+            call Surf_Read_setka_bin(name)
+
 			call Int2_Read_bin(name2)
 			call PUI_Set()
 			call PUI_f_Set()
 			call PUI_Read_bin(name2)
-			call PUI_calc_Sm()
+			call PUI_Read_bin(9)
+
+			! call PUI_calc_Sm()
+            ! call PUI_Save_bin(9)
+
 			call Culc_f_pui()
+            call Cut_f_pui()
+            call PUI_Save_f_bin(9)
+            ! call PUI_Read_f_bin(9)
+
+            call PUI_Culc_h0()
+            call PUI_F_integr_Set()
 			call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
-            call Int_2_Print_par_1D()
+            call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(1, 18.0_8, 10.00001_8, 0.00001_8)
+            call PUI_print(2, 1.0_8, 22.00001_8, 0.00001_8)
+            call PUI_print(3, -40.0_8, 20.00001_8, 0.00001_8)
+            ! call Int_2_Print_par_1D()
+
 			!call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			!call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
 			

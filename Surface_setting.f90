@@ -37,217 +37,215 @@ module Surface_setting
 	contains
 	
 	subroutine Surf_Save_bin(num)
-	! Сохраняет положения поверхностей основной сетки (которая находится в модуле Storage)
-    use STORAGE
-    use GEO_PARAM
-    implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-	integer :: i, j, k, N1, N2, N3, yzel
-	real(8):: kord(3)
-    
-    write(unit=name, fmt='(i5.5)') num
-    
-    open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY')
-	
-    
-    write(1) par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_al1
-	
-	do k = 1, par_l_phi
+		! Сохраняет положения поверхностей основной сетки (которая находится в модуле Storage)
+		use STORAGE
+		use GEO_PARAM
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer :: i, j, k, N1, N2, N3, yzel
+		real(8):: kord(3)
 		
-		yzel = gl_RAY_A(5, 3, k)
-		kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			
-		write(1) polar_angle(kord(2), kord(3))
+		write(unit=name, fmt='(i5.5)') num
 		
-		! A - лучи
-		do j = 1, par_m_A
+		open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY')
+		
+		
+		write(1) par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_al1
+		
+		do k = 1, par_l_phi
 			
-			! TS
-			yzel = gl_RAY_A(par_n_TS, j, k)
+			yzel = gl_RAY_A(5, 3, k)
 			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				
+			write(1) polar_angle(kord(2), kord(3))
 			
-			write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)), norm2(kord)
+			! A - лучи
+			do j = 1, par_m_A
+				
+				! TS
+				yzel = gl_RAY_A(par_n_TS, j, k)
+				kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				
+				write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)), norm2(kord)
+				
+				
+				! Гелиопауза
+				yzel = gl_RAY_A(par_n_HP, j, k)
+				kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) norm2(kord)
+				
+				! BS
+				yzel = gl_RAY_A(par_n_BS, j, k)
+				kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) norm2(kord)
+				
+			end do
+			
+			! B - лучи
+			do j = 1, par_m_BC
+				
+				! the = (j - 1) * par_pi_8/2.0/(par_m_A - 1)
+				
+				! TS
+				yzel = gl_RAY_B(par_n_TS, j, k)
+				kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)),  norm2(kord)
+				
+				
+				! Гелиопауза
+				yzel = gl_RAY_B(par_n_HP, j, k)
+				kord = (/ gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) kord(1), sqrt(kord(2)**2 + kord(3)**2)
+				
+			end do
 			
 			
-			! Гелиопауза
-			yzel = gl_RAY_A(par_n_HP, j, k)
-			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) norm2(kord)
+			! O - лучи
+			do j = 1, par_m_O
+				
+				! Гелиопауза
+				yzel = gl_RAY_O(1, j, k)
+				kord = (/ gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) kord(1), sqrt(kord(2)**2 + kord(3)**2)
+				
+			end do
 			
-			! BS
-			yzel = gl_RAY_A(par_n_BS, j, k)
-			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) norm2(kord)
+			
+			! K - лучи
+			do j = par_m_K, 1, -1
+				! TS
+				yzel = gl_RAY_K(par_n_TS, j, k)
+				kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
+				write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)), norm2(kord)
+			end do
+			
 			
 		end do
 		
-		! B - лучи
-		do j = 1, par_m_BC
-			
-			! the = (j - 1) * par_pi_8/2.0/(par_m_A - 1)
-			
-			! TS
-			yzel = gl_RAY_B(par_n_TS, j, k)
-			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)),  norm2(kord)
-			
-			
-			! Гелиопауза
-			yzel = gl_RAY_B(par_n_HP, j, k)
-			kord = (/ gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) kord(1), sqrt(kord(2)**2 + kord(3)**2)
-			
-		end do
 		
-		
-		! O - лучи
-		do j = 1, par_m_O
-			
-			! Гелиопауза
-			yzel = gl_RAY_O(1, j, k)
-			kord = (/ gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) kord(1), sqrt(kord(2)**2 + kord(3)**2)
-			
-		end do
-		
-		
-		! K - лучи
-		do j = par_m_K, 1, -1
-			! TS
-			yzel = gl_RAY_K(par_n_TS, j, k)
-			kord = (/gl_x(yzel), gl_y(yzel), gl_z(yzel)/)
-			write(1) polar_angle(kord(1), sqrt(kord(2)**2 + kord(3)**2)), norm2(kord)
-		end do
-		
-		
-	end do
-	
-	
-	close(1)
-	
-	
+		close(1)
 	end subroutine Surf_Save_bin
 	
 	
 	subroutine Surf_Read_setka_bin(num)
-	! Variables
-    use STORAGE
-    use GEO_PARAM
-    implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-    integer :: n, i, j, k, N1, N2, N3
-    logical :: exists
-    
-    write(unit=name,fmt='(i5.5)') num
-    
-    inquire(file="Surf_Save" // name // ".bin", exist=exists)
-    
-    if (exists == .False.) then
-		pause "net faila!!!  8idjgeye0-0987fhjdkeye "
-        STOP "net faila!!!"
-    end if
-    
-    
-    
-    
-    open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
-    
-    read(1)  Surf_l_phi, Surf_m_A, Surf_m_BC, Surf_m_O, Surf_m_K, Surf_triple_point, Surf_al1
-    
-	allocate( Surf_phi(Surf_l_phi) )
-	
-	allocate( Surf_TS_the(Surf_m_A + Surf_m_BC + Surf_m_K, Surf_l_phi) )
-	allocate( Surf_TS_r(Surf_m_A + Surf_m_BC + Surf_m_K, Surf_l_phi) )
-	
-	allocate( Surf_BS_the(Surf_m_A, Surf_l_phi) )
-	allocate( Surf_BS_r(Surf_m_A, Surf_l_phi) )
-	
-	allocate( Surf_HP_the(Surf_m_A, Surf_l_phi) )
-	allocate( Surf_HP_r_A(Surf_m_A, Surf_l_phi) )
-	
-	allocate( Surf_HP_x(Surf_m_BC + Surf_m_O, Surf_l_phi) )
-	allocate( Surf_HP_r(Surf_m_BC + Surf_m_O, Surf_l_phi) )
-	
-	do k = 1, Surf_l_phi
-		read(1) Surf_phi(k)
+		! Variables
+		use STORAGE
+		use GEO_PARAM
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer :: n, i, j, k, N1, N2, N3
+		logical :: exists
 		
-		! A
-		do j = 1, Surf_m_A
-			read(1) Surf_TS_the(j, k), Surf_TS_r(j, k)
-			Surf_HP_the(j, k) = Surf_TS_the(j, k)
-			Surf_BS_the(j, k) = Surf_TS_the(j, k)
-			read(1) Surf_HP_r_A(j, k)
-			read(1) Surf_BS_r(j, k)
+		write(unit=name,fmt='(i5.5)') num
+		
+		inquire(file="Surf_Save" // name // ".bin", exist=exists)
+		
+		if (exists == .False.) then
+			pause "net faila!!!  8idjgeye0-0987fhjdkeye "
+			STOP "net faila!!!"
+		end if
+		
+		
+		
+		
+		open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		
+		read(1)  Surf_l_phi, Surf_m_A, Surf_m_BC, Surf_m_O, Surf_m_K, Surf_triple_point, Surf_al1
+		
+		allocate( Surf_phi(Surf_l_phi) )
+		
+		allocate( Surf_TS_the(Surf_m_A + Surf_m_BC + Surf_m_K, Surf_l_phi) )
+		allocate( Surf_TS_r(Surf_m_A + Surf_m_BC + Surf_m_K, Surf_l_phi) )
+		
+		allocate( Surf_BS_the(Surf_m_A, Surf_l_phi) )
+		allocate( Surf_BS_r(Surf_m_A, Surf_l_phi) )
+		
+		allocate( Surf_HP_the(Surf_m_A, Surf_l_phi) )
+		allocate( Surf_HP_r_A(Surf_m_A, Surf_l_phi) )
+		
+		allocate( Surf_HP_x(Surf_m_BC + Surf_m_O, Surf_l_phi) )
+		allocate( Surf_HP_r(Surf_m_BC + Surf_m_O, Surf_l_phi) )
+		
+		do k = 1, Surf_l_phi
+			read(1) Surf_phi(k)
+			
+			! A
+			do j = 1, Surf_m_A
+				read(1) Surf_TS_the(j, k), Surf_TS_r(j, k)
+				Surf_HP_the(j, k) = Surf_TS_the(j, k)
+				Surf_BS_the(j, k) = Surf_TS_the(j, k)
+				read(1) Surf_HP_r_A(j, k)
+				read(1) Surf_BS_r(j, k)
+			end do
+			
+			! B
+			do j = 1, Surf_m_BC
+				read(1) Surf_TS_the(j + Surf_m_A, k), Surf_TS_r(j + Surf_m_A, k)
+				read(1) Surf_HP_x(j, k), Surf_HP_r(j, k)
+			end do
+			
+			! O
+			do j = 1, Surf_m_O
+				read(1) Surf_HP_x(j + Surf_m_BC, k), Surf_HP_r(j + Surf_m_BC, k)
+			end do
+			
+			! K - лучи
+			do j = 1, Surf_m_K
+				read(1) Surf_TS_the(j + Surf_m_A + Surf_m_BC, k), Surf_TS_r(j + Surf_m_A + Surf_m_BC, k)
+			end do
+			
 		end do
 		
-		! B
-		do j = 1, Surf_m_BC
-			read(1) Surf_TS_the(j + Surf_m_A, k), Surf_TS_r(j + Surf_m_A, k)
-			read(1) Surf_HP_x(j, k), Surf_HP_r(j, k)
-		end do
 		
-		! O
-		do j = 1, Surf_m_O
-			read(1) Surf_HP_x(j + Surf_m_BC, k), Surf_HP_r(j + Surf_m_BC, k)
-		end do
-		
-		! K - лучи
-		do j = 1, Surf_m_K
-			read(1) Surf_TS_the(j + Surf_m_A + Surf_m_BC, k), Surf_TS_r(j + Surf_m_A + Surf_m_BC, k)
-		end do
-		
-	end do
-	
-	
-	close(1)
+		close(1)
 	
 	end subroutine Surf_Read_setka_bin
 	
 	
 	real(8) pure function Surf_Get_TS(x, y, z)
-	! Variables
-    implicit none
-    real(8), intent(in) :: x, y, z
-    real(8) :: the, phi, t1, t2, a, b, c, d
-	integer :: k1, k, j, j1
-	
-	 phi = polar_angle(y, z)
-	 the = polar_angle(x, sqrt(y**2 + z**2) )
-	 
-	 k1 = Surf_l_phi
-	 do k = 1, Surf_l_phi
-		 if(Surf_phi(k) > phi) then
-			 k1 = k
-			 EXIT
-		 end if
-	 end do
-	 
-	 t1 = (phi - Surf_phi(k1 - 1))/( Surf_phi(k1) - Surf_phi(k1 - 1) )
-	 
-	 j1 = size(Surf_TS_the(:, 1)) 
-	 do j = 1, size(Surf_TS_the(:, 1)) 
-		 if(Surf_TS_the(j, k1) >= the) then
-			 j1 = j
-			 EXIT
-		 end if
-	 end do
-	 
-	 if (j1 == 1) then
-		 j1 = 2
-		 t2 = 0.0
-	 else
-		t2 = ( the - Surf_TS_the(j1 - 1, k1) )/( Surf_TS_the(j1, k1) - Surf_TS_the(j1 - 1, k1) )
-	 end if
-	 
-	 a = Surf_TS_r(j1 - 1, k1 - 1)
-	 b = Surf_TS_r(j1, k1 - 1)
-	 c = Surf_TS_r(j1 - 1, k1)
-	 d = Surf_TS_r(j1, k1)
-	
-	 
-	 Surf_Get_TS = ((1.0 - t1) * a + t1 * c) * (1.0 - t2) + ((1.0 - t1) * b + t1 * d) * t2
+		! Variables
+		implicit none
+		real(8), intent(in) :: x, y, z
+		real(8) :: the, phi, t1, t2, a, b, c, d
+		integer :: k1, k, j, j1
+		
+		phi = polar_angle(y, z)
+		the = polar_angle(x, sqrt(y**2 + z**2) )
+		
+		k1 = Surf_l_phi
+		do k = 1, Surf_l_phi
+			if(Surf_phi(k) > phi) then
+				k1 = k
+				EXIT
+			end if
+		end do
+		
+		t1 = (phi - Surf_phi(k1 - 1))/( Surf_phi(k1) - Surf_phi(k1 - 1) )
+		
+		j1 = size(Surf_TS_the(:, 1)) 
+		do j = 1, size(Surf_TS_the(:, 1)) 
+			if(Surf_TS_the(j, k1) >= the) then
+				j1 = j
+				EXIT
+			end if
+		end do
+		
+		if (j1 == 1) then
+			j1 = 2
+			t2 = 0.0
+		else
+			t2 = ( the - Surf_TS_the(j1 - 1, k1) )/( Surf_TS_the(j1, k1) - Surf_TS_the(j1 - 1, k1) )
+		end if
+		
+		a = Surf_TS_r(j1 - 1, k1 - 1)
+		b = Surf_TS_r(j1, k1 - 1)
+		c = Surf_TS_r(j1 - 1, k1)
+		d = Surf_TS_r(j1, k1)
+		
+		
+		Surf_Get_TS = ((1.0 - t1) * a + t1 * c) * (1.0 - t2) + ((1.0 - t1) * b + t1 * d) * t2
 	 
 	end function Surf_Get_TS
 	

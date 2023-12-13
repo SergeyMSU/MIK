@@ -34,7 +34,7 @@
 	
 	
     integer(4), allocatable :: int2_all_Cell(:, :)   ! Весь набор ячеек (8, :) - первая координата массива - это набор узлов ячейки
-	integer(4), allocatable :: int2_Cell_A(:, :, :)
+	integer(4), allocatable :: int2_Cell_A(:, :, :)  ! Набор номеров ячеек группы A (так проще по ним ориентироваться было - это для связи)
 	integer(4), allocatable :: int2_Cell_B(:, :, :)
 	integer(4), allocatable :: int2_Cell_C(:, :, :)
 	
@@ -63,1826 +63,1826 @@
 	
 	subroutine Int2_Initial()
 	
-	integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj, s1, s2, ss1, ss2, l
-	real(8) :: a1(3), a2(3), a3(3), a4(3), b1(3), b2(3), b3(3), aa(3), bb(3), normal(3), S, di
-	! Заполняем интерполяционную сетку из основной
-	int2_Point_A(1, :, :) = -1  ! Центральная точка
-	int2_Point_B(1, :, :) = -1  ! Центральная точка
-	
-	
-	N1 = size(gl_Cell_A(:, 1, 1))
-	N2 = size(gl_Cell_A(1, :, 1))
-	N3 = size(gl_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, par_n_TS - 1
-				int2_Point_A(i + 1, j + 1, k) = gl_Cell_A(i, j, k)
-				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
-				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 
-			do i = par_n_TS, par_n_HP - 1
-				int2_Point_A(i + 3, j + 1, k) = gl_Cell_A(i, j, k)
-				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
-				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+		integer(4) :: i, j, k, N1, N2, N3, ijk, N, kk, m, ii, jj, s1, s2, ss1, ss2, l
+		real(8) :: a1(3), a2(3), a3(3), a4(3), b1(3), b2(3), b3(3), aa(3), bb(3), normal(3), S, di
+		! Заполняем интерполяционную сетку из основной
+		int2_Point_A(1, :, :) = -1  ! Центральная точка
+		int2_Point_B(1, :, :) = -1  ! Центральная точка
+		
+		
+		N1 = size(gl_Cell_A(:, 1, 1))
+		N2 = size(gl_Cell_A(1, :, 1))
+		N3 = size(gl_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, par_n_TS - 1
+					int2_Point_A(i + 1, j + 1, k) = gl_Cell_A(i, j, k)
+					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 					
+				end do
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_HP, par_n_BS - 1
-				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
-				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
-				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+		
+		do k = 1, N3
+			do j = 1, N2 
+				do i = par_n_TS, par_n_HP - 1
+					int2_Point_A(i + 3, j + 1, k) = gl_Cell_A(i, j, k)
+					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+						
+				end do
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_BS, par_n_END - 1
-				int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
-				int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
-				int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_HP, par_n_BS - 1
+					int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
+					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	
-	
-	! B - ячеейки !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	N1 = size(gl_Cell_B(:, 1, 1))
-	N2 = size(gl_Cell_B(1, :, 1))
-	N3 = size(gl_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, par_n_TS - 1
-				int2_Point_B(i + 1, j + 1, k) = gl_Cell_B(i, j, k)
-				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
-				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_BS, par_n_END - 1
+					int2_Point_A(i + 5, j + 1, k) = gl_Cell_A(i, j, k)
+					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
+					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_TS, N1
-				int2_Point_B(i + 3, j + 1, k) = gl_Cell_B(i, j, k)
-				int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
-				int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
+		
+		
+		
+		! B - ячеейки !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		N1 = size(gl_Cell_B(:, 1, 1))
+		N2 = size(gl_Cell_B(1, :, 1))
+		N3 = size(gl_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, par_n_TS - 1
+					int2_Point_B(i + 1, j + 1, k) = gl_Cell_B(i, j, k)
+					int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+					int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	
-	! C - точки  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	N1 = size(gl_Cell_C(:, 1, 1))
-	N2 = size(gl_Cell_C(1, :, 1))
-	N3 = size(gl_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, par_n_HP - par_n_TS
-				int2_Point_C(i, j, k) = gl_Cell_C(i, j, k)
-				ijk = gl_Cell_C(i, j, k)
-				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
-				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_TS, N1
+					int2_Point_B(i + 3, j + 1, k) = gl_Cell_B(i, j, k)
+					int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
+					int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_HP - par_n_TS + 1, par_n_BS - par_n_TS
-				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
-				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
-				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+		
+		
+		! C - точки  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		N1 = size(gl_Cell_C(:, 1, 1))
+		N2 = size(gl_Cell_C(1, :, 1))
+		N3 = size(gl_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, par_n_HP - par_n_TS
+					int2_Point_C(i, j, k) = gl_Cell_C(i, j, k)
+					ijk = gl_Cell_C(i, j, k)
+					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_BS - par_n_TS + 1, par_n_END - par_n_TS
-				int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
-				int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
-				int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
-				int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_HP - par_n_TS + 1, par_n_BS - par_n_TS
+					int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
+					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+				end do
 			end do
 		end do
-	end do
-	
-	
-	! Заполняем особые точки (поверхности разрывов)
-	N = size(gl_Cell_C) + size(gl_Cell_A) + size(gl_Cell_B)
-	int2_Point_A(1, :, :) = N + 1
-	int2_Point_B(1, :, :) = N + 1
-	int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
-	int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(1, 1, 1) )
-	int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(1, 1, 1) )
-	int2_Cell_par2(:, N + 1) = 1
-	N = N + 1
-	
-	N1 = size(gl_Cell_A(:, 1, 1))
-	N2 = size(gl_Cell_A(1, :, 1))
-	N3 = size(gl_Cell_A(1, 1, :))
-	
-	! A
-	do k = 1, N3
-		do j = 1, N2
-			int2_Point_A(par_n_TS + 1, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS - 1, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS - 1, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS - 1, j, k) )
-			N = N + 1
-			
-			int2_Point_A(par_n_TS + 2, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS, j, k) )
-			N = N + 1
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_BS - par_n_TS + 1, par_n_END - par_n_TS
+					int2_Point_C(i + 2, j, k) = gl_Cell_C(i, j, k)
+					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
+					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
+				end do
+			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			int2_Point_A(par_n_HP + 3, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP - 1, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP - 1, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP - 1, j, k) )
-			N = N + 1
-			
-			int2_Point_A(par_n_HP + 4, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP, j, k) )
-			N = N + 1
-		end do
-	end do
-	
-	! Добавим ряд точек на границе полусферы
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_END, par_n_END
-				int2_Point_A(i + 5, j + 1, k) = N + 1
-				aa = gl_Cell_center(:, gl_Cell_A(i - 1, j, k))
+		
+		
+		! Заполняем особые точки (поверхности разрывов)
+		N = size(gl_Cell_C) + size(gl_Cell_A) + size(gl_Cell_B)
+		int2_Point_A(1, :, :) = N + 1
+		int2_Point_B(1, :, :) = N + 1
+		int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
+		int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(1, 1, 1) )
+		int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(1, 1, 1) )
+		int2_Cell_par2(:, N + 1) = 1
+		N = N + 1
+		
+		N1 = size(gl_Cell_A(:, 1, 1))
+		N2 = size(gl_Cell_A(1, :, 1))
+		N3 = size(gl_Cell_A(1, 1, :))
+		
+		! A
+		do k = 1, N3
+			do j = 1, N2
+				int2_Point_A(par_n_TS + 1, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS - 1, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS - 1, j, k) )
+				N = N + 1
 				
-				if(aa(1) >= 0.0) then
-					di = norm2(aa)
-					int2_coord(:, N + 1) = aa/di * par_R_END
-				else
+				int2_Point_A(par_n_TS + 2, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS, j, k) )
+				N = N + 1
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2
+				int2_Point_A(par_n_HP + 3, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP - 1, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP - 1, j, k) )
+				N = N + 1
+				
+				int2_Point_A(par_n_HP + 4, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP, j, k) )
+				N = N + 1
+			end do
+		end do
+		
+		! Добавим ряд точек на границе полусферы
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_END, par_n_END
+					int2_Point_A(i + 5, j + 1, k) = N + 1
+					aa = gl_Cell_center(:, gl_Cell_A(i - 1, j, k))
+					
+					if(aa(1) >= 0.0) then
+						di = norm2(aa)
+						int2_coord(:, N + 1) = aa/di * par_R_END
+					else
+						di = sqrt(aa(2)**2 + aa(3)**2)
+						aa(2) = aa(2)/di * par_R_END
+						aa(3) = aa(3)/di * par_R_END
+						int2_coord(:, N + 1) = aa
+					end if
+					
+					
+					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(i - 1, j, k) )
+					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(i - 1, j, k) )
+					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(i - 1, j, k))
+					N = N + 1
+				end do
+			end do
+		end do
+		
+		
+		!B
+		N1 = size(gl_Cell_B(:, 1, 1))
+		N2 = size(gl_Cell_B(1, :, 1))
+		N3 = size(gl_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				int2_Point_B(par_n_TS + 1, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS - 1, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS - 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS - 1, j, k) )
+				N = N + 1
+				
+				int2_Point_B(par_n_TS + 2, j + 1, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS, j, k) )
+				N = N + 1 
+			end do
+		end do
+		
+		! Добавим ряд точек на границе 
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = N1 + 1, N1 + 1
+					int2_Point_B(i + 3, j + 1, k) = N + 1
+					aa = gl_Cell_center(:, gl_Cell_B(i - 1, j, k))
+					int2_coord(:, N + 1) = (/par_R_LEFT, aa(2), aa(3)/)
+					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(i - 1, j, k) )
+					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(i - 1, j, k) )
+					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(i - 1, j, k))
+					N = N + 1 
+				end do
+			end do
+		end do
+		
+		!C
+		N1 = size(gl_Cell_C(:, 1, 1))
+		N2 = size(gl_Cell_C(1, :, 1))
+		N3 = size(gl_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				int2_Point_C(par_n_HP - par_n_TS + 1, j, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS, j, k) )
+				N = N + 1
+				
+				int2_Point_C(par_n_HP - par_n_TS + 2, j, k) = N + 1
+				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
+				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
+				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
+				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
+				N = N + 1 
+			end do
+		end do
+		
+		! Добавим два ряда на границе
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_END - par_n_TS + 1, par_n_END - par_n_TS + 1
+					int2_Point_C(i + 2, j, k) = N + 1
+					aa = gl_Cell_center(:, gl_Cell_C(i - 1, j, k))
 					di = sqrt(aa(2)**2 + aa(3)**2)
 					aa(2) = aa(2)/di * par_R_END
 					aa(3) = aa(3)/di * par_R_END
 					int2_coord(:, N + 1) = aa
-				end if
-				
-				
-				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(i - 1, j, k) )
-				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(i - 1, j, k) )
-				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(i - 1, j, k))
-				N = N + 1
+					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(i - 1, j, k) )
+					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(i - 1, j, k) )
+					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(i - 1, j, k))
+					N = N + 1 
+				end do
 			end do
 		end do
-	end do
-	
-	
-	!B
-	N1 = size(gl_Cell_B(:, 1, 1))
-	N2 = size(gl_Cell_B(1, :, 1))
-	N3 = size(gl_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			int2_Point_B(par_n_TS + 1, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS - 1, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS - 1, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS - 1, j, k) )
-			N = N + 1
-			
-			int2_Point_B(par_n_TS + 2, j + 1, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS, j, k) )
-			N = N + 1 
-		end do
-	end do
-	
-	! Добавим ряд точек на границе 
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = N1 + 1, N1 + 1
-				int2_Point_B(i + 3, j + 1, k) = N + 1
-				aa = gl_Cell_center(:, gl_Cell_B(i - 1, j, k))
-				int2_coord(:, N + 1) = (/par_R_LEFT, aa(2), aa(3)/)
-				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(i - 1, j, k) )
-				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(i - 1, j, k) )
-				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(i - 1, j, k))
-				N = N + 1 
-			end do
-		end do
-	end do
-	
-	!C
-	N1 = size(gl_Cell_C(:, 1, 1))
-	N2 = size(gl_Cell_C(1, :, 1))
-	N3 = size(gl_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			int2_Point_C(par_n_HP - par_n_TS + 1, j, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS, j, k) )
-			N = N + 1
-			
-			int2_Point_C(par_n_HP - par_n_TS + 2, j, k) = N + 1
-			int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
-			int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
-			int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
-			int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
-			N = N + 1 
-		end do
-	end do
-	
-	! Добавим два ряда на границе
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_END - par_n_TS + 1, par_n_END - par_n_TS + 1
-				int2_Point_C(i + 2, j, k) = N + 1
-				aa = gl_Cell_center(:, gl_Cell_C(i - 1, j, k))
-				di = sqrt(aa(2)**2 + aa(3)**2)
-				aa(2) = aa(2)/di * par_R_END
-				aa(3) = aa(3)/di * par_R_END
-				int2_coord(:, N + 1) = aa
-				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(i - 1, j, k) )
-				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(i - 1, j, k) )
-				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(i - 1, j, k))
-				N = N + 1 
-			end do
-		end do
-	end do
-	
-	N1 = size(int2_Point_C(:, 1, 1))
-	N2 = size(int2_Point_C(1, :, 1))
-	N3 = size(int2_Point_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = N2, N2
-			do i = 1, N1
-				int2_Point_C(i, j, k) = N + 1
-				aa = int2_coord(:, int2_Point_C(i, j - 1, k))
-				aa(1) = par_R_LEFT
-				int2_coord(:, N + 1) = aa
-				int2_Cell_par(:, N + 1) = int2_Cell_par(:, int2_Point_C(i, j - 1, k))
-				int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, int2_Point_C(i, j - 1, k))
-				int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_C(i, j - 1, k))
-				N = N + 1 
-			end do
-		end do
-	end do
-	
-	! Ячейки на оси
-	N1 = size(int2_Point_A(:, 1, 1))
-	N2 = size(int2_Point_A(1, :, 1))
-	N3 = size(int2_Point_A(1, 1, :))
-	
-	!A
-	do i = 2, N1
-		int2_Point_A(i, 1, :) = N + 1
-		int2_coord(:, N + 1) = 0.0
-		int2_Cell_par(:, N + 1) = 0.0
-		int2_Cell_par_2(:, N + 1) = 0.0
-		int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_A(i, 2, 1))
+		
+		N1 = size(int2_Point_C(:, 1, 1))
+		N2 = size(int2_Point_C(1, :, 1))
+		N3 = size(int2_Point_C(1, 1, :))
 		
 		do k = 1, N3
-			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, k)), 0.0_8, 0.0_8 /)
-			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_A(i, 2, k))
-			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_A(i, 2, k))
+			do j = N2, N2
+				do i = 1, N1
+					int2_Point_C(i, j, k) = N + 1
+					aa = int2_coord(:, int2_Point_C(i, j - 1, k))
+					aa(1) = par_R_LEFT
+					int2_coord(:, N + 1) = aa
+					int2_Cell_par(:, N + 1) = int2_Cell_par(:, int2_Point_C(i, j - 1, k))
+					int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, int2_Point_C(i, j - 1, k))
+					int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_C(i, j - 1, k))
+					N = N + 1 
+				end do
+			end do
 		end do
-		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
-		int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
-		int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
-		N = N + 1
-	end do
-	
-	N1 = size(int2_Point_B(:, 1, 1))
-	N2 = size(int2_Point_B(1, :, 1))
-	N3 = size(int2_Point_B(1, 1, :))
-	
-	!B
-	do i = 2, N1
-		int2_Point_B(i, 1, :) = N + 1
-		int2_coord(:, N + 1) = 0.0
-		int2_Cell_par(:, N + 1) = 0.0
-		int2_Cell_par_2(:, N + 1) = 0.0
-		int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_B(i, 2, 1))
+		
+		! Ячейки на оси
+		N1 = size(int2_Point_A(:, 1, 1))
+		N2 = size(int2_Point_A(1, :, 1))
+		N3 = size(int2_Point_A(1, 1, :))
+		
+		!A
+		do i = 2, N1
+			int2_Point_A(i, 1, :) = N + 1
+			int2_coord(:, N + 1) = 0.0
+			int2_Cell_par(:, N + 1) = 0.0
+			int2_Cell_par_2(:, N + 1) = 0.0
+			int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_A(i, 2, 1))
+			
+			do k = 1, N3
+				int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, k)), 0.0_8, 0.0_8 /)
+				int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_A(i, 2, k))
+				int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_A(i, 2, k))
+			end do
+			int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
+			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
+			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
+			N = N + 1
+		end do
+		
+		N1 = size(int2_Point_B(:, 1, 1))
+		N2 = size(int2_Point_B(1, :, 1))
+		N3 = size(int2_Point_B(1, 1, :))
+		
+		!B
+		do i = 2, N1
+			int2_Point_B(i, 1, :) = N + 1
+			int2_coord(:, N + 1) = 0.0
+			int2_Cell_par(:, N + 1) = 0.0
+			int2_Cell_par_2(:, N + 1) = 0.0
+			int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_B(i, 2, 1))
+			
+			do k = 1, N3
+				int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_B(i, 2, k)), 0.0_8, 0.0_8 /)
+				int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_B(i, 2, k))
+				int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_B(i, 2, k))
+			end do
+			int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
+			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
+			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
+			N = N + 1
+		end do
+		
+		! Заполняем ячейки (двойственную сетку)
+		
+		N = 1
+		
+		! A - точки 
+		N1 = size(int2_Point_A(:, 1, 1))
+		N2 = size(int2_Point_A(1, :, 1))
+		N3 = size(int2_Point_A(1, 1, :))
 		
 		do k = 1, N3
-			int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_B(i, 2, k)), 0.0_8, 0.0_8 /)
-			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_B(i, 2, k))
-			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_B(i, 2, k))
-		end do
-		int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
-		int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
-		int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
-		N = N + 1
-	end do
-	
-	! Заполняем ячейки (двойственную сетку)
-	
-	N = 1
-	
-	! A - точки 
-	N1 = size(int2_Point_A(:, 1, 1))
-	N2 = size(int2_Point_A(1, :, 1))
-	N3 = size(int2_Point_A(1, 1, :))
-	
-	do k = 1, N3
-		
-		kk = k + 1
-		if (kk > N3) kk = 1
-		
-		do j = 1, N2 - 1
-			do i = 1, N1 - 1
-				
-				if (i == par_n_TS + 1) CYCLE
-				if (i == par_n_HP + 3) CYCLE
-				
-				int2_Cell_A(i, j, k) = N
-				
-				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_A(i + 1, j + 1, k)
-				int2_all_Cell(4, N) = int2_Point_A(i, j + 1, k)
-				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_A(i + 1, j + 1, kk)
-				int2_all_Cell(8, N) = int2_Point_A(i, j + 1, kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					ijk = int2_all_Cell(m, N)
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2 - 1
+				do i = 1, N1 - 1
+					
+					if (i == par_n_TS + 1) CYCLE
+					if (i == par_n_HP + 3) CYCLE
+					
+					int2_Cell_A(i, j, k) = N
+					
+					int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+					int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+					int2_all_Cell(3, N) = int2_Point_A(i + 1, j + 1, k)
+					int2_all_Cell(4, N) = int2_Point_A(i, j + 1, k)
+					int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+					int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+					int2_all_Cell(7, N) = int2_Point_A(i + 1, j + 1, kk)
+					int2_all_Cell(8, N) = int2_Point_A(i, j + 1, kk)
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						ijk = int2_all_Cell(m, N)
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	
-	! B - точки 
-	N1 = size(int2_Point_B(:, 1, 1))
-	N2 = size(int2_Point_B(1, :, 1))
-	N3 = size(int2_Point_B(1, 1, :))
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
 		
-		do j = 1, N2 - 1
-			do i = 1, N1 - 1
-				
-				if (i == par_n_TS + 1) CYCLE
-				
-				int2_Cell_B(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_B(i, j, k)
-				int2_all_Cell(4, N) = int2_Point_B(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_B(i + 1, j + 1, k)
-				int2_all_Cell(2, N) = int2_Point_B(i, j + 1, k)
-				int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
-				int2_all_Cell(8, N) = int2_Point_B(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_B(i + 1, j + 1, kk)
-				int2_all_Cell(6, N) = int2_Point_B(i, j + 1, kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					ijk = int2_all_Cell(m, N)
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		! B - точки 
+		N1 = size(int2_Point_B(:, 1, 1))
+		N2 = size(int2_Point_B(1, :, 1))
+		N3 = size(int2_Point_B(1, 1, :))
+		
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2 - 1
+				do i = 1, N1 - 1
+					
+					if (i == par_n_TS + 1) CYCLE
+					
+					int2_Cell_B(i, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_B(i, j, k)
+					int2_all_Cell(4, N) = int2_Point_B(i + 1, j, k)
+					int2_all_Cell(3, N) = int2_Point_B(i + 1, j + 1, k)
+					int2_all_Cell(2, N) = int2_Point_B(i, j + 1, k)
+					int2_all_Cell(5, N) = int2_Point_B(i, j, kk)
+					int2_all_Cell(8, N) = int2_Point_B(i + 1, j, kk)
+					int2_all_Cell(7, N) = int2_Point_B(i + 1, j + 1, kk)
+					int2_all_Cell(6, N) = int2_Point_B(i, j + 1, kk)
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						ijk = int2_all_Cell(m, N)
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	! C - точки 
-	N1 = size(int2_Point_C(:, 1, 1))
-	N2 = size(int2_Point_C(1, :, 1))
-	N3 = size(int2_Point_C(1, 1, :))
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
+		! C - точки 
+		N1 = size(int2_Point_C(:, 1, 1))
+		N2 = size(int2_Point_C(1, :, 1))
+		N3 = size(int2_Point_C(1, 1, :))
 		
-		do j = 1, N2 - 1
-			do i = 1, N1 - 1
-				
-				if (i == par_n_HP - par_n_TS + 1) CYCLE
-				
-				int2_Cell_C(i + 1, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_C(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_C(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_C(i + 1, j + 1, k)
-				int2_all_Cell(4, N) = int2_Point_C(i, j + 1, k)
-				int2_all_Cell(5, N) = int2_Point_C(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_C(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_C(i + 1, j + 1, kk)
-				int2_all_Cell(8, N) = int2_Point_C(i, j + 1, kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					ijk = int2_all_Cell(m, N)
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2 - 1
+				do i = 1, N1 - 1
+					
+					if (i == par_n_HP - par_n_TS + 1) CYCLE
+					
+					int2_Cell_C(i + 1, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_C(i, j, k)
+					int2_all_Cell(2, N) = int2_Point_C(i + 1, j, k)
+					int2_all_Cell(3, N) = int2_Point_C(i + 1, j + 1, k)
+					int2_all_Cell(4, N) = int2_Point_C(i, j + 1, k)
+					int2_all_Cell(5, N) = int2_Point_C(i, j, kk)
+					int2_all_Cell(6, N) = int2_Point_C(i + 1, j, kk)
+					int2_all_Cell(7, N) = int2_Point_C(i + 1, j + 1, kk)
+					int2_all_Cell(8, N) = int2_Point_C(i, j + 1, kk)
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						ijk = int2_all_Cell(m, N)
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	!Залатываем дырки между группами !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
-	! AB  - точки 
-	N1 = size(int2_Point_A(:, 1, 1))
-	N2 = size(int2_Point_A(1, :, 1))
-	N3 = size(int2_Point_A(1, 1, :))
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
+		!Залатываем дырки между группами !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		
-		do j = N2, N2
-			do i = 1, par_n_TS
-				
-				if (i == par_n_TS + 1) CYCLE
-				if (i == par_n_HP + 3) CYCLE
-				
-				int2_Cell_A(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(4, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
-				int2_all_Cell(8, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		! AB  - точки 
+		N1 = size(int2_Point_A(:, 1, 1))
+		N2 = size(int2_Point_A(1, :, 1))
+		N3 = size(int2_Point_A(1, 1, :))
+		
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = N2, N2
+				do i = 1, par_n_TS
+					
+					if (i == par_n_TS + 1) CYCLE
+					if (i == par_n_HP + 3) CYCLE
+					
+					int2_Cell_A(i, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+					int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+					int2_all_Cell(3, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+					int2_all_Cell(4, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), k)
+					int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+					int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+					int2_all_Cell(7, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+					int2_all_Cell(8, N) = int2_Point_B(i, size(int2_Point_B(1, :, 1)), kk)
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	! AC - точки 
-	N1 = size(int2_Point_A(:, 1, 1))
-	N2 = size(int2_Point_A(1, :, 1))
-	N3 = size(int2_Point_A(1, 1, :))
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
+		! AC - точки 
+		N1 = size(int2_Point_A(:, 1, 1))
+		N2 = size(int2_Point_A(1, :, 1))
+		N3 = size(int2_Point_A(1, 1, :))
 		
-		do j = N2, N2
-			do i = par_n_TS + 2, N1 - 1
-				
-				if (i == par_n_TS + 1) CYCLE
-				if (i == par_n_HP + 3) CYCLE
-				
-				int2_Cell_A(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_A(i, j, k)
-				int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
-				int2_all_Cell(3, N) = int2_Point_C(i - par_n_TS - 1, 1, k)
-				if (i == par_n_TS + 2) then
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = N2, N2
+				do i = par_n_TS + 2, N1 - 1
+					
+					if (i == par_n_TS + 1) CYCLE
+					if (i == par_n_HP + 3) CYCLE
+					
+					int2_Cell_A(i, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+					int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+					int2_all_Cell(3, N) = int2_Point_C(i - par_n_TS - 1, 1, k)
+					if (i == par_n_TS + 2) then
+						int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+					else
+						int2_all_Cell(4, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, k)
+					end if
+					int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+					int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+					int2_all_Cell(7, N) = int2_Point_C(i - par_n_TS - 1, 1, kk)
+					if (i == par_n_TS + 2) then
+						int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+					else
+						int2_all_Cell(8, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, kk)
+					end if
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Point_A(:, 1, 1))
+		N2 = size(int2_Point_A(1, :, 1))
+		N3 = size(int2_Point_A(1, 1, :))
+		
+		! Около тройной точки
+		!do k = 1, N3
+		!	
+		!	kk = k + 1
+		!	if (kk > N3) kk = 1
+		!	
+		!	do j = N2, N2
+		!		do i = par_n_TS + 2, par_n_TS + 2
+		!			
+		!			int2_Cell_A(i, j, k) = N
+		!			int2_all_Cell(1, N) = int2_Point_A(i, j, k)
+		!			int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
+		!			int2_all_Cell(3, N) = int2_Point_C(1, 1, k)
+		!			int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
+		!			int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
+		!			int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
+		!			int2_all_Cell(7, N) = int2_Point_C(1, 1, kk)
+		!			int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
+		!			
+		!			int2_Cell_center(:, N) = 0.0
+		!			do m = 1, 8
+		!				int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		!			end do
+		!			int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+		!			
+		!			N = N + 1
+		!		end do
+		!	end do
+		!end do
+		
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = N2, N2
+				do i = par_n_TS + 1, par_n_TS + 1
+					
+					int2_Cell_A(i, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_A(i + 1, j, k)
+					int2_all_Cell(2, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
+					int2_all_Cell(3, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
 					int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-				else
-					int2_all_Cell(4, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, k)
-				end if
-				int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
-				int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
-				int2_all_Cell(7, N) = int2_Point_C(i - par_n_TS - 1, 1, kk)
-				if (i == par_n_TS + 2) then
+					int2_all_Cell(5, N) = int2_Point_A(i + 1, j, kk)
+					int2_all_Cell(6, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
+					int2_all_Cell(7, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
 					int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
-				else
-					int2_all_Cell(8, N) = int2_Point_C(i - 1 - par_n_TS	- 1, 1, kk)
-				end if
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	N1 = size(int2_Point_A(:, 1, 1))
-	N2 = size(int2_Point_A(1, :, 1))
-	N3 = size(int2_Point_A(1, 1, :))
-	
-	! Около тройной точки
-	!do k = 1, N3
-	!	
-	!	kk = k + 1
-	!	if (kk > N3) kk = 1
-	!	
-	!	do j = N2, N2
-	!		do i = par_n_TS + 2, par_n_TS + 2
-	!			
-	!			int2_Cell_A(i, j, k) = N
-	!			int2_all_Cell(1, N) = int2_Point_A(i, j, k)
-	!			int2_all_Cell(2, N) = int2_Point_A(i + 1, j, k)
-	!			int2_all_Cell(3, N) = int2_Point_C(1, 1, k)
-	!			int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-	!			int2_all_Cell(5, N) = int2_Point_A(i, j, kk)
-	!			int2_all_Cell(6, N) = int2_Point_A(i + 1, j, kk)
-	!			int2_all_Cell(7, N) = int2_Point_C(1, 1, kk)
-	!			int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
-	!			
-	!			int2_Cell_center(:, N) = 0.0
-	!			do m = 1, 8
-	!				int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
-	!			end do
-	!			int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-	!			
-	!			N = N + 1
-	!		end do
-	!	end do
-	!end do
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
+		! Между B и C точками
 		
-		do j = N2, N2
-			do i = par_n_TS + 1, par_n_TS + 1
-				
-				int2_Cell_A(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_A(i + 1, j, k)
-				int2_all_Cell(2, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(3, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(4, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(5, N) = int2_Point_A(i + 1, j, kk)
-				int2_all_Cell(6, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
-				int2_all_Cell(7, N) = int2_Point_B(i + 2, size(int2_Point_B(1, :, 1)), kk)
-				int2_all_Cell(8, N) = int2_Point_B(i + 1, size(int2_Point_B(1, :, 1)), kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		N1 = size(int2_Point_C(:, 1, 1))
+		N2 = size(int2_Point_C(1, :, 1))
+		N3 = size(int2_Point_C(1, 1, :))
+		
+		do k = 1, N3
+			
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2 - 1
+				do i = 1, 1
+					
+					int2_Cell_C(i, j, k) = N
+					int2_all_Cell(1, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), k)
+					int2_all_Cell(2, N) = int2_Point_C(i, j , k)
+					int2_all_Cell(3, N) = int2_Point_C(i, j + 1, k)
+					int2_all_Cell(4, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), k)
+					int2_all_Cell(5, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), kk)
+					int2_all_Cell(6, N) = int2_Point_C(i, j , kk)
+					int2_all_Cell(7, N) = int2_Point_C(i, j + 1, kk)
+					int2_all_Cell(8, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), kk)
+					
+					int2_Cell_center(:, N) = 0.0
+					do m = 1, 8
+						int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+					end do
+					int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
+					
+					N = N + 1
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
 			end do
 		end do
-	end do
-	
-	! Между B и C точками
-	
-	N1 = size(int2_Point_C(:, 1, 1))
-	N2 = size(int2_Point_C(1, :, 1))
-	N3 = size(int2_Point_C(1, 1, :))
-	
-	do k = 1, N3
 		
-		kk = k + 1
-		if (kk > N3) kk = 1
+		!print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
 		
-		do j = 1, N2 - 1
-			do i = 1, 1
-				
-				int2_Cell_C(i, j, k) = N
-				int2_all_Cell(1, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(2, N) = int2_Point_C(i, j , k)
-				int2_all_Cell(3, N) = int2_Point_C(i, j + 1, k)
-				int2_all_Cell(4, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), k)
-				int2_all_Cell(5, N) = int2_Point_B(par_n_TS + 2 + j, size(int2_Point_B(1, :, 1)), kk)
-				int2_all_Cell(6, N) = int2_Point_C(i, j , kk)
-				int2_all_Cell(7, N) = int2_Point_C(i, j + 1, kk)
-				int2_all_Cell(8, N) = int2_Point_B(par_n_TS + 3 + j, size(int2_Point_B(1, :, 1)), kk)
-				
-				int2_Cell_center(:, N) = 0.0
-				do m = 1, 8
-					int2_Cell_center(:, N) = int2_Cell_center(:, N) + int2_coord(:, int2_all_Cell(m, N))
+		! Прописываем связи и соседей всем ячейкам
+		
+		! связи Для A - ячеек ---------------------------------------------------------------------------------------------------
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1 - 1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 1, j, k)
 				end do
-				int2_Cell_center(:, N) = int2_Cell_center(:, N)/8.0
-				
-				N = N + 1
-			end do
-		end do
-	end do
-	
-	!print*, " A  ==  B?", N - 1, size(int2_all_Cell(1, :))
-	
-	! Прописываем связи и соседей всем ячейкам
-	
-	! связи Для A - ячеек ---------------------------------------------------------------------------------------------------
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1 - 1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 2, N1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(2, int2_Cell_A(i, j, k)) = int2_Cell_A(i - 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 1
-			do i = 1, N1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j + 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 2, N2
-			do i = 1, N1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(4, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j - 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k + 1
-		if (kk > N3) kk = 1
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(5, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k - 1
-		if (kk < 1) kk = N3
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_A(i, j, k) == 0) CYCLE
-				int2_all_neighbours(6, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
-			end do
-		end do
-	end do
-	
-	! связи Для B - ячеек ---------------------------------------------------------------------------------------------------
-	N1 = size(int2_Cell_B(:, 1, 1))
-	N2 = size(int2_Cell_B(1, :, 1))
-	N3 = size(int2_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1 - 1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(1, int2_Cell_B(i, j, k)) = int2_Cell_B(i + 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 2, N1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(2, int2_Cell_B(i, j, k)) = int2_Cell_B(i - 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 1
-			do i = 1, N1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(3, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j + 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 2, N2
-			do i = 1, N1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(4, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j - 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k + 1
-		if (kk > N3) kk = 1
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(5, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k - 1
-		if (kk < 1) kk = N3
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_B(i, j, k) == 0) CYCLE
-				int2_all_neighbours(6, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
-			end do
-		end do
-	end do
-	
-	! связи Для C - ячеек ---------------------------------------------------------------------------------------------------
-	N1 = size(int2_Cell_C(:, 1, 1))
-	N2 = size(int2_Cell_C(1, :, 1))
-	N3 = size(int2_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1 - 1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(1, int2_Cell_C(i, j, k)) = int2_Cell_C(i + 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 2, N1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(2, int2_Cell_C(i, j, k)) = int2_Cell_C(i - 1, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 1
-			do i = 1, N1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(3, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j + 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 2, N2
-			do i = 1, N1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(4, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j - 1, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k + 1
-		if (kk > N3) kk = 1
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(5, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		kk = k - 1
-		if (kk < 1) kk = N3
-		
-		do j = 1, N2
-			do i = 1, N1
-				if(int2_Cell_C(i, j, k) == 0) CYCLE
-				int2_all_neighbours(6, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
-			end do
-		end do
-	end do
-	
-	! Теперь нужно отдельно прописать связи на стыках групп + на поверхностях разрыва + в тройной точке
-	
-	! TS в B - группе
-	N1 = size(int2_Cell_B(:, 1, 1))
-	N2 = size(int2_Cell_B(1, :, 1))
-	N3 = size(int2_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_TS, par_n_TS
-				int2_all_neighbours(1, int2_Cell_B(i, j, k)) = int2_Cell_B(i + 2, j, k)
-				int2_all_neighbours(2, int2_Cell_B(i + 2, j, k)) = int2_Cell_B(i, j, k)
-			end do
-		end do
-	end do
-	
-	
-	! TS в A - группе
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_TS, par_n_TS
-				int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 2, j, k)
-				int2_all_neighbours(2, int2_Cell_A(i + 2, j, k)) = int2_Cell_A(i, j, k)
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_HP + 2, par_n_HP + 2
-				int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 2, j, k)
-				int2_all_neighbours(2, int2_Cell_A(i + 2, j, k)) = int2_Cell_A(i, j, k)
 			end do
 		end do
 		
-		int2_all_neighbours(1, int2_Cell_A(par_n_TS, N2, k)) = 0
-		int2_all_neighbours(1, int2_Cell_A(par_n_TS + 1, N2, k)) = 0
-		int2_all_neighbours(2, int2_Cell_A(par_n_TS + 1, N2, k)) = 0
-		int2_all_neighbours(2, int2_Cell_A(par_n_TS + 2, N2, k)) = 0
+		do k = 1, N3
+			do j = 1, N2
+				do i = 2, N1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(2, int2_Cell_A(i, j, k)) = int2_Cell_A(i - 1, j, k)
+				end do
+			end do
+		end do
 		
-		int2_all_neighbours(2, int2_Cell_A(par_n_TS + 2, N2, k)) = int2_Cell_A(par_n_TS + 1, N2, k)
-		int2_all_neighbours(1, int2_Cell_A(par_n_TS + 1, N2, k)) = int2_Cell_A(par_n_TS + 2, N2, k)
+		do k = 1, N3
+			do j = 1, N2 - 1
+				do i = 1, N1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j + 1, k)
+				end do
+			end do
+		end do
 		
-		int2_all_neighbours(2, int2_Cell_A(par_n_TS + 1, N2, k)) = int2_Cell_A(par_n_TS, N2, k)
-		int2_all_neighbours(1, int2_Cell_A(par_n_TS, N2, k)) = int2_Cell_A(par_n_TS + 1, N2, k)
+		do k = 1, N3
+			do j = 2, N2
+				do i = 1, N1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(4, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j - 1, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			kk = k + 1
+			if (kk > N3) kk = 1
 			
-	end do
-	
-	
-	! HP в C - группе
-	N1 = size(int2_Cell_C(:, 1, 1))
-	N2 = size(int2_Cell_C(1, :, 1))
-	N3 = size(int2_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = par_n_HP - par_n_TS + 1, par_n_HP - par_n_TS + 1
-				int2_all_neighbours(1, int2_Cell_C(i, j, k)) = int2_Cell_C(i + 2, j, k)
-				int2_all_neighbours(2, int2_Cell_C(i + 2, j, k)) = int2_Cell_C(i, j, k)
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(5, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
+				end do
 			end do
 		end do
-	end do
-	
-	! AB - связи
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = N2, N2
-			do i = 1, par_n_TS
-				int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)
-				ijk = int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)
-				int2_all_neighbours(3, int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_A(i, j, k)
+		
+		do k = 1, N3
+			kk = k - 1
+			if (kk < 1) kk = N3
+			
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_A(i, j, k) == 0) CYCLE
+					int2_all_neighbours(6, int2_Cell_A(i, j, k)) = int2_Cell_A(i, j, kk)
+				end do
+			end do
+		end do
+		
+		! связи Для B - ячеек ---------------------------------------------------------------------------------------------------
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1 - 1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(1, int2_Cell_B(i, j, k)) = int2_Cell_B(i + 1, j, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 2, N1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(2, int2_Cell_B(i, j, k)) = int2_Cell_B(i - 1, j, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2 - 1
+				do i = 1, N1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(3, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j + 1, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 2, N2
+				do i = 1, N1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(4, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j - 1, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(5, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			kk = k - 1
+			if (kk < 1) kk = N3
+			
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_B(i, j, k) == 0) CYCLE
+					int2_all_neighbours(6, int2_Cell_B(i, j, k)) = int2_Cell_B(i, j, kk)
+				end do
+			end do
+		end do
+		
+		! связи Для C - ячеек ---------------------------------------------------------------------------------------------------
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1 - 1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(1, int2_Cell_C(i, j, k)) = int2_Cell_C(i + 1, j, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 2, N1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(2, int2_Cell_C(i, j, k)) = int2_Cell_C(i - 1, j, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2 - 1
+				do i = 1, N1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(3, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j + 1, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 2, N2
+				do i = 1, N1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(4, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j - 1, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			kk = k + 1
+			if (kk > N3) kk = 1
+			
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(5, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			kk = k - 1
+			if (kk < 1) kk = N3
+			
+			do j = 1, N2
+				do i = 1, N1
+					if(int2_Cell_C(i, j, k) == 0) CYCLE
+					int2_all_neighbours(6, int2_Cell_C(i, j, k)) = int2_Cell_C(i, j, kk)
+				end do
+			end do
+		end do
+		
+		! Теперь нужно отдельно прописать связи на стыках групп + на поверхностях разрыва + в тройной точке
+		
+		! TS в B - группе
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_TS, par_n_TS
+					int2_all_neighbours(1, int2_Cell_B(i, j, k)) = int2_Cell_B(i + 2, j, k)
+					int2_all_neighbours(2, int2_Cell_B(i + 2, j, k)) = int2_Cell_B(i, j, k)
+				end do
+			end do
+		end do
+		
+		
+		! TS в A - группе
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_TS, par_n_TS
+					int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 2, j, k)
+					int2_all_neighbours(2, int2_Cell_A(i + 2, j, k)) = int2_Cell_A(i, j, k)
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_HP + 2, par_n_HP + 2
+					int2_all_neighbours(1, int2_Cell_A(i, j, k)) = int2_Cell_A(i + 2, j, k)
+					int2_all_neighbours(2, int2_Cell_A(i + 2, j, k)) = int2_Cell_A(i, j, k)
+				end do
 			end do
 			
-			int2_all_neighbours(3, int2_Cell_A(par_n_TS + 1, j, k)) = int2_Cell_B(par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
-			int2_all_neighbours(3, int2_Cell_B(par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_A(par_n_TS + 1, j, k)
-				
-		end do
-	end do
-	
-	! AC - связи
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = N2, N2
-			do i = par_n_TS + 2, N1
-				if(i == par_n_HP + 3) CYCLE
-				int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_C(i - par_n_TS	- 1, 1, k)
-				ijk = int2_Cell_C(i - par_n_TS - 1, 1, k)
-				int2_all_neighbours(4, int2_Cell_C(i - par_n_TS - 1, 1, k)) = int2_Cell_A(i, j, k)
-			end do
-		end do
-	end do
-	
-	
-	! BC - связи
-	N1 = size(int2_Cell_C(:, 1, 1))
-	N2 = size(int2_Cell_C(1, :, 1))
-	N3 = size(int2_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, 1
-				int2_all_neighbours(2, int2_Cell_C(i, j, k)) = int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
-				ijk = int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
-				int2_all_neighbours(3, int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_C(i, j, k)
-			end do
-		end do
-	end do
-	
-	! Делаем проверки связей
-	
-	print*, "Proverka 1"
-	
-	N1 = size(int2_all_Cell(1, :))
-	do i = 1, N1
-		loop1: do j = 1, 6
-			s1 = int2_all_neighbours(j, i)
-			if (s1 < 1) CYCLE
-			do k = 1, 6
-				if(int2_all_neighbours(k, s1) == i) CYCLE loop1
-			end do
-			print*, "No sosed ", i, j
-		end do loop1
-	end do
-	
-	print*, "End proverka 1"
-	
-	! Создаём тетраэдры
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1
-				s1 = int2_Cell_A(i, j, k)
-				if (s1 == 0) CYCLE
-				if(j == N2 .and. i == par_n_TS + 1) CYCLE
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(1, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(2, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(2, s1), int2_all_Cell(8, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(7, s1), int2_all_Cell(8, s1), int2_all_Cell(6, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
+			int2_all_neighbours(1, int2_Cell_A(par_n_TS, N2, k)) = 0
+			int2_all_neighbours(1, int2_Cell_A(par_n_TS + 1, N2, k)) = 0
+			int2_all_neighbours(2, int2_Cell_A(par_n_TS + 1, N2, k)) = 0
+			int2_all_neighbours(2, int2_Cell_A(par_n_TS + 2, N2, k)) = 0
 			
-				int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(4, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(1, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(4, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(2, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(5, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
+			int2_all_neighbours(2, int2_Cell_A(par_n_TS + 2, N2, k)) = int2_Cell_A(par_n_TS + 1, N2, k)
+			int2_all_neighbours(1, int2_Cell_A(par_n_TS + 1, N2, k)) = int2_Cell_A(par_n_TS + 2, N2, k)
 			
-				int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
-				int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
+			int2_all_neighbours(2, int2_Cell_A(par_n_TS + 1, N2, k)) = int2_Cell_A(par_n_TS, N2, k)
+			int2_all_neighbours(1, int2_Cell_A(par_n_TS, N2, k)) = int2_Cell_A(par_n_TS + 1, N2, k)
 				
-				int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
-				
-				int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
-				
-				int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
-				
-				int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
-				
-				int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
-				
+		end do
+		
+		
+		! HP в C - группе
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = par_n_HP - par_n_TS + 1, par_n_HP - par_n_TS + 1
+					int2_all_neighbours(1, int2_Cell_C(i, j, k)) = int2_Cell_C(i + 2, j, k)
+					int2_all_neighbours(2, int2_Cell_C(i + 2, j, k)) = int2_Cell_C(i, j, k)
+				end do
 			end do
 		end do
-	end do
-	
-	! Отдельно для тройной точки
-	do k = 1, N3
-		do j = N2, N2
-			do i = par_n_TS + 1, par_n_TS + 1
-				s1 = int2_Cell_A(i, j, k)
-				if (s1 == 0) CYCLE
-				int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(1, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(1, s1), int2_all_Cell(5, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(1, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(5, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
+		
+		! AB - связи
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = N2, N2
+				do i = 1, par_n_TS
+					int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)
+					ijk = int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)
+					int2_all_neighbours(3, int2_Cell_B(i, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_A(i, j, k)
+				end do
 				
-				int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(1, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(2, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(4, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(1, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
-			
-				
-				int2_gran_sosed((s1 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-				int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 1
-				
-				int2_gran_sosed((s1 - 1) * 24 + 6) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 2
-				
-				
-			end do
-		end do
-	end do
-	
-	N1 = size(int2_Cell_B(:, 1, 1))
-	N2 = size(int2_Cell_B(1, :, 1))
-	N3 = size(int2_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1
-				s1 = int2_Cell_B(i, j, k)
-				if (s1 == 0) CYCLE
-				int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(8, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(4, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
-			
-				int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(1, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(2, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(1, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(4, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(6, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
-			
-				int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
-				int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
-				
-				int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
-				
-				int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
-				
-				int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
-				
-				int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
-				
-				int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
-				
-			end do
-		end do
-	end do
-	
-	
-	N1 = size(int2_Cell_C(:, 1, 1))
-	N2 = size(int2_Cell_C(1, :, 1))
-	N3 = size(int2_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1
-				s1 = int2_Cell_C(i, j, k)
-				if (s1 == 0) CYCLE
-				int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(8, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(4, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
-			
-				int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(1, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(2, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(1, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(4, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
-				
-				int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(7, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
-				int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(6, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
-				int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
-			
-				int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
-				int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
-				
-				int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
-				
-				int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
-				int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
-				
-				int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
-				
-				int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
-				int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
-				
-				int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
-				int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
-				
-			end do
-		end do
-	end do
-	
-	! Ещё не всех соседей тетраэдрам нашли
-	! Но сначала нужно обнулить нулевые тетраэдры
-	
-	N1 = size(int2_all_tetraendron(1, :))
-	
-	loop2: do i = 1, N1
-		do j = 1, 4
-			s1 = int2_all_tetraendron(j, i)
-			if (s1 == 0) CYCLE
-			if(int2_gran_point(1, s1) == int2_gran_point(2, s1) .or. int2_gran_point(1, s1) == int2_gran_point(3, s1) &
-				.or. int2_gran_point(2, s1) == int2_gran_point(3, s1)) then
-				int2_all_tetraendron(:, i) = 0
-				int2_gran_point(:, s1) = 0
-				CYCLE loop2
-			end if
-		end do
-	end do loop2
-	
-	! Находем соседей между ячейками (в А - группе)
-	
-	N1 = size(int2_Cell_A(:, 1, 1))
-	N2 = size(int2_Cell_A(1, :, 1))
-	N3 = size(int2_Cell_A(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2 - 2
-			do i = 1, N1 - 1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-				if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
-				if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
-				
-				s1 = int2_Cell_A(i, j, k)
-				s2 = int2_Cell_A(i + 1, j, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-
-				if(j == N2 .and. i == par_n_TS + 1) CYCLE               ! Из-за тройной точки - эти отдельно построим
-				if(j == N2 - 1 .and. i == par_n_TS + 1) CYCLE
-				if(j == N2 .and. i == par_n_TS) CYCLE
-				if(j == N2 - 1 .and. i == par_n_TS) CYCLE
-				if(j == N2 .and. i == par_n_TS + 2) CYCLE
-				if(j == N2 - 1 .and. i == par_n_TS + 2) CYCLE
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 3), int2_gran_point(:, (s1 - 1) * 24 + 6))) then
-					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-				end if
-				
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 15), int2_gran_point(:, (s1 - 1) * 24 + 9))) then
-					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-				end if
-				
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 2
-			do i = 1, N1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-				if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
-				if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
-				
-				s1 = int2_Cell_A(i, j, k)
-				s2 = int2_Cell_A(i, j + 1, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 2), int2_gran_point(:, (s1 - 1) * 24 + 20))) then
-					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-				end if
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 21), int2_gran_point(:, (s1 - 1) * 24 + 12) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-				end if
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3 - 1
-		do j = 1, N2 - 2
-			do i = 1, N1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-				if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
-				if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
-				
-				
-				s1 = int2_Cell_A(i, j, k)
-				s2 = int2_Cell_A(i, j, k + 1)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 13), int2_gran_point(:, (s1 - 1) * 24 + 24) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				end if
-				
-				
-				if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 8), int2_gran_point(:, (s1 - 1) * 24 + 17) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
-					int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
-				end if
-				
-			end do
-		end do
-	end do
-	
-	! Находим соседей между ячейками (в B - группе)
-	
-	N1 = size(int2_Cell_B(:, 1, 1))
-	N2 = size(int2_Cell_B(1, :, 1))
-	N3 = size(int2_Cell_B(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2 - 2
-			do i = 1, N1 - 1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-				
-				s1 = int2_Cell_B(i, j, k)
-				s2 = int2_Cell_B(i + 1, j, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-				end if
-
-				if( Int2_Comparison(int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-				end if
-				
+				int2_all_neighbours(3, int2_Cell_A(par_n_TS + 1, j, k)) = int2_Cell_B(par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
+				int2_all_neighbours(3, int2_Cell_B(par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_A(par_n_TS + 1, j, k)
 					
 			end do
 		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 2
-			do i = 1, N1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-				
-				s1 = int2_Cell_B(i, j, k)
-				s2 = int2_Cell_B(i, j + 1, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-				end if
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-				end if
-				
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3 - 1
-		do j = 1, N2 - 2
-			do i = 1, N1
-				
-				if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
-
-				s1 = int2_Cell_B(i, j, k)
-				s2 = int2_Cell_B(i, j, k + 1)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				end if
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
-					int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
-				end if
-				
-			end do
-		end do
-	end do
-	
-	! Находем соседей между ячейками (в C - группе)
-	
-	N1 = size(int2_Cell_C(:, 1, 1))
-	N2 = size(int2_Cell_C(1, :, 1))
-	N3 = size(int2_Cell_C(1, 1, :))
-	
-	do k = 1, N3
-		do j = 1, N2
-			do i = 1, N1 - 1
-				s1 = int2_Cell_C(i, j, k)
-				s2 = int2_Cell_C(i + 1, j, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
-				end if
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
-					int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
-				end if
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3
-		do j = 1, N2 - 1
-			do i = 1, N1
-				s1 = int2_Cell_C(i, j, k)
-				s2 = int2_Cell_C(i, j + 1, k)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20))) then
-					int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
-					int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
-				end if
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
-					int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
-				end if
-				
-			end do
-		end do
-	end do
-	
-	do k = 1, N3 - 1
-		do j = 1, N2
-			do i = 1, N1
-				s1 = int2_Cell_C(i, j, k)
-				s2 = int2_Cell_C(i, j, k + 1)
-				
-				if(s1 == 0 .or. s2 == 0) CYCLE
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
-					int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
-				end if
-				
-				
-				if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
-					int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
-					int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
-				end if
-				
-				
-			end do
-		end do
-	end do
-	
-	! Обнулим ссылки не несуществующие тетраэдры:
-	N1 = size(int2_all_tetraendron(1, :))
-	
-	do i = 1, N1
-		if(int2_all_tetraendron(1, i) == 0) then
-			int2_all_tetraendron(1, i) = 0
-			int2_all_tetraendron(2, i) = 0
-			int2_all_tetraendron(3, i) = 0
-			int2_all_tetraendron(4, i) = 0
-			CYCLE !Нет тетраэдра
-		end if
 		
-			
-			do k = 1, 4 ! Бежим по граням тетраэдра
-			s1 = int2_all_tetraendron(k, i)  ! Номер грани
-			ii = int2_gran_sosed(s1)  ! Номер тетраэдра - соседа
-			if (ii == 0) CYCLE
-			
-			if(int2_all_tetraendron(1, ii) == 0) then
-				int2_all_tetraendron(1, ii) = 0
-				int2_all_tetraendron(2, ii) = 0
-				int2_all_tetraendron(3, ii) = 0
-				int2_all_tetraendron(4, ii) = 0
-				int2_gran_sosed(s1) = 0
-				CYCLE
-			end if
+		! AC - связи
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = N2, N2
+				do i = par_n_TS + 2, N1
+					if(i == par_n_HP + 3) CYCLE
+					int2_all_neighbours(3, int2_Cell_A(i, j, k)) = int2_Cell_C(i - par_n_TS	- 1, 1, k)
+					ijk = int2_Cell_C(i - par_n_TS - 1, 1, k)
+					int2_all_neighbours(4, int2_Cell_C(i - par_n_TS - 1, 1, k)) = int2_Cell_A(i, j, k)
+				end do
 			end do
-	end do 
-	
-	
-! Обнулим грани несуществующих тетраэдров:
-	N1 = size(int2_all_tetraendron(1, :))
-	
-	do i = 1, N1
-		if(int2_all_tetraendron(1, i) == 0) then
-			int2_gran_point(:, 4 * (i - 1) + 1) = 0
-			int2_gran_point(:, 4 * (i - 1) + 2) = 0
-			int2_gran_point(:, 4 * (i - 1) + 3) = 0
-			int2_gran_point(:, 4 * (i - 1) + 4) = 0
-		end if
-	end do
-	
-
-	
-	
-	
-	! Обнулим ссылки не несуществующие грани:
-	N1 = size(int2_gran_point(1, :))
-	
-	do i = 1, N1
-		if(int2_gran_point(1, i) == 0) CYCLE !Нет грани
-			
-			if(int2_gran_point(1, i) == int2_gran_point(2, i) .or. int2_gran_point(1, i) == int2_gran_point(3, i) .or. &
-				int2_gran_point(2, i) == int2_gran_point(3, i)) int2_gran_point(:, i) = 0
-	end do 
-	
-	print*, "Auto connect"
-	! Теперь надо соединить между группами и тройную точку (предлагается автоматическое соединение)
-	
-	N1 = size(int2_all_Cell(1, :))
-	if (.True.) then
-	do i = 1, N1
-		do j = 1, 6
-			s1 = (i - 1) * 6 + j  ! Номер тетраэра
-			
-			
-			if(int2_all_tetraendron(1, s1) == 0) CYCLE !Нет тетраэдра
-			
-			loop3: do k = 1, 4 ! Бежим по граням тетраэдра
-				
-				!if(s1 == 1195701) then
-				!print*, int2_all_tetraendron(:, s1)
-				!continue
-				!end if
-				
-				
-				s2 = (i - 1) * 24 + (j - 1) * 4 + k  ! Номер грани
-				ijk = int2_gran_sosed(s2)   ! для отладки
-
-				if (int2_gran_sosed(s2) /= 0) CYCLE ! Сосед уже найдён
-				! Сосед не определён, нужно искать по координатам
-				a1 = int2_coord(:, int2_gran_point(1, s2))
-				a2 = int2_coord(:, int2_gran_point(2, s2))
-				a3 = int2_coord(:, int2_gran_point(3, s2))
-				
-				do l = 1, 6  ! Бежим по соседям этой ячейки
-					ii = int2_all_neighbours(l, i)
-					if (ii == 0) CYCLE ! Соседа нет
+		end do
+		
+		
+		! BC - связи
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, 1
+					int2_all_neighbours(2, int2_Cell_C(i, j, k)) = int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
+					ijk = int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)
+					int2_all_neighbours(3, int2_Cell_B(j + par_n_TS + 2, size(int2_Cell_B(1, :, 1)), k)) = int2_Cell_C(i, j, k)
+				end do
+			end do
+		end do
+		
+		! Делаем проверки связей
+		
+		print*, "Proverka 1"
+		
+		N1 = size(int2_all_Cell(1, :))
+		do i = 1, N1
+			loop1: do j = 1, 6
+				s1 = int2_all_neighbours(j, i)
+				if (s1 < 1) CYCLE
+				do k = 1, 6
+					if(int2_all_neighbours(k, s1) == i) CYCLE loop1
+				end do
+				print*, "No sosed ", i, j
+			end do loop1
+		end do
+		
+		print*, "End proverka 1"
+		
+		! Создаём тетраэдры
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1
+					s1 = int2_Cell_A(i, j, k)
+					if (s1 == 0) CYCLE
+					if(j == N2 .and. i == par_n_TS + 1) CYCLE
 					
-					do jj = 1, 6  ! Тетраэдры соседа
-						ss1 = (ii - 1) * 6 + jj  ! Номер тетраэдра
-						if(int2_all_tetraendron(1, ss1) == 0) CYCLE !Нет тетраэдра
+					int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(1, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(2, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(2, s1), int2_all_Cell(8, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(7, s1), int2_all_Cell(8, s1), int2_all_Cell(6, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(2, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
+				
+					int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(4, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(1, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(4, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(2, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(5, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
+				
+					int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
+					int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
+					
+					int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
+					
+					int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
+					
+					int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
+					
+				end do
+			end do
+		end do
+		
+		! Отдельно для тройной точки
+		do k = 1, N3
+			do j = N2, N2
+				do i = par_n_TS + 1, par_n_TS + 1
+					s1 = int2_Cell_A(i, j, k)
+					if (s1 == 0) CYCLE
+					int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(1, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(1, s1), int2_all_Cell(5, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(1, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(5, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(1, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(2, s1), int2_all_Cell(6, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(4, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(1, s1), int2_all_Cell(2, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(1, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(2, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
+				
+					
+					int2_gran_sosed((s1 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+					int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 1
+					
+					int2_gran_sosed((s1 - 1) * 24 + 6) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 2
+					
+					
+				end do
+			end do
+		end do
+		
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1
+					s1 = int2_Cell_B(i, j, k)
+					if (s1 == 0) CYCLE
+					int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(8, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(4, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
+				
+					int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(1, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(2, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(1, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(4, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(6, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
+				
+					int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
+					int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
+					
+					int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
+					
+					int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
+					
+					int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
+					
+				end do
+			end do
+		end do
+		
+		
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1
+					s1 = int2_Cell_C(i, j, k)
+					if (s1 == 0) CYCLE
+					int2_gran_point(:, (s1 - 1) * 24 + 1) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 2) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 3) = (/ int2_all_Cell(2, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 4) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(6, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 1) = (/ (s1 - 1) * 24 + 1, (s1 - 1) * 24 + 2, (s1 - 1) * 24 + 3, (s1 - 1) * 24 + 4 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 5) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 6) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 7) = (/ int2_all_Cell(3, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 8) = (/ int2_all_Cell(8, s1), int2_all_Cell(5, s1), int2_all_Cell(7, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 2) = (/ (s1 - 1) * 24 + 5, (s1 - 1) * 24 + 6, (s1 - 1) * 24 + 7, (s1 - 1) * 24 + 8 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 9) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(8, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 10) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 11) = (/ int2_all_Cell(3, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 12) = (/ int2_all_Cell(4, s1), int2_all_Cell(8, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 3) = (/ (s1 - 1) * 24 + 9, (s1 - 1) * 24 + 10, (s1 - 1) * 24 + 11, (s1 - 1) * 24 + 12 /)
+				
+					int2_gran_point(:, (s1 - 1) * 24 + 13) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(1, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 14) = (/ int2_all_Cell(2, s1), int2_all_Cell(3, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 15) = (/ int2_all_Cell(2, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 16) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 4) = (/ (s1 - 1) * 24 + 13, (s1 - 1) * 24 + 14, (s1 - 1) * 24 + 15, (s1 - 1) * 24 + 16 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 17) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(1, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 18) = (/ int2_all_Cell(3, s1), int2_all_Cell(4, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 19) = (/ int2_all_Cell(3, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 20) = (/ int2_all_Cell(4, s1), int2_all_Cell(1, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 5) = (/ (s1 - 1) * 24 + 17, (s1 - 1) * 24 + 18, (s1 - 1) * 24 + 19, (s1 - 1) * 24 + 20 /)
+					
+					int2_gran_point(:, (s1 - 1) * 24 + 21) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(7, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 22) = (/ int2_all_Cell(3, s1), int2_all_Cell(6, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 23) = (/ int2_all_Cell(3, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
+					int2_gran_point(:, (s1 - 1) * 24 + 24) = (/ int2_all_Cell(6, s1), int2_all_Cell(7, s1), int2_all_Cell(5, s1) /)
+					int2_all_tetraendron(:, (s1 - 1) * 6 + 6) = (/ (s1 - 1) * 24 + 21, (s1 - 1) * 24 + 22, (s1 - 1) * 24 + 23, (s1 - 1) * 24 + 24 /)
+				
+					int2_gran_sosed((s1 - 1) * 24 + 1) = (s1 - 1) * 6 + 4
+					int2_gran_sosed((s1 - 1) * 24 + 4) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 5) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 7) = (s1 - 1) * 6 + 6
+					
+					int2_gran_sosed((s1 - 1) * 24 + 10) = (s1 - 1) * 6 + 5
+					int2_gran_sosed((s1 - 1) * 24 + 11) = (s1 - 1) * 6 + 2
+					
+					int2_gran_sosed((s1 - 1) * 24 + 14) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 16) = (s1 - 1) * 6 + 5
+					
+					int2_gran_sosed((s1 - 1) * 24 + 18) = (s1 - 1) * 6 + 3
+					int2_gran_sosed((s1 - 1) * 24 + 19) = (s1 - 1) * 6 + 4
+					
+					int2_gran_sosed((s1 - 1) * 24 + 22) = (s1 - 1) * 6 + 1
+					int2_gran_sosed((s1 - 1) * 24 + 23) = (s1 - 1) * 6 + 2
+					
+				end do
+			end do
+		end do
+		
+		! Ещё не всех соседей тетраэдрам нашли
+		! Но сначала нужно обнулить нулевые тетраэдры
+		
+		N1 = size(int2_all_tetraendron(1, :))
+		
+		loop2: do i = 1, N1
+			do j = 1, 4
+				s1 = int2_all_tetraendron(j, i)
+				if (s1 == 0) CYCLE
+				if(int2_gran_point(1, s1) == int2_gran_point(2, s1) .or. int2_gran_point(1, s1) == int2_gran_point(3, s1) &
+					.or. int2_gran_point(2, s1) == int2_gran_point(3, s1)) then
+					int2_all_tetraendron(:, i) = 0
+					int2_gran_point(:, s1) = 0
+					CYCLE loop2
+				end if
+			end do
+		end do loop2
+		
+		! Находем соседей между ячейками (в А - группе)
+		
+		N1 = size(int2_Cell_A(:, 1, 1))
+		N2 = size(int2_Cell_A(1, :, 1))
+		N3 = size(int2_Cell_A(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2 - 2
+				do i = 1, N1 - 1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+					if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
+					if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
+					
+					s1 = int2_Cell_A(i, j, k)
+					s2 = int2_Cell_A(i + 1, j, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+
+					if(j == N2 .and. i == par_n_TS + 1) CYCLE               ! Из-за тройной точки - эти отдельно построим
+					if(j == N2 - 1 .and. i == par_n_TS + 1) CYCLE
+					if(j == N2 .and. i == par_n_TS) CYCLE
+					if(j == N2 - 1 .and. i == par_n_TS) CYCLE
+					if(j == N2 .and. i == par_n_TS + 2) CYCLE
+					if(j == N2 - 1 .and. i == par_n_TS + 2) CYCLE
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 3), int2_gran_point(:, (s1 - 1) * 24 + 6))) then
+						int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+						int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
+					end if
+					
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 15), int2_gran_point(:, (s1 - 1) * 24 + 9))) then
+						int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+					end if
+					
+					
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2 - 2
+				do i = 1, N1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+					if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
+					if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
+					
+					s1 = int2_Cell_A(i, j, k)
+					s2 = int2_Cell_A(i, j + 1, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 2), int2_gran_point(:, (s1 - 1) * 24 + 20))) then
+						int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+						int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+					end if
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 21), int2_gran_point(:, (s1 - 1) * 24 + 12) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
+					end if
+					
+				end do
+			end do
+		end do
+		
+		do k = 1, N3 - 1
+			do j = 1, N2 - 2
+				do i = 1, N1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+					if(i == par_n_HP - 1 .or. i == par_n_HP .or. i == par_n_HP + 1) CYCLE
+					if(i == par_n_BS - 1 .or. i == par_n_BS .or. i == par_n_BS + 1) CYCLE
+					
+					
+					s1 = int2_Cell_A(i, j, k)
+					s2 = int2_Cell_A(i, j, k + 1)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 13), int2_gran_point(:, (s1 - 1) * 24 + 24) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+						int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+					end if
+					
+					
+					if(Int2_Comparison(int2_gran_point(:, (s2 - 1) * 24 + 8), int2_gran_point(:, (s1 - 1) * 24 + 17) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 8) = (s1 - 1) * 6 + 5
+						int2_gran_sosed((s1 - 1) * 24 + 17) = (s2 - 1) * 6 + 2
+					end if
+					
+				end do
+			end do
+		end do
+		
+		! Находим соседей между ячейками (в B - группе)
+		
+		N1 = size(int2_Cell_B(:, 1, 1))
+		N2 = size(int2_Cell_B(1, :, 1))
+		N3 = size(int2_Cell_B(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2 - 2
+				do i = 1, N1 - 1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+					
+					s1 = int2_Cell_B(i, j, k)
+					s2 = int2_Cell_B(i + 1, j, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+					end if
+
+					if( Int2_Comparison(int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+						int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
+					end if
+					
 						
-						do kk = 1, 4 ! Бежим по граням тетраэдра
-							ss2 = (ii - 1) * 24 + (jj - 1) * 4 + kk  ! Номер грани
-							b1 = int2_coord(:, int2_gran_point(1, ss2))
-							b2 = int2_coord(:, int2_gran_point(2, ss2))
-							b3 = int2_coord(:, int2_gran_point(3, ss2))
-							if ( norm2(a1 - b1) < 0.00001 .or. norm2(a1 - b2) < 0.00001 .or. norm2(a1 - b3) < 0.00001) then
-								if ( norm2(a2 - b1) < 0.00001 .or. norm2(a2 - b2) < 0.00001 .or. norm2(a2 - b3) < 0.00001) then
-									if ( norm2(a3 - b1) < 0.00001 .or. norm2(a3 - b2) < 0.00001 .or. norm2(a3 - b3) < 0.00001) then
-										int2_gran_sosed(s2) = ss1
-											!if(ss1 == 1075918) then
-											!	print*, a1, a2, a3
-											!	print*, b1, b2, b3
-											!	continue
-											!end if
-										CYCLE loop3
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2 - 2
+				do i = 1, N1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+					
+					s1 = int2_Cell_B(i, j, k)
+					s2 = int2_Cell_B(i, j + 1, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+						int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+					end if
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
+					end if
+					
+					
+				end do
+			end do
+		end do
+		
+		do k = 1, N3 - 1
+			do j = 1, N2 - 2
+				do i = 1, N1
+					
+					if(i == par_n_TS - 1 .or. i == par_n_TS .or. i == par_n_TS + 1) CYCLE
+
+					s1 = int2_Cell_B(i, j, k)
+					s2 = int2_Cell_B(i, j, k + 1)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+						int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+					end if
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+						int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
+					end if
+					
+				end do
+			end do
+		end do
+		
+		! Находем соседей между ячейками (в C - группе)
+		
+		N1 = size(int2_Cell_C(:, 1, 1))
+		N2 = size(int2_Cell_C(1, :, 1))
+		N3 = size(int2_Cell_C(1, 1, :))
+		
+		do k = 1, N3
+			do j = 1, N2
+				do i = 1, N1 - 1
+					s1 = int2_Cell_C(i, j, k)
+					s2 = int2_Cell_C(i + 1, j, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 15), int2_gran_point(1, (s1 - 1) * 24 + 9) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 15) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 9) = (s2 - 1) * 6 + 4
+					end if
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 3), int2_gran_point(1, (s1 - 1) * 24 + 6) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 3) = (s1 - 1) * 6 + 2
+						int2_gran_sosed((s1 - 1) * 24 + 6) = (s2 - 1) * 6 + 1
+					end if
+					
+				end do
+			end do
+		end do
+		
+		do k = 1, N3
+			do j = 1, N2 - 1
+				do i = 1, N1
+					s1 = int2_Cell_C(i, j, k)
+					s2 = int2_Cell_C(i, j + 1, k)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 2), int2_gran_point(1, (s1 - 1) * 24 + 20))) then
+						int2_gran_sosed((s2 - 1) * 24 + 2) = (s1 - 1) * 6 + 5
+						int2_gran_sosed((s1 - 1) * 24 + 20) = (s2 - 1) * 6 + 1
+					end if
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 21), int2_gran_point(1, (s1 - 1) * 24 + 12) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 21) = (s1 - 1) * 6 + 3
+						int2_gran_sosed((s1 - 1) * 24 + 12) = (s2 - 1) * 6 + 6
+					end if
+					
+				end do
+			end do
+		end do
+		
+		do k = 1, N3 - 1
+			do j = 1, N2
+				do i = 1, N1
+					s1 = int2_Cell_C(i, j, k)
+					s2 = int2_Cell_C(i, j, k + 1)
+					
+					if(s1 == 0 .or. s2 == 0) CYCLE
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 13), int2_gran_point(1, (s1 - 1) * 24 + 24) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 13) = (s1 - 1) * 6 + 6
+						int2_gran_sosed((s1 - 1) * 24 + 24) = (s2 - 1) * 6 + 4
+					end if
+					
+					
+					if(Int2_Comparison( int2_gran_point(1, (s2 - 1) * 24 + 17), int2_gran_point(1, (s1 - 1) * 24 + 8) )) then
+						int2_gran_sosed((s2 - 1) * 24 + 17) = (s1 - 1) * 6 + 2
+						int2_gran_sosed((s1 - 1) * 24 + 8) = (s2 - 1) * 6 + 5
+					end if
+					
+					
+				end do
+			end do
+		end do
+		
+		! Обнулим ссылки не несуществующие тетраэдры:
+		N1 = size(int2_all_tetraendron(1, :))
+		
+		do i = 1, N1
+			if(int2_all_tetraendron(1, i) == 0) then
+				int2_all_tetraendron(1, i) = 0
+				int2_all_tetraendron(2, i) = 0
+				int2_all_tetraendron(3, i) = 0
+				int2_all_tetraendron(4, i) = 0
+				CYCLE !Нет тетраэдра
+			end if
+			
+				
+				do k = 1, 4 ! Бежим по граням тетраэдра
+				s1 = int2_all_tetraendron(k, i)  ! Номер грани
+				ii = int2_gran_sosed(s1)  ! Номер тетраэдра - соседа
+				if (ii == 0) CYCLE
+				
+				if(int2_all_tetraendron(1, ii) == 0) then
+					int2_all_tetraendron(1, ii) = 0
+					int2_all_tetraendron(2, ii) = 0
+					int2_all_tetraendron(3, ii) = 0
+					int2_all_tetraendron(4, ii) = 0
+					int2_gran_sosed(s1) = 0
+					CYCLE
+				end if
+				end do
+		end do 
+		
+		
+		! Обнулим грани несуществующих тетраэдров:
+		N1 = size(int2_all_tetraendron(1, :))
+		
+		do i = 1, N1
+			if(int2_all_tetraendron(1, i) == 0) then
+				int2_gran_point(:, 4 * (i - 1) + 1) = 0
+				int2_gran_point(:, 4 * (i - 1) + 2) = 0
+				int2_gran_point(:, 4 * (i - 1) + 3) = 0
+				int2_gran_point(:, 4 * (i - 1) + 4) = 0
+			end if
+		end do
+		
+
+		
+		
+		
+		! Обнулим ссылки не несуществующие грани:
+		N1 = size(int2_gran_point(1, :))
+		
+		do i = 1, N1
+			if(int2_gran_point(1, i) == 0) CYCLE !Нет грани
+				
+				if(int2_gran_point(1, i) == int2_gran_point(2, i) .or. int2_gran_point(1, i) == int2_gran_point(3, i) .or. &
+					int2_gran_point(2, i) == int2_gran_point(3, i)) int2_gran_point(:, i) = 0
+		end do 
+		
+		print*, "Auto connect"
+		! Теперь надо соединить между группами и тройную точку (предлагается автоматическое соединение)
+		
+		N1 = size(int2_all_Cell(1, :))
+		if (.True.) then
+		do i = 1, N1
+			do j = 1, 6
+				s1 = (i - 1) * 6 + j  ! Номер тетраэра
+				
+				
+				if(int2_all_tetraendron(1, s1) == 0) CYCLE !Нет тетраэдра
+				
+				loop3: do k = 1, 4 ! Бежим по граням тетраэдра
+					
+					!if(s1 == 1195701) then
+					!print*, int2_all_tetraendron(:, s1)
+					!continue
+					!end if
+					
+					
+					s2 = (i - 1) * 24 + (j - 1) * 4 + k  ! Номер грани
+					ijk = int2_gran_sosed(s2)   ! для отладки
+
+					if (int2_gran_sosed(s2) /= 0) CYCLE ! Сосед уже найдён
+					! Сосед не определён, нужно искать по координатам
+					a1 = int2_coord(:, int2_gran_point(1, s2))
+					a2 = int2_coord(:, int2_gran_point(2, s2))
+					a3 = int2_coord(:, int2_gran_point(3, s2))
+					
+					do l = 1, 6  ! Бежим по соседям этой ячейки
+						ii = int2_all_neighbours(l, i)
+						if (ii == 0) CYCLE ! Соседа нет
+						
+						do jj = 1, 6  ! Тетраэдры соседа
+							ss1 = (ii - 1) * 6 + jj  ! Номер тетраэдра
+							if(int2_all_tetraendron(1, ss1) == 0) CYCLE !Нет тетраэдра
+							
+							do kk = 1, 4 ! Бежим по граням тетраэдра
+								ss2 = (ii - 1) * 24 + (jj - 1) * 4 + kk  ! Номер грани
+								b1 = int2_coord(:, int2_gran_point(1, ss2))
+								b2 = int2_coord(:, int2_gran_point(2, ss2))
+								b3 = int2_coord(:, int2_gran_point(3, ss2))
+								if ( norm2(a1 - b1) < 0.00001 .or. norm2(a1 - b2) < 0.00001 .or. norm2(a1 - b3) < 0.00001) then
+									if ( norm2(a2 - b1) < 0.00001 .or. norm2(a2 - b2) < 0.00001 .or. norm2(a2 - b3) < 0.00001) then
+										if ( norm2(a3 - b1) < 0.00001 .or. norm2(a3 - b2) < 0.00001 .or. norm2(a3 - b3) < 0.00001) then
+											int2_gran_sosed(s2) = ss1
+												!if(ss1 == 1075918) then
+												!	print*, a1, a2, a3
+												!	print*, b1, b2, b3
+												!	continue
+												!end if
+											CYCLE loop3
+										else
+											CYCLE
+										end if
 									else
 										CYCLE
 									end if
 								else
 									CYCLE
 								end if
-							else
-								CYCLE
-							end if
+								
+							end do
 							
 						end do
-						
 					end do
+					
+				end do loop3
+			end do
+		end do
+		end if
+		print*, "END auto connect"
+		
+		! Заполняем плоскости тетраедров
+		
+		N1 = size(int2_plane_tetraendron(1, 1, :))
+		
+		do i = 1, N1
+			if (int2_all_tetraendron(1, i) == 0) CYCLE  ! Нет тетраэдра
+			
+			do j = 1, 4
+				s1 = int2_all_tetraendron(j, i) ! Номер грани тетраедра
+				a1 = int2_coord(:, int2_gran_point(1, s1))
+				a2 = int2_coord(:, int2_gran_point(2, s1))
+				a3 = int2_coord(:, int2_gran_point(3, s1))
+				
+				if (j == 1) int2_all_tetraendron_point(1, i) = int2_gran_point(1, s1)
+				if (j == 1) int2_all_tetraendron_point(2, i) = int2_gran_point(2, s1)
+				if (j == 1) int2_all_tetraendron_point(3, i) = int2_gran_point(3, s1)
+				
+				aa = a3 - a1
+				bb = a2 - a1
+			
+				normal(1) = aa(2) * bb(3) - aa(3) * bb(2) 
+				normal(2) = aa(3) * bb(1) - aa(1) * bb(3) 
+				normal(3) = aa(1) * bb(2) - aa(2) * bb(1)  
+				
+				int2_plane_tetraendron(1:3, j, i) = normal
+				int2_plane_tetraendron(4, j, i) = -DOT_PRODUCT(normal, a1)
+				
+				k = j + 1
+				if (k > 4) k = 1
+				s2 = int2_all_tetraendron(k, i) ! Номер другой грани тетраедра
+				do ii = 1, 3
+					if(int2_gran_point(ii, s2) /= int2_gran_point(1, s1) .and. int2_gran_point(ii, s2) /= int2_gran_point(2, s1) .and. &
+					int2_gran_point(ii, s2) /= int2_gran_point(3, s1)) then
+						if (j == 1) int2_all_tetraendron_point(4, i) = int2_gran_point(ii, s2)
+						if ( DOT_PRODUCT(int2_plane_tetraendron(1:3, j, i), int2_coord(:, int2_gran_point(ii, s2))) + &
+							int2_plane_tetraendron(4, j, i) > 0) then
+							int2_plane_tetraendron(:, j, i) = -int2_plane_tetraendron(:, j, i)
+						end if
+						EXIT
+					end if
 				end do
 				
-			end do loop3
-		end do
-	end do
-	end if
-	print*, "END auto connect"
-	
-	! Заполняем плоскости тетраедров
-	
-	N1 = size(int2_plane_tetraendron(1, 1, :))
-	
-	do i = 1, N1
-		if (int2_all_tetraendron(1, i) == 0) CYCLE  ! Нет тетраэдра
-		
-		do j = 1, 4
-			s1 = int2_all_tetraendron(j, i) ! Номер грани тетраедра
-			a1 = int2_coord(:, int2_gran_point(1, s1))
-			a2 = int2_coord(:, int2_gran_point(2, s1))
-			a3 = int2_coord(:, int2_gran_point(3, s1))
 			
-			if (j == 1) int2_all_tetraendron_point(1, i) = int2_gran_point(1, s1)
-			if (j == 1) int2_all_tetraendron_point(2, i) = int2_gran_point(2, s1)
-			if (j == 1) int2_all_tetraendron_point(3, i) = int2_gran_point(3, s1)
-			
-			aa = a3 - a1
-			bb = a2 - a1
-		
-			normal(1) = aa(2) * bb(3) - aa(3) * bb(2) 
-			normal(2) = aa(3) * bb(1) - aa(1) * bb(3) 
-			normal(3) = aa(1) * bb(2) - aa(2) * bb(1)  
-			
-			int2_plane_tetraendron(1:3, j, i) = normal
-			int2_plane_tetraendron(4, j, i) = -DOT_PRODUCT(normal, a1)
-			
-			k = j + 1
-			if (k > 4) k = 1
-			s2 = int2_all_tetraendron(k, i) ! Номер другой грани тетраедра
-			do ii = 1, 3
-				if(int2_gran_point(ii, s2) /= int2_gran_point(1, s1) .and. int2_gran_point(ii, s2) /= int2_gran_point(2, s1) .and. &
-				  int2_gran_point(ii, s2) /= int2_gran_point(3, s1)) then
-					if (j == 1) int2_all_tetraendron_point(4, i) = int2_gran_point(ii, s2)
-					if ( DOT_PRODUCT(int2_plane_tetraendron(1:3, j, i), int2_coord(:, int2_gran_point(ii, s2))) + &
-						int2_plane_tetraendron(4, j, i) > 0) then
-						int2_plane_tetraendron(:, j, i) = -int2_plane_tetraendron(:, j, i)
-					end if
-					EXIT
-				end if
 			end do
 			
-		
 		end do
 		
-	end do
-	
-	! Вычислим объёмы тетраэдров ******************************************************************
-	N1 = size(int2_all_tetraendron(1, :))
-	do i = 1, N1
+		! Вычислим объёмы тетраэдров ******************************************************************
+		N1 = size(int2_all_tetraendron(1, :))
+		do i = 1, N1
+			
+			if(int2_all_tetraendron_point(1, i) == 0 .or. int2_all_tetraendron_point(2, i) == 0 .or. &
+				int2_all_tetraendron_point(3, i) == 0 .or. int2_all_tetraendron_point(4, i) == 0) then
+				int2_all_tetraendron_point(1, i) = 0.0
+				int2_all_tetraendron_point(2, i) = 0.0
+				int2_all_tetraendron_point(3, i) = 0.0
+				int2_all_tetraendron_point(4, i) = 0.0
+				int2_all_Volume(i) = 0.0
+				CYCLE
+			end if
+			
+			a1 = int2_coord(:, int2_all_tetraendron_point(1, i))
+			a2 = int2_coord(:, int2_all_tetraendron_point(2, i))
+			a3 = int2_coord(:, int2_all_tetraendron_point(3, i))
+			a4 = int2_coord(:, int2_all_tetraendron_point(4, i))
+			
+			b1 = a2 - a1
+			b2 = a3 - a1
+			
+			b3(1) = b1(2) * b2(3) - b1(3) * b2(2)
+			b3(2) = b1(3) * b2(1) - b1(1) * b2(3)
+			b3(3) = b1(1) * b2(2) - b1(2) * b2(1)
+			S = norm2(b3)
+			b3 = b3/S
+			S = S/2.0
+			
+			di = dabs(DOT_PRODUCT(a4, b3) - DOT_PRODUCT(b3, a1))
+			
+			int2_all_Volume(i) = S * di/3.0
+			
+			!if(int2_all_Volume(i) > 2.0) then
+			!	print*, a1
+			!	print*, a2
+			!	print*, a3
+			!	print*, a4
+			!	print*, int2_all_Volume(i)
+			!	continue
+			!end if
+			
+			
+		end do
 		
-		if(int2_all_tetraendron_point(1, i) == 0 .or. int2_all_tetraendron_point(2, i) == 0 .or. &
-			int2_all_tetraendron_point(3, i) == 0 .or. int2_all_tetraendron_point(4, i) == 0) then
-			int2_all_tetraendron_point(1, i) = 0.0
-			int2_all_tetraendron_point(2, i) = 0.0
-			int2_all_tetraendron_point(3, i) = 0.0
-			int2_all_tetraendron_point(4, i) = 0.0
-			int2_all_Volume(i) = 0.0
-			CYCLE
-		end if
-		
-		a1 = int2_coord(:, int2_all_tetraendron_point(1, i))
-		a2 = int2_coord(:, int2_all_tetraendron_point(2, i))
-		a3 = int2_coord(:, int2_all_tetraendron_point(3, i))
-		a4 = int2_coord(:, int2_all_tetraendron_point(4, i))
-		
-		b1 = a2 - a1
-		b2 = a3 - a1
-		
-		b3(1) = b1(2) * b2(3) - b1(3) * b2(2)
-        b3(2) = b1(3) * b2(1) - b1(1) * b2(3)
-        b3(3) = b1(1) * b2(2) - b1(2) * b2(1)
-		S = norm2(b3)
-		b3 = b3/S
-		S = S/2.0
-		
-		di = dabs(DOT_PRODUCT(a4, b3) - DOT_PRODUCT(b3, a1))
-		
-		int2_all_Volume(i) = S * di/3.0
-		
-		!if(int2_all_Volume(i) > 2.0) then
-		!	print*, a1
-		!	print*, a2
-		!	print*, a3
-		!	print*, a4
-		!	print*, int2_all_Volume(i)
-		!	continue
-		!end if
 		
 		
-	end do
-	
-	
-	
-	!print*, "proverka sosedey"
-	!
-	!N1 = size(int2_all_tetraendron(1, :))
-	!
-	!do i = 1, N1
-	!	if(int2_all_tetraendron(1, i) == 0) CYCLE !Нет тетраэдра
-	!		
-	!	loop4: do k = 1, 4 ! Бежим по граням тетраэдра
-	!		s1 = int2_all_tetraendron(k, i)  ! Номер грани
-	!		ii = int2_gran_sosed(s1)  ! Номер тетраэдра - соседа
-	!		if (ii == 0) CYCLE
-	!		a1 = int2_coord(:, int2_gran_point(1, s1))
-	!		a2 = int2_coord(:, int2_gran_point(2, s1))
-	!		a3 = int2_coord(:, int2_gran_point(3, s1))
-	!		do j = 1, 4 ! Бежим по граням тетраэдра - соседа
-	!			ss2 = int2_all_tetraendron(j, ii) ! Номер грани
-	!			b1 = int2_coord(:, int2_gran_point(1, ss2))
-	!			b2 = int2_coord(:, int2_gran_point(2, ss2))
-	!			b3 = int2_coord(:, int2_gran_point(3, ss2))
-	!			if ( norm2(a1 - b1) < 0.00001 .or. norm2(a1 - b2) < 0.00001 .or. norm2(a1 - b3) < 0.00001) then
-	!				if ( norm2(a2 - b1) < 0.00001 .or. norm2(a2 - b2) < 0.00001 .or. norm2(a2 - b3) < 0.00001) then
-	!					if ( norm2(a3 - b1) < 0.00001 .or. norm2(a3 - b2) < 0.00001 .or. norm2(a3 - b3) < 0.00001) then
-	!					int2_gran_sosed(s2) = ss1
-	!					CYCLE loop4
-	!					else
-	!						CYCLE
-	!					end if
-	!				else
-	!					CYCLE
-	!				end if
-	!			else
-	!				CYCLE
-	!			end if
-	!			print*, "NET SOSEDA y SOSEDA"
-	!		end do
-	!	end do loop4
-	!end do
-	!
-	!			
-	!print*, "end proverka sosedey"
-	
-	
-	!N1 = size(int2_Cell_A(:, 1, 1))
-	!N2 = size(int2_Cell_A(1, :, 1))
-	!N3 = size(int2_Cell_A(1, 1, :))
-	
-	!print*, "Size = ", size(int2_Cell_C) + size(int2_Cell_A) + size(int2_Cell_B), size(int2_all_Cell(1, :))
-	
-	!do k = 1, 1
-	!	do j = N2, N2
-	!		do i = par_n_TS + 1, par_n_TS + 1
-	!			s1 = int2_Cell_A(i, j, k)
-	!			if (s1 == 0) CYCLE
-	!			
-	!			print*, int2_all_Cell(:, s1)
-	!			!if(s1 == 215713) then
-	!			!	print*, i, j, k
-	!			!	print*, int2_all_neighbours(:, s1)
-	!			!else
-	!			!	CYCLE
-	!			!end if
-	!			
-	!			print*, "seriya tetraendrov  ", (s1 - 1) * 6
-	!			do l = 1, 6
-	!				print*, "*******************************************************************"
-	!				print*, "l = ", l
-	!				print*, int2_all_tetraendron(:, (s1 - 1) * 6 + l)
-	!				do ii = 1, 4
-	!					print*, "gran = ", ii
-	!					ijk = int2_all_tetraendron(ii, (s1 - 1) * 6 + l)
-	!					if (ijk /= 0) then
-	!						print*, "Sosed = ", int2_gran_sosed(int2_all_tetraendron(ii, (s1 - 1) * 6 + l))
-	!						print*, "yzel = ", int2_gran_point(:, ijk)
-	!					else
-	!						print*, "no gran"
-	!					end if
-	!				end do
-	!				
-	!				
-	!			end do
-	!			
-	!		end do
-	!	end do
-	!end do
+		!print*, "proverka sosedey"
+		!
+		!N1 = size(int2_all_tetraendron(1, :))
+		!
+		!do i = 1, N1
+		!	if(int2_all_tetraendron(1, i) == 0) CYCLE !Нет тетраэдра
+		!		
+		!	loop4: do k = 1, 4 ! Бежим по граням тетраэдра
+		!		s1 = int2_all_tetraendron(k, i)  ! Номер грани
+		!		ii = int2_gran_sosed(s1)  ! Номер тетраэдра - соседа
+		!		if (ii == 0) CYCLE
+		!		a1 = int2_coord(:, int2_gran_point(1, s1))
+		!		a2 = int2_coord(:, int2_gran_point(2, s1))
+		!		a3 = int2_coord(:, int2_gran_point(3, s1))
+		!		do j = 1, 4 ! Бежим по граням тетраэдра - соседа
+		!			ss2 = int2_all_tetraendron(j, ii) ! Номер грани
+		!			b1 = int2_coord(:, int2_gran_point(1, ss2))
+		!			b2 = int2_coord(:, int2_gran_point(2, ss2))
+		!			b3 = int2_coord(:, int2_gran_point(3, ss2))
+		!			if ( norm2(a1 - b1) < 0.00001 .or. norm2(a1 - b2) < 0.00001 .or. norm2(a1 - b3) < 0.00001) then
+		!				if ( norm2(a2 - b1) < 0.00001 .or. norm2(a2 - b2) < 0.00001 .or. norm2(a2 - b3) < 0.00001) then
+		!					if ( norm2(a3 - b1) < 0.00001 .or. norm2(a3 - b2) < 0.00001 .or. norm2(a3 - b3) < 0.00001) then
+		!					int2_gran_sosed(s2) = ss1
+		!					CYCLE loop4
+		!					else
+		!						CYCLE
+		!					end if
+		!				else
+		!					CYCLE
+		!				end if
+		!			else
+		!				CYCLE
+		!			end if
+		!			print*, "NET SOSEDA y SOSEDA"
+		!		end do
+		!	end do loop4
+		!end do
+		!
+		!			
+		!print*, "end proverka sosedey"
+		
+		
+		!N1 = size(int2_Cell_A(:, 1, 1))
+		!N2 = size(int2_Cell_A(1, :, 1))
+		!N3 = size(int2_Cell_A(1, 1, :))
+		
+		!print*, "Size = ", size(int2_Cell_C) + size(int2_Cell_A) + size(int2_Cell_B), size(int2_all_Cell(1, :))
+		
+		!do k = 1, 1
+		!	do j = N2, N2
+		!		do i = par_n_TS + 1, par_n_TS + 1
+		!			s1 = int2_Cell_A(i, j, k)
+		!			if (s1 == 0) CYCLE
+		!			
+		!			print*, int2_all_Cell(:, s1)
+		!			!if(s1 == 215713) then
+		!			!	print*, i, j, k
+		!			!	print*, int2_all_neighbours(:, s1)
+		!			!else
+		!			!	CYCLE
+		!			!end if
+		!			
+		!			print*, "seriya tetraendrov  ", (s1 - 1) * 6
+		!			do l = 1, 6
+		!				print*, "*******************************************************************"
+		!				print*, "l = ", l
+		!				print*, int2_all_tetraendron(:, (s1 - 1) * 6 + l)
+		!				do ii = 1, 4
+		!					print*, "gran = ", ii
+		!					ijk = int2_all_tetraendron(ii, (s1 - 1) * 6 + l)
+		!					if (ijk /= 0) then
+		!						print*, "Sosed = ", int2_gran_sosed(int2_all_tetraendron(ii, (s1 - 1) * 6 + l))
+		!						print*, "yzel = ", int2_gran_point(:, ijk)
+		!					else
+		!						print*, "no gran"
+		!					end if
+		!				end do
+		!				
+		!				
+		!			end do
+		!			
+		!		end do
+		!	end do
+		!end do
 	
 	end subroutine Int2_Initial
 	
