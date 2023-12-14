@@ -671,373 +671,777 @@ module Monte_Karlo
 	end subroutine M_K_init
 	
 	subroutine M_K_Fly(n_potok)
-	! Функция запускает все частицы в стеке потока + все дочерние частицы
-	
-	integer(4), intent(in) :: n_potok  ! Номер потока 
-	
-	real(8) :: particle(8)
-	integer(4):: particle_2(4), i, ijk
-	logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
-	
-	integer(4) :: num  ! Номер частицы, верхняя в стеке
-	integer(4) :: cell ! Номер ячейки, в которой находится частица
-	integer(4) :: next ! Номер ячейки, в которую попадёт частица в следующий раз
-	integer(4) :: area2  ! Зона, в которой сейчас находится ячейка
-	integer(4) :: II  ! На сколько атомов расщепляется атом при перезарядке
-	integer(4) :: to_i, to_j, from_i, from_j
-	logical :: bb, bb2
-	
-	real(8) :: time ! Оценочное время до вылета частицы из ячейки
-	
-	real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
-	real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
-	real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
-	real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
-	real(8) :: v1, v2, v3, r_peregel, ddt
-	
-	real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
-	
-	real(8) :: Wr(par_n_zone + 1), Wthe(par_n_zone + 1), Wphi(par_n_zone + 1), mu_(par_n_zone + 1)
-	
-	integer(4) :: step
- 
-	step = 0
-	
-	do while (stek(n_potok) >= 1)
+		! Функция запускает все частицы в стеке потока + все дочерние частицы
 		
-		step = step + 1
+		integer(4), intent(in) :: n_potok  ! Номер потока 
 		
-		!if (mod(step, 1) == 0) print*, "step = ", step
+		real(8) :: particle(8)
+		integer(4):: particle_2(4), i, ijk
+		logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
 		
-		!pause
+		integer(4) :: num  ! Номер частицы, верхняя в стеке
+		integer(4) :: cell ! Номер ячейки, в которой находится частица
+		integer(4) :: next ! Номер ячейки, в которую попадёт частица в следующий раз
+		integer(4) :: area2  ! Зона, в которой сейчас находится ячейка
+		integer(4) :: II  ! На сколько атомов расщепляется атом при перезарядке
+		integer(4) :: to_i, to_j, from_i, from_j
+		logical :: bb, bb2
 		
-		if(stek(n_potok) > par_stek * 0.9) then
-			print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
-			pause
-			STOP
-		end if
+		real(8) :: time ! Оценочное время до вылета частицы из ячейки
 		
-			
-		num = stek(n_potok)
-		stek(n_potok) = stek(n_potok) - 1
-		! Берём все параметры частицы
-		particle = M_K_particle(:, num, n_potok)
-		particle_2 = M_K_particle_2(:, num, n_potok)
-		if(MK_Mu_stat) particle_3 = M_K_particle_3(:, :, num, n_potok)
-		!print*, "stek(n_potok) = ", stek(n_potok)
-		!print*, particle
-		!print*, "______"
-		!print*, particle_2
-		!pause
+		real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
+		real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
+		real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
+		real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
+		real(8) :: v1, v2, v3, r_peregel, ddt
 		
+		real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
 		
-		loop1: do  ! пока частица не вылетит из области
-			cell = particle_2(1)
-			mu = particle(7)                                ! Вес частицы
+		real(8) :: Wr(par_n_zone + 1), Wthe(par_n_zone + 1), Wphi(par_n_zone + 1), mu_(par_n_zone + 1)
 		
-			call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
-			
-			time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
-			
-			kappa = 0.0
-			do ijk = 1, 3
-				
-				select case (ijk)
-					case(1)
-						ddt = 1.0/6.0                                      
-					case(2)
-						ddt = 5.0/6.0                                    
-					case(3)
-						ddt = 3.0/6.0                                  
-					case default
-						print*, "Error uijkhjgfbnbnn hbuhuefw"
-						STOP
-				end select
-				
-				call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
-					particle(3) + time * ddt * particle(6), cell, PAR)
-			
-				cp = sqrt(PAR(5)/PAR(1))
-				vx = PAR(2)
-				vy = PAR(3)
-				vz = PAR(4)
-				ro = PAR(1)
-			
-				if(ro <= 0.0 .or. ro > 1000.0) then
-					print*, PAR
-					print*, "___"
-					print*, cell, int2_all_tetraendron_point(:, cell)
-					pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
-				end if
-			
-				! Найдём время до перезарядки и веса частиц  ****************************************************************************************
-				u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
-				u1 =  vx - particle(4)
-				u2 =  vy - particle(5)
-				u3 =  vz - particle(6)
-				skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
-			
-				if (u / cp > 7.0) then
-					uz = MK_Velosity_1(u, cp);
-					nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
-				else
-					nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
-				end if
+		integer(4) :: step
+	
+		step = 0
 		
-				kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
-			end do
+		do while (stek(n_potok) >= 1)
 			
-			area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
+			step = step + 1
 			
-			r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+			!if (mod(step, 1) == 0) print*, "step = ", step
 			
-			if(MK_photoionization) then
-				nu_ph = par_nu_ph * (par_1ae/r)**2
-				kappa_ph = (nu_ph * time)     ! по фотоионизации
-			end if
-			
-			kappa_all = kappa
-			if(MK_photoionization) kappa_all = kappa_all + kappa_ph
-			
-			call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
-			
-			t_ex = -(time / kappa_all) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
-			t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
-			mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
-			mu2 = mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома
-			mu_ph = 0.0
-			if(MK_photoionization) mu_ph = (kappa_ph / kappa_all) * mu_perez  ! Вес ионизированного атома
-			mu_ex = mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
-			
-			
-			if(mu2 < 0.0) then
-				print*, mu2, mu, mu_ex, kappa
-				STOP "Eror oiuyyuiojhu987uio9i"
-			end if
-			
-
-			r_ex = particle(1:3) + t_ex * particle(4:6)   ! Координаты перезарядки
-			
-			! проверка, если перезарядка произошла за пределами ячейки (нужно немного сдвигать её в этом случае)
-			if (Belong_tetraedron(r_ex(1), r_ex(2), r_ex(3), cell) == .False.) then
-				t_ex = time * 0.998
-				t2 = time - t_ex
-				r_ex = particle(1:3) + t_ex * particle(4:6)  
-			end if
-			
-			r = norm2(r_ex)  ! Расстояние от точки перезарядки до Солнца
-			
-			from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
-			from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
-			
-			!print*, from_i, from_j, r_ex, polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )
 			!pause
 			
-			if(MK_Mu_stat .and. particle_3(from_i, from_j) == .False.) then
-				particle_3(from_i, from_j) = .True.
-				
-				!$omp critical
-				MK_Mu_statistic(from_i, from_j, particle_2(2)) = MK_Mu_statistic(from_i, from_j, particle_2(2)) + &
-					mu/max(0.3 * MK_SINKR(from_j), sin(polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )))
-				!$omp end critical
-			end if
-			
-			
-			
-			! Накапливаем моменты и т.д. ______________________________________________________________________________________________________________________________
-			if(MK_is_NaN == .True. .and. ieee_is_nan(t_ex * mu + t2 * mu2)) then
-				print*, "NaN 789olhgyuimnhyuiolkuytgf"
+			if(stek(n_potok) > par_stek * 0.9) then
+				print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
 				pause
+				STOP
 			end if
 			
-			M_K_Moment(1, particle_2(2), cell, n_potok) = M_K_Moment(1, particle_2(2), cell, n_potok) + t_ex * mu + t2 * mu2
-			M_K_Moment(2:4, particle_2(2), cell, n_potok) = M_K_Moment(2:4, particle_2(2), cell, n_potok) + (t_ex * mu + t2 * mu2) * particle(4:6)
-			M_K_Moment(5, particle_2(2), cell, n_potok) = M_K_Moment(5, particle_2(2), cell, n_potok) + &
-				(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
-			
-			if(par_n_moment > 9) then
-				M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(4)**2
-				M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
-				M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
-				M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
-				M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
-				M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
-				M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(4)**3
-				M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(5)**3
-				M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
-					(t_ex * mu + t2 * mu2) * particle(6)**3
-			end if
-			
-			
-			if (u / cp > 7.0) then
-				uz_M = MK_Velosity_2(u, cp)/ (uz * (cp**2) * cp * par_pi_8 * par_sqrtpi)
-				uz_E = MK_Velosity_3(u, cp)
 				
-				if(MK_is_NaN == .True. .and. ieee_is_nan(uz_E)) then
-					print*, "NaN 34rtyu765rdfgh"
-					pause
+			num = stek(n_potok)
+			stek(n_potok) = stek(n_potok) - 1
+			! Берём все параметры частицы
+			particle = M_K_particle(:, num, n_potok)
+			particle_2 = M_K_particle_2(:, num, n_potok)
+			if(MK_Mu_stat) particle_3 = M_K_particle_3(:, :, num, n_potok)
+			!print*, "stek(n_potok) = ", stek(n_potok)
+			!print*, particle
+			!print*, "______"
+			!print*, particle_2
+			!pause
+			
+			
+			loop1: do  ! пока частица не вылетит из области
+				cell = particle_2(1)
+				mu = particle(7)                                ! Вес частицы
+			
+				call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
+				
+				time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
+				
+				kappa = 0.0
+				do ijk = 1, 3
+					
+					select case (ijk)
+						case(1)
+							ddt = 1.0/6.0                                      
+						case(2)
+							ddt = 5.0/6.0                                    
+						case(3)
+							ddt = 3.0/6.0                                  
+						case default
+							print*, "Error uijkhjgfbnbnn hbuhuefw"
+							STOP
+					end select
+					
+					call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
+						particle(3) + time * ddt * particle(6), cell, PAR)
+				
+					cp = sqrt(PAR(5)/PAR(1))
+					vx = PAR(2)
+					vy = PAR(3)
+					vz = PAR(4)
+					ro = PAR(1)
+				
+					if(ro <= 0.0 .or. ro > 1000.0) then
+						print*, PAR
+						print*, "___"
+						print*, cell, int2_all_tetraendron_point(:, cell)
+						pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
+					end if
+				
+					! Найдём время до перезарядки и веса частиц  ****************************************************************************************
+					u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
+					u1 =  vx - particle(4)
+					u2 =  vy - particle(5)
+					u3 =  vz - particle(6)
+					skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
+				
+					if (u / cp > 7.0) then
+						uz = MK_Velosity_1(u, cp);
+						nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
+					else
+						nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
+					end if
+			
+					kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
+				end do
+				
+				area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
+				
+				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+				
+				if(MK_photoionization) then
+					nu_ph = par_nu_ph * (par_1ae/r)**2
+					kappa_ph = (nu_ph * time)     ! по фотоионизации
 				end if
 				
-				M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) - mu_ex * uz_M * u1 / u
-				M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) - mu_ex * uz_M * u2 / u
-				M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) - mu_ex * uz_M * u3 / u
-				M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
-					mu_ex * (-0.25 * (3.0 * cp**2 + 2.0 * u**2) * (uz_E / uz) - uz_M * skalar / u)
-			else
-				k1 = MK_int_1(u, cp)
-				k2 = MK_int_2(u, cp)
-				k3 = MK_int_3(u, cp)
+				kappa_all = kappa
+				if(MK_photoionization) kappa_all = kappa_all + kappa_ph
 				
-				if( MK_is_NaN == .True. .and. (ieee_is_nan(k1) .or. ieee_is_nan(k2) .or. ieee_is_nan(k3))) then
-					print*, "NaN klkjhgfddfujyukjhjhgfghozpem"
-					pause
+				call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
+				
+				t_ex = -(time / kappa_all) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
+				t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
+				mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
+				mu2 = mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома
+				mu_ph = 0.0
+				if(MK_photoionization) mu_ph = (kappa_ph / kappa_all) * mu_perez  ! Вес ионизированного атома
+				mu_ex = mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
+				
+				
+				if(mu2 < 0.0) then
+					print*, mu2, mu, mu_ex, kappa
+					STOP "Eror oiuyyuiojhu987uio9i"
 				end if
 				
-				M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u1 / u
-				M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u2 / u
-				M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u3 / u
-				M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
-					mu_ex * (-0.5 * k3/k1 + k2/k1 * skalar / u)
-				
-			end if
-			
-			! Добавим интеграллы по фотоионизации  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			M_K_Moment(19, particle_2(2), cell, n_potok) = M_K_Moment(19, particle_2(2), cell, n_potok) + mu_ph 
-			M_K_Moment(6:8, particle_2(2), cell, n_potok) = M_K_Moment(6:8, particle_2(2), cell, n_potok) + mu_ph * particle(4:6)
-			M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
-				mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
-			
-			! Добавляем для расчёта PUI
-			if(area2 <= 2) then
-				!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
-				call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
-				call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
-			end if
-			!!(t_ex * mu + t2 * mu2)
-			!_________________________________________________________________________________________
-			
-			
-			
-			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
-			call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
-		
-			! Перезаряжаем
-			if (area2 == 1 .or. Ur / cp > 1.8) then   ! Без геометрического расщепления
-				II = 0  ! II - это сколько дополнительных атомов запускается (помимо основного)
-			else
-				II = MK_geo_zones(r, 1.2_8) - 1
-			end if
-			
-			call M_K_Change_Velosity4(n_potok, Ur/cp, Uthe/cp, Uphi/cp, Vr/cp, Vthe/cp, Vphi/cp, Wr, Wthe, Wphi, mu_, &
-				cp, r, II, r_ex(1), r_ex(2), r_ex(3), bb)
-			
-			Wr = Wr * cp
-			Wthe = Wthe * cp
-			Wphi = Wphi * cp
-			
-			do i = 1, II + 1
-				if(i == II + 1 .and. bb == .False.) CYCLE  ! Если не запускается основной атом
-				call dekard_skorost(r_ex(1), r_ex(2), r_ex(3), Wr(i), Wphi(i), Wthe(i), v1, v2, v3)
-				V = (/ v1, v2, v3 /)
-				
-				call MK_Distination(r_ex, V, to_i, to_j, r_peregel)  ! Находим зону назначения в точке перегелия для рулетки
-				
-				mu3 = mu_ex * mu_(i)
-				call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
-				
-				if(bb2 == .False.) CYCLE  ! Не запускаем эту частицу, она вырубается
-				
-				! Запишем новую частицу в стек
-				stek(n_potok) = stek(n_potok) + 1
-				M_K_particle(1:3, stek(n_potok), n_potok) = r_ex
-				M_K_particle(4:6, stek(n_potok), n_potok) = V
-				M_K_particle(7, stek(n_potok), n_potok) = mu3
-				M_K_particle(8, stek(n_potok), n_potok) = r_peregel
 
-				M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+				r_ex = particle(1:3) + t_ex * particle(4:6)   ! Координаты перезарядки
 				
-				if(MK_Mu_stat == .True.) then
-					if(particle_2(2) == area2) then
-						M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
-					else 
-						M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
+				! проверка, если перезарядка произошла за пределами ячейки (нужно немного сдвигать её в этом случае)
+				if (Belong_tetraedron(r_ex(1), r_ex(2), r_ex(3), cell) == .False.) then
+					t_ex = time * 0.998
+					t2 = time - t_ex
+					r_ex = particle(1:3) + t_ex * particle(4:6)  
+				end if
+				
+				r = norm2(r_ex)  ! Расстояние от точки перезарядки до Солнца
+				
+				from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
+				from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
+				
+				!print*, from_i, from_j, r_ex, polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )
+				!pause
+				
+				if(MK_Mu_stat .and. particle_3(from_i, from_j) == .False.) then
+					particle_3(from_i, from_j) = .True.
+					
+					!$omp critical
+					MK_Mu_statistic(from_i, from_j, particle_2(2)) = MK_Mu_statistic(from_i, from_j, particle_2(2)) + &
+						mu/max(0.3 * MK_SINKR(from_j), sin(polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )))
+					!$omp end critical
+				end if
+				
+				
+				
+				! Накапливаем моменты и т.д. ______________________________________________________________________________________________________________________________
+				if(MK_is_NaN == .True. .and. ieee_is_nan(t_ex * mu + t2 * mu2)) then
+					print*, "NaN 789olhgyuimnhyuiolkuytgf"
+					pause
+				end if
+				
+				M_K_Moment(1, particle_2(2), cell, n_potok) = M_K_Moment(1, particle_2(2), cell, n_potok) + t_ex * mu + t2 * mu2
+				M_K_Moment(2:4, particle_2(2), cell, n_potok) = M_K_Moment(2:4, particle_2(2), cell, n_potok) + (t_ex * mu + t2 * mu2) * particle(4:6)
+				M_K_Moment(5, particle_2(2), cell, n_potok) = M_K_Moment(5, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
+				
+				if(par_n_moment > 9) then
+					M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)**2
+					M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
+					M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
+					M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
+					M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
+					M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
+					M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)**3
+					M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)**3
+					M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(6)**3
+				end if
+				
+				
+				if (u / cp > 7.0) then
+					uz_M = MK_Velosity_2(u, cp)/ (uz * (cp**2) * cp * par_pi_8 * par_sqrtpi)
+					uz_E = MK_Velosity_3(u, cp)
+					
+					if(MK_is_NaN == .True. .and. ieee_is_nan(uz_E)) then
+						print*, "NaN 34rtyu765rdfgh"
+						pause
+					end if
+					
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) - mu_ex * uz_M * u1 / u
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) - mu_ex * uz_M * u2 / u
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) - mu_ex * uz_M * u3 / u
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+						mu_ex * (-0.25 * (3.0 * cp**2 + 2.0 * u**2) * (uz_E / uz) - uz_M * skalar / u)
+				else
+					k1 = MK_int_1(u, cp)
+					k2 = MK_int_2(u, cp)
+					k3 = MK_int_3(u, cp)
+					
+					if( MK_is_NaN == .True. .and. (ieee_is_nan(k1) .or. ieee_is_nan(k2) .or. ieee_is_nan(k3))) then
+						print*, "NaN klkjhgfddfujyukjhjhgfghozpem"
+						pause
+					end if
+					
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u1 / u
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u2 / u
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u3 / u
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+						mu_ex * (-0.5 * k3/k1 + k2/k1 * skalar / u)
+					
+				end if
+				
+				! Добавим интеграллы по фотоионизации  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				M_K_Moment(19, particle_2(2), cell, n_potok) = M_K_Moment(19, particle_2(2), cell, n_potok) + mu_ph 
+				M_K_Moment(6:8, particle_2(2), cell, n_potok) = M_K_Moment(6:8, particle_2(2), cell, n_potok) + mu_ph * particle(4:6)
+				M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
+				
+				! Добавляем для расчёта PUI
+				if(area2 <= 2) then
+					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
+					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
+					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
+					call PUI_Add(cell, u, kappa_all/time, mu, t_ex)
+					call PUI_Add(cell, u, kappa_all/time, mu2, t2)
+				end if
+				!!(t_ex * mu + t2 * mu2)
+				!_________________________________________________________________________________________
+				
+				
+				
+				call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
+				call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
+			
+				! Перезаряжаем
+				if (area2 == 1 .or. Ur / cp > 1.8) then   ! Без геометрического расщепления
+					II = 0  ! II - это сколько дополнительных атомов запускается (помимо основного)
+				else
+					II = MK_geo_zones(r, 1.2_8) - 1
+				end if
+				
+				call M_K_Change_Velosity4(n_potok, Ur/cp, Uthe/cp, Uphi/cp, Vr/cp, Vthe/cp, Vphi/cp, Wr, Wthe, Wphi, mu_, &
+					cp, r, II, r_ex(1), r_ex(2), r_ex(3), bb)
+				
+				Wr = Wr * cp
+				Wthe = Wthe * cp
+				Wphi = Wphi * cp
+				
+				do i = 1, II + 1
+					if(i == II + 1 .and. bb == .False.) CYCLE  ! Если не запускается основной атом
+					call dekard_skorost(r_ex(1), r_ex(2), r_ex(3), Wr(i), Wphi(i), Wthe(i), v1, v2, v3)
+					V = (/ v1, v2, v3 /)
+					
+					call MK_Distination(r_ex, V, to_i, to_j, r_peregel)  ! Находим зону назначения в точке перегелия для рулетки
+					
+					mu3 = mu_ex * mu_(i)
+					call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
+					
+					if(bb2 == .False.) CYCLE  ! Не запускаем эту частицу, она вырубается
+					
+					! Запишем новую частицу в стек
+					stek(n_potok) = stek(n_potok) + 1
+					M_K_particle(1:3, stek(n_potok), n_potok) = r_ex
+					M_K_particle(4:6, stek(n_potok), n_potok) = V
+					M_K_particle(7, stek(n_potok), n_potok) = mu3
+					M_K_particle(8, stek(n_potok), n_potok) = r_peregel
+
+					M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+					
+					if(MK_Mu_stat == .True.) then
+						if(particle_2(2) == area2) then
+							M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
+						else 
+							M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
+						end if
+					end if
+					
+					! (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
+					
+				end do
+				
+				! Проверяем, нужно ли вырубить неперезаряженную часть атома
+				call MK_ruletka(n_potok, particle_2(3), particle_2(4), from_i, from_j, particle_2(2), &
+						r, particle(8), mu2, bb2)
+				if(bb2 == .False.) EXIT loop1  ! Не запускаем эту частицу, она вырубается
+				particle(7) = mu2
+			
+				! Находим следующую ячейку
+				
+				particle(1:3) = particle(1:3) + time * particle(4:6)
+				if(next == 0) then
+					if (norm2(particle(1:3)) <= 100.0) then
+						print*, "Error 23e2323 ", particle(1:3)
+						pause
+					end if
+					EXIT loop1  ! частица долетела до края области
+				end if
+				
+		11			continue 
+				
+				
+				
+				
+				call Int2_Get_tetraedron(particle(1), particle(2), particle(3), next)  ! Находим точно следующий тетраэдр
+				if (next == -1) then ! ЗАТЫК
+					next = 3
+					particle(1:3) = particle(1:3) + (time/100.0) * particle(4:6)
+					print*, "Zatik"
+					pause
+					GO TO 11
+				end if
+				
+				particle_2(1) = next
+				if(next == 0) then
+					if (norm2(particle(1:3)) <= 100.0) then
+						print*, "Error wqer2r42  ", particle(1:3)
+						pause
+					end if
+					
+					EXIT loop1  ! частица долетела до края области
+				end if
+				
+				if(particle(1) > 0.00001 .and. norm2(particle(1:3)) > par_Rmax + 0.001) then
+					EXIT loop1  ! частица долетела до края области
+				end if
+				
+			
+				
+			
+			end do loop1
+			
+			
+		end do
+		
+	end subroutine M_K_Fly
+	
+	subroutine M_K_Fly_PUI(n_potok)
+		! Функция также учитывает пикапы!
+		! Функция запускает все частицы в стеке потока + все дочерние частицы
+		
+		integer(4), intent(in) :: n_potok  ! Номер потока 
+		
+		real(8) :: particle(8)
+		integer(4):: particle_2(4), i, ijk
+		logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
+		
+		integer(4) :: num  ! Номер частицы, верхняя в стеке
+		integer(4) :: cell ! Номер ячейки-тетраэдра, в которой находится частица
+		integer(4) :: cell2 ! Номер ячейки-основной, в которой находится частица
+		integer(4) :: next ! Номер ячейки, в которую попадёт частица в следующий раз
+		integer(4) :: area2  ! Зона, в которой сейчас находится ячейка
+		integer(4) :: II  ! На сколько атомов расщепляется атом при перезарядке
+		integer(4) :: to_i, to_j, from_i, from_j
+		logical :: bb, bb2
+		
+		real(8) :: time ! Оценочное время до вылета частицы из ячейки
+		
+		real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
+		real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
+		real(8) :: nu_ex_pui, kappa_pui, mu_ex_pui
+		real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
+		real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
+		real(8) :: v1, v2, v3, r_peregel, ddt
+		
+		real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
+		
+		real(8) :: Wr(par_n_zone + 1), Wthe(par_n_zone + 1), Wphi(par_n_zone + 1), mu_(par_n_zone + 1)
+		
+		integer(4) :: step
+	
+		step = 0
+		
+		do while (stek(n_potok) >= 1)
+			
+			step = step + 1
+			
+			!if (mod(step, 1) == 0) print*, "step = ", step
+			
+			!pause
+			
+			if(stek(n_potok) > par_stek * 0.9) then
+				print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
+				pause
+				STOP
+			end if
+			
+				
+			num = stek(n_potok)
+			stek(n_potok) = stek(n_potok) - 1
+			! Берём все параметры частицы
+			particle = M_K_particle(:, num, n_potok)
+			particle_2 = M_K_particle_2(:, num, n_potok)
+			if(MK_Mu_stat) particle_3 = M_K_particle_3(:, :, num, n_potok)
+			
+			
+			loop1: do  ! пока частица не вылетит из области
+				cell = particle_2(1)
+				mu = particle(7)                                ! Вес частицы
+			
+				call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
+				
+				time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
+				cell2 = INT(cell/6.0) + 1  ! Номер ячейки, где брать pui
+
+				area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
+
+				kappa = 0.0
+				kappa_pui = 0.0
+				do ijk = 1, 3  ! Разбиение траектории на 3 части для более точной перезарядки
+					
+					select case (ijk)
+						case(1)
+							ddt = 1.0/6.0                                      
+						case(2)
+							ddt = 5.0/6.0                                    
+						case(3)
+							ddt = 3.0/6.0                                  
+						case default
+							print*, "Error uijkhjgfbnbnn hbuhuefw"
+							STOP
+					end select
+					
+					call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
+						particle(3) + time * ddt * particle(6), cell, PAR)
+				
+					cp = sqrt(PAR(5)/PAR(1))
+					vx = PAR(2)
+					vy = PAR(3)
+					vz = PAR(4)
+					ro = PAR(1)
+					!! Нужно учесть изменение температуры и плотности протонов из-за отдельного учёта пикапов
+				
+					if(ro <= 0.0 .or. ro > 1000.0) then
+						print*, PAR
+						print*, "___"
+						print*, cell, int2_all_tetraendron_point(:, cell)
+						pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
+					end if
+				
+					! Найдём время до перезарядки и веса частиц  ****************************************************************************************
+					u = sqrt(kvv(particle(4) - vx, particle(5) - vy, particle(6) - vz))
+					u1 =  vx - particle(4)
+					u2 =  vy - particle(5)
+					u3 =  vz - particle(6)
+					skalar = particle(4) * u1 + particle(5) * u2 + particle(6) * u3
+				
+					if (u / cp > 7.0) then
+						uz = MK_Velosity_1(u, cp);
+						nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
+					else
+						nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
+					end if
+
+					if(area2 <= 2) kappa_pui = kappa_pui + PUI_get_nu_integr(cell2, u)/ par_Kn * time/3.0
+			
+					kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
+				end do
+
+				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+				
+				if(MK_photoionization) then
+					nu_ph = par_nu_ph * (par_1ae/r)**2
+					kappa_ph = (nu_ph * time)     ! по фотоионизации
+				end if
+				
+				kappa_all = kappa + kappa_pui
+				if(MK_photoionization) kappa_all = kappa_all + kappa_ph
+				
+				call M_K_rand(sensor(1, 2, n_potok), sensor(2, 2, n_potok), sensor(3, 2, n_potok), ksi)
+				
+				t_ex = -(time / kappa_all) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
+				t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
+				mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
+				mu2 = max(mu - mu_perez, 0.0)   !mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома 
+				mu_ph = 0.0
+				if(MK_photoionization) mu_ph = (kappa_ph / kappa_all) * mu_perez  ! Вес ионизированного атома
+				mu_ex = (kappa / kappa_all) * mu_perez  ! mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
+				mu_ex_pui = (kappa_pui / kappa_all) * mu_perez  ! mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
+				
+				
+				if(mu2 < 0.0) then
+					print*, mu2, mu, mu_ex, kappa
+					STOP "Eror oiuyyuiojhu987uio9i"
+				end if
+				
+
+				r_ex = particle(1:3) + t_ex * particle(4:6)   ! Координаты перезарядки
+				
+				! проверка, если перезарядка произошла за пределами ячейки (нужно немного сдвигать её в этом случае)
+				if (Belong_tetraedron(r_ex(1), r_ex(2), r_ex(3), cell) == .False.) then
+					t_ex = time * 0.998
+					t2 = time - t_ex
+					r_ex = particle(1:3) + t_ex * particle(4:6)  
+				end if
+				
+				r = norm2(r_ex)  ! Расстояние от точки перезарядки до Солнца
+				
+				from_i = MK_geo_zones(r, 1.0_8)     ! Зона по r в точке перезарядки
+				from_j = MK_alpha_zones( polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) ) ) ! Зона по углу в точке перезарядки
+				
+				!print*, from_i, from_j, r_ex, polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )
+				!pause
+				
+				if(MK_Mu_stat .and. particle_3(from_i, from_j) == .False.) then
+					particle_3(from_i, from_j) = .True.
+					
+					!$omp critical
+					MK_Mu_statistic(from_i, from_j, particle_2(2)) = MK_Mu_statistic(from_i, from_j, particle_2(2)) + &
+						mu/max(0.3 * MK_SINKR(from_j), sin(polar_angle( r_ex(1), sqrt(r_ex(2)**2 + r_ex(3)**2) )))
+					!$omp end critical
+				end if
+				
+				
+				
+				! Накапливаем моменты и т.д. ______________________________________________________________________________________________________________________________
+				if(MK_is_NaN == .True. .and. ieee_is_nan(t_ex * mu + t2 * mu2)) then
+					print*, "NaN 789olhgyuimnhyuiolkuytgf"
+					pause
+				end if
+				
+				M_K_Moment(1, particle_2(2), cell, n_potok) = M_K_Moment(1, particle_2(2), cell, n_potok) + t_ex * mu + t2 * mu2
+				M_K_Moment(2:4, particle_2(2), cell, n_potok) = M_K_Moment(2:4, particle_2(2), cell, n_potok) + (t_ex * mu + t2 * mu2) * particle(4:6)
+				M_K_Moment(5, particle_2(2), cell, n_potok) = M_K_Moment(5, particle_2(2), cell, n_potok) + &
+					(t_ex * mu + t2 * mu2) * kvv(particle(4), particle(5), particle(6))
+				
+				if(par_n_moment > 9) then
+					M_K_Moment(10, particle_2(2), cell, n_potok) = M_K_Moment(10, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)**2
+					M_K_Moment(11, particle_2(2), cell, n_potok) = M_K_Moment(11, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)*particle(5)
+					M_K_Moment(12, particle_2(2), cell, n_potok) = M_K_Moment(12, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)*particle(6)
+					M_K_Moment(13, particle_2(2), cell, n_potok) = M_K_Moment(13, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)*particle(5)
+					M_K_Moment(14, particle_2(2), cell, n_potok) = M_K_Moment(14, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)*particle(6)
+					M_K_Moment(15, particle_2(2), cell, n_potok) = M_K_Moment(15, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(6)*particle(6)
+					M_K_Moment(16, particle_2(2), cell, n_potok) = M_K_Moment(16, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(4)**3
+					M_K_Moment(17, particle_2(2), cell, n_potok) = M_K_Moment(17, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(5)**3
+					M_K_Moment(18, particle_2(2), cell, n_potok) = M_K_Moment(18, particle_2(2), cell, n_potok) + &
+						(t_ex * mu + t2 * mu2) * particle(6)**3
+				end if
+				
+				
+				if (u / cp > 7.0) then
+					uz_M = MK_Velosity_2(u, cp)/ (uz * (cp**2) * cp * par_pi_8 * par_sqrtpi)
+					uz_E = MK_Velosity_3(u, cp)
+					
+					if(MK_is_NaN == .True. .and. ieee_is_nan(uz_E)) then
+						print*, "NaN 34rtyu765rdfgh"
+						pause
+					end if
+					
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) - mu_ex * uz_M * u1 / u
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) - mu_ex * uz_M * u2 / u
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) - mu_ex * uz_M * u3 / u
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+						mu_ex * (-0.25 * (3.0 * cp**2 + 2.0 * u**2) * (uz_E / uz) - uz_M * skalar / u)
+				else
+					k1 = MK_int_1(u, cp)
+					k2 = MK_int_2(u, cp)
+					k3 = MK_int_3(u, cp)
+					
+					if( MK_is_NaN == .True. .and. (ieee_is_nan(k1) .or. ieee_is_nan(k2) .or. ieee_is_nan(k3))) then
+						print*, "NaN klkjhgfddfujyukjhjhgfghozpem"
+						pause
+					end if
+					
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u1 / u
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u2 / u
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + mu_ex * (k2/k1) * u3 / u
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+						mu_ex * (-0.5 * k3/k1 + k2/k1 * skalar / u)
+					
+				end if
+
+				! Добавим интегралы по перезарядке на пикапах !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			
+				if(area2 <= 2) then
+					k1 = PUI_get_nu_integr(cell2, u)
+					uz_M = PUI_get_Mz_integr(cell2, u)/k1
+					uz_E = PUI_get_E_integr(cell2, u)/k1
+					uz_M = 1.0 - uz_M/u
+					k1 = (particle(4) - vx) * uz_M
+					k2 = (particle(5) - vy) * uz_M
+					k3 = (particle(6) - vz) * uz_M
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + k1
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + k2
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + k3
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + u**2 / 2.0 + &
+					(k1 * vx + k2 * vy + k3 * vz) - uz_E
+				end if
+
+				! Добавим интегралы по фотоионизации  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				M_K_Moment(19, particle_2(2), cell, n_potok) = M_K_Moment(19, particle_2(2), cell, n_potok) + mu_ph 
+				M_K_Moment(6:8, particle_2(2), cell, n_potok) = M_K_Moment(6:8, particle_2(2), cell, n_potok) + mu_ph * particle(4:6)
+				M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
+					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
+				
+				! Добавляем для расчёта PUI
+				if(area2 <= 2) then
+					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
+					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
+					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
+					call PUI_Add(cell, u, kappa_all/time, mu, t_ex)
+					call PUI_Add(cell, u, kappa_all/time, mu2, t2)
+				end if
+				!_________________________________________________________________________________________
+				
+				
+				
+				call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
+				call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), particle(4), particle(5), particle(6), Vr, Vphi, Vthe)
+			
+				! Перезаряжаем
+				if (area2 == 1 .or. Ur / cp > 1.8) then   ! Без геометрического расщепления
+					II = 0  ! II - это сколько дополнительных атомов запускается (помимо основного)
+				else
+					II = MK_geo_zones(r, 1.2_8) - 1
+				end if
+
+				if(area2 <= 2) then  !! Нужно перезаряжать с пикапами
+					call MK_pui_charge_exchange_velocity(n_potok, vx, vy, vz, particle(4), particle(5), particle(6), cell2, k1, k2, k3)
+					! Функция возвращает сразу декартовые компоненты новой скорости
+					V = (/ k1, k2, k3 /)
+					call MK_Distination(r_ex, V, to_i, to_j, r_peregel)
+					mu3 = mu_ex_pui
+					call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
+
+					if(bb2 /= .False.) then  ! Если не надо вырубать атом
+						! Запишем новую частицу в стек
+						stek(n_potok) = stek(n_potok) + 1
+						M_K_particle(1:3, stek(n_potok), n_potok) = r_ex
+						M_K_particle(4:6, stek(n_potok), n_potok) = V
+						M_K_particle(7, stek(n_potok), n_potok) = mu3
+						M_K_particle(8, stek(n_potok), n_potok) = r_peregel
+
+						M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+						
+						if(MK_Mu_stat == .True.) then
+							if(particle_2(2) == area2) then
+								M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
+							else 
+								M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
+							end if
+						end if
+						
 					end if
 				end if
 				
-				! (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
+				call M_K_Change_Velosity4(n_potok, Ur/cp, Uthe/cp, Uphi/cp, Vr/cp, Vthe/cp, Vphi/cp, Wr, Wthe, Wphi, mu_, &
+					cp, r, II, r_ex(1), r_ex(2), r_ex(3), bb)
 				
-			end do
+				Wr = Wr * cp
+				Wthe = Wthe * cp
+				Wphi = Wphi * cp
+				
+				do i = 1, II + 1
+					if(i == II + 1 .and. bb == .False.) CYCLE  ! Если не запускается основной атом
+					call dekard_skorost(r_ex(1), r_ex(2), r_ex(3), Wr(i), Wphi(i), Wthe(i), v1, v2, v3)
+					V = (/ v1, v2, v3 /)
+					
+					call MK_Distination(r_ex, V, to_i, to_j, r_peregel)  ! Находим зону назначения в точке перегелия для рулетки
+					
+					mu3 = mu_ex * mu_(i)
+					call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
+					
+					if(bb2 == .False.) CYCLE  ! Не запускаем эту частицу, она вырубается
+					
+					! Запишем новую частицу в стек
+					stek(n_potok) = stek(n_potok) + 1
+					M_K_particle(1:3, stek(n_potok), n_potok) = r_ex
+					M_K_particle(4:6, stek(n_potok), n_potok) = V
+					M_K_particle(7, stek(n_potok), n_potok) = mu3
+					M_K_particle(8, stek(n_potok), n_potok) = r_peregel
+
+					M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+					
+					if(MK_Mu_stat == .True.) then
+						if(particle_2(2) == area2) then
+							M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
+						else 
+							M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
+						end if
+					end if
+					
+				end do
+				
+				! Проверяем, нужно ли вырубить неперезаряженную часть атома
+				call MK_ruletka(n_potok, particle_2(3), particle_2(4), from_i, from_j, particle_2(2), &
+						r, particle(8), mu2, bb2)
+				if(bb2 == .False.) EXIT loop1  ! Не запускаем эту частицу, она вырубается
+				particle(7) = mu2
 			
-			! Проверяем, нужно ли вырубить неперезаряженную часть атома
-			call MK_ruletka(n_potok, particle_2(3), particle_2(4), from_i, from_j, particle_2(2), &
-					r, particle(8), mu2, bb2)
-			if(bb2 == .False.) EXIT loop1  ! Не запускаем эту частицу, она вырубается
-			particle(7) = mu2
-		
-			! Находим следующую ячейку
-			
-			particle(1:3) = particle(1:3) + time * particle(4:6)
-			if(next == 0) then
-				if (norm2(particle(1:3)) <= 100.0) then
-					print*, "Error 23e2323 ", particle(1:3)
-					pause
-				end if
-				EXIT loop1  ! частица долетела до края области
-			end if
-			
-11			continue 
-			
-			
-			
-			
-			call Int2_Get_tetraedron(particle(1), particle(2), particle(3), next)  ! Находим точно следующий тетраэдр
-			if (next == -1) then ! ЗАТЫК
-				next = 3
-				particle(1:3) = particle(1:3) + (time/100.0) * particle(4:6)
-				print*, "Zatik"
-				pause
-				GO TO 11
-			end if
-			
-			particle_2(1) = next
-			if(next == 0) then
-				if (norm2(particle(1:3)) <= 100.0) then
-					print*, "Error wqer2r42  ", particle(1:3)
-					pause
+				! Находим следующую ячейку
+				
+				particle(1:3) = particle(1:3) + time * particle(4:6)
+				if(next == 0) then
+					if (norm2(particle(1:3)) <= 100.0) then
+						print*, "Error 23e2323 ", particle(1:3)
+						pause
+					end if
+					EXIT loop1  ! частица долетела до края области
 				end if
 				
-				EXIT loop1  ! частица долетела до края области
-			end if
+		11			continue 
+				
+				
+				
+				
+				call Int2_Get_tetraedron(particle(1), particle(2), particle(3), next)  ! Находим точно следующий тетраэдр
+				if (next == -1) then ! ЗАТЫК
+					next = 3
+					particle(1:3) = particle(1:3) + (time/100.0) * particle(4:6)
+					print*, "Zatik"
+					pause
+					GO TO 11
+				end if
+				
+				particle_2(1) = next
+				if(next == 0) then
+					if (norm2(particle(1:3)) <= 100.0) then
+						print*, "Error wqer2r42  ", particle(1:3)
+						pause
+					end if
+					
+					EXIT loop1  ! частица долетела до края области
+				end if
+				
+				if(particle(1) > 0.00001 .and. norm2(particle(1:3)) > par_Rmax + 0.001) then
+					EXIT loop1  ! частица долетела до края области
+				end if
+				
 			
-			if(particle(1) > 0.00001 .and. norm2(particle(1:3)) > par_Rmax + 0.001) then
-				EXIT loop1  ! частица долетела до края области
-			end if
+				
 			
-		
+			end do loop1
 			
+			
+		end do
 		
-		end do loop1
-		
-		
-	end do
-	
-	
-	
-	! Variables
-	
-	! Body of M_K_Start
-	
-	
-	end subroutine M_K_Fly
-	
+	end subroutine M_K_Fly_PUI
 	
 	subroutine M_K_rand(s1, s2, s3, b)
 	
@@ -1182,7 +1586,7 @@ module Monte_Karlo
 			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
 			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi2)
 			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi3)
-			w = PUI_get_F_integer(ksi, num)
+			w = PUI_get_F_integer(ksi1, num)
 			the = acos(1.0 - 2.0 * ksi2)
 			u = sqrt(w**2 * sin(the)**2 + (w * cos(the) - UH)**2)
 			if(u * MK_sigma(u)/( (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc) * h0) >= ksi3) EXIT

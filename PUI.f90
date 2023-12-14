@@ -150,6 +150,31 @@ module PUI
 
 	end subroutine PUI_f_Set
 
+	subroutine PUI_n_T_culc()
+		integer :: n2, N, i
+		real(8) :: w, S, S2
+
+		N = size(f_pui(1, :))
+
+		!$omp parallel
+	 	!$omp do private(i, w, S, S2)
+		do n2 = 1, N
+			S = 0.0
+			S2 = 0.0
+			do i = 1, pui_nW
+				w = (i-0.5) * pui_wR/pui_nW
+				S = S + f_pui(i, n2) * 4 * par_pi_8 * w**2 * (pui_wR/pui_nW)
+				S2 = S2 + f_pui(i, n2) * 4 * par_pi_8 * w**4 * (pui_wR/pui_nW)
+			end do
+			S2 = S2/(S * 3.0)
+			n_pui(n2) = S
+			T_pui(n2) = S2
+		end do
+		!$omp end do
+		!$omp end parallel
+
+	end subroutine PUI_n_T_culc
+
 	subroutine PUI_F_integr_Set()
 		! Создаём массивы для интегрирования функции распределения для последующего розыгрыша
 		! и сразу вычисляет их
@@ -582,7 +607,8 @@ module PUI
 
 	real(8) pure function PUI_get_F_integer(ksi, n)
 		! Получить значение функции F_integr_pui  
-		real(8), intent (in) :: ksi, n
+		real(8), intent (in) :: ksi
+		integer, intent (in) :: n
 
 		integer :: k1, k2
 		real(8) :: x1, x2,  f1, f2
@@ -683,10 +709,10 @@ module PUI
 		end if
     end function PUI_get_E_integr
 
-	subroutine PUI_Add(cell, wr, nu_ex, nu_ph, mu, time)
+	subroutine PUI_Add(cell, wr, nu_ex, mu, time)
 		! wr - скорость атома в СК, связанной со средней скоростью плазмы (модуль этой скорости)
 		integer, intent(in) :: cell
-		real(8), intent(in) :: wr, nu_ex, nu_ph, mu, time
+		real(8), intent(in) :: wr, nu_ex, mu, time
 		integer i, j
 
 		j = pui_num_tetr(cell)
@@ -696,9 +722,6 @@ module PUI
 			call omp_set_lock(pui_lock(j))
 			pui_Sm(i, j) = pui_Sm(i, j) + mu * time
 			pui_Sp(i, j) = pui_Sp(i, j) + mu * time * nu_ex
-
-			!pui_Sm(i, j) = pui_Sm(i, j) + mu * time
-			pui_Sp(i, j) = pui_Sp(i, j) + mu * time * nu_ph
 			call omp_unset_lock(pui_lock(j))
 
 		end if

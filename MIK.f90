@@ -46,7 +46,7 @@
             ez(2) = 0.0
             ez(3) = 0.0
 
-            if( 1.0 - fabs(DOT_PRODUCT(ex, ez)) < 0.001) then
+            if( 1.0 - dabs(DOT_PRODUCT(ex, ez)) < 0.001) then
                 ez(1) = 0.0
                 ez(2) = 1.0
                 ez(3) = 0.0
@@ -6910,6 +6910,54 @@
         print*, "****   HP = ", (norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP - 1, 1, 1))) + norm2(gl_Cell_center(:, gl_Cell_A(par_n_HP, 1, 1))))/2.0
 	
 	end subroutine Print_par_1D
+
+    subroutine Print_par_1D_PUI()
+        use GEO_PARAM
+        use STORAGE
+        use Interpolate2
+        use PUI
+        implicit none
+
+        integer :: N1, N2, kk, k, i, j, N, m, num
+        real(8) :: c(3), Mach
+        real(8) :: PAR(9)     ! Выходные параметры
+        real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
+        real(8) :: Dr, DI1, DI2, DI3
+        
+        Dr = 1.0/par_R0
+        DI1 = 0.0264
+        DI2 = 0.007622
+        DI3 = 0.00292921
+
+        num = 3
+        N = size(gl_Cell_A(:, 1, 1)) 
+
+        open(1, file = 'print_par_1D_PUI.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, Ur, u, v, w, p, p+BB, BB, Bx, By, Bz, n_He,"
+        write(1,*) "Max, In, Iu, IT, T, n_pui, T_pui, p_pui"
+
+
+        do j = 1, N
+            c = gl_Cell_center(:, gl_Cell_A(j, 1, 1))
+            m = gl_Cell_A(j, 1, 1)
+            
+            if(allocated(int2_Moment)) then
+                call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
+            end if
+            
+            write(1,*) norm2(c) * Dr, gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c),&
+                gl_Cell_par(2, m ), gl_Cell_par(3, m ), gl_Cell_par(4, m ), &
+                gl_Cell_par(5, m ), gl_Cell_par(5, m ) + norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8), norm2(gl_Cell_par(6:8, m ))**2/(8.0 * par_pi_8),&
+                gl_Cell_par(6, m ), gl_Cell_par(7, m ), gl_Cell_par(8, m ), &
+                gl_Cell_par2(1, m ), &
+                norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
+                sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3, &
+                gl_Cell_par(5, m )/gl_Cell_par(1, m )!, !TODO 
+        end do
+        
+        close(1)
+        
+	end subroutine Print_par_1D_PUI
 	
 	subroutine Print_tok_layer()
 	    use GEO_PARAM
@@ -8704,6 +8752,7 @@
 
             call PUI_Culc_h0()
             call PUI_F_integr_Set()
+            call PUI_n_T_culc()
 			call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
