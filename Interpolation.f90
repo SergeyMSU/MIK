@@ -2657,7 +2657,7 @@
 	
 	end subroutine Int2_Get_par_fast
 	
-	subroutine Int2_Get_par_fast2(x, y, z, num, PAR, MAS_PUI)
+	subroutine Int2_Get_par_fast2(x, y, z, num, PAR, MAS_PUI, rho_He)
 	! Здесь точно известно в каком тетраэдое точка
 	! Найти тетраедр, которому принадлежит точка и получить значения параметров
 	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
@@ -2671,6 +2671,7 @@
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
 	real(8), intent(out), optional :: MAS_PUI(2)   ! Массив параметров пикапов
+	real(8), intent(out), optional :: rho_He   ! Массив параметров пикапов
 	integer :: i, yzel, yzel2
 	
 	Minv = int2_all_tetraendron_matrix(:, :, num)
@@ -2696,6 +2697,11 @@
 				EXIT
 			end if
 		end do
+	end if
+
+	if(present(rho_He)) then
+		rho_He = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
+		vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
 	end if
 	
 	end subroutine Int2_Get_par_fast2

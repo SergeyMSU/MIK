@@ -6968,7 +6968,7 @@
                 gl_Cell_par2(1, m ), &
                 norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
                 sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3, &
-                gl_Cell_par(5, m )/gl_Cell_par(1, m ), MAS_PUI(1), MAS_PUI(2), MAS_PUI(1) * MAS_PUI(2), T_th, rho_th, p_th
+                gl_Cell_par(5, m )/(2.0 * gl_Cell_par(1, m )), MAS_PUI(1), MAS_PUI(2), MAS_PUI(1) * MAS_PUI(2), T_th, rho_th, p_th
         end do
         
         close(1)
@@ -8335,7 +8335,11 @@
 	    integer(4) :: step, name, name2, i, j, k, ij1, ij2, ij3, ii
 		real(8) :: PAR(9)     ! Выходные параметры
 	    integer(4) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
-	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
+	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp, aa
+
+        aa = 10E30
+
+        print*, "test = ", aa/(10E28)
 		
         
 		name = 535 !? 534 Номер файла основной сетки   533 - до PUI
@@ -8356,7 +8360,7 @@
 		! 315 перед тем, как перестроить сетку
 		name2 = 15 !? 9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 4  !? 3 Номер алгоритма
+		step = 2  !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8735,11 +8739,11 @@
             call PUI_Set()                !! PUI
             call PUI_f_Set()              !! PUI
             call PUI_f_Set2()             !! PUI
-            call PUI_Read_bin(13)
-            call PUI_Read_f_bin(14)
+            call PUI_Read_bin(16)
+            call PUI_Read_f_bin(17)
             call PUI_Culc_h0()            !! PUI
             call PUI_F_integr_Set()       !! PUI
-            call PUI_Read_for_MK_bin(14)   !! PUI
+            call PUI_Read_for_MK_bin(17)   !! PUI
             call Print_par_1D_PUI()
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
@@ -8776,8 +8780,8 @@
 			call PUI_Read_bin(name2 + 1)
 			! call PUI_Read_bin(9)
 
-			! call PUI_calc_Sm()
-            ! call PUI_Save_bin(name2 + 1)
+			call PUI_calc_Sm()
+            call PUI_Save_bin(name2 + 1)
 
 			! call Culc_f_pui()
             ! call Cut_f_pui()
