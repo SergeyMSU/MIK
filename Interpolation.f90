@@ -2588,7 +2588,7 @@
 	
 	end subroutine Int2_Set_interpol_matrix
 	
-	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, n_HE)
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, n_HE, MAS_PUI)
 	! Ќайти тетраедр, которому принадлежит точка и получить значени€ параметров
 	! ¬ отличие от медленной версии, эта не вычисл€ет матрицу интерпол€ции каждый раз, 
 	! предполагаетс€, что матрицы лежат в пам€ти
@@ -2600,9 +2600,11 @@
 	real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
 	real(8), intent(out), optional :: PAR_k(5)
 	real(8), intent(out), optional :: n_HE
+	real(8), intent(out), optional :: MAS_PUI(2)   ! ћассив параметров пикапов
 	
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
+	integer:: i, yzel, yzel2
 	
 	
 	call Int2_Get_tetraedron(x, y, z, num)
@@ -2636,13 +2638,26 @@
 	if(present(n_HE)) then
 		n_HE = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
-	
 	end if
-	
+
+	if(present(MAS_PUI)) then
+		MAS_PUI = 0.0	
+		do i = 1, 4
+			yzel = int2_all_tetraendron_point(i, num)
+			yzel2 = f_pui_num2(yzel)
+			if(yzel2 > 0) then
+				MAS_PUI(1) = MAS_PUI(1) + vec(1, i) * n_pui(yzel2)
+				MAS_PUI(2) = MAS_PUI(2) + vec(1, i) * T_pui(yzel2)
+			else
+				MAS_PUI = 0.0
+				EXIT
+			end if
+		end do
+	end if
 	
 	end subroutine Int2_Get_par_fast
 	
-	subroutine Int2_Get_par_fast2(x, y, z, num, PAR)
+	subroutine Int2_Get_par_fast2(x, y, z, num, PAR, MAS_PUI)
 	! «десь точно известно в каком тетраэдое точка
 	! Ќайти тетраедр, которому принадлежит точка и получить значени€ параметров
 	! ¬ отличие от медленной версии, эта не вычисл€ет матрицу интерпол€ции каждый раз, 
@@ -2655,8 +2670,8 @@
 	
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
-	
-	
+	real(8), intent(out), optional :: MAS_PUI(2)   ! ћассив параметров пикапов
+	integer :: i, yzel, yzel2
 	
 	Minv = int2_all_tetraendron_matrix(:, :, num)
 	
@@ -2665,10 +2680,23 @@
 	
 	vec = MATMUL(vec, Minv)
 
-	
 	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
 	
+	if(present(MAS_PUI)) then
+		MAS_PUI = 0.0	
+		do i = 1, 4
+			yzel = int2_all_tetraendron_point(i, num)
+			yzel2 = f_pui_num2(yzel)
+			if(yzel2 > 0) then
+				MAS_PUI(1) = MAS_PUI(1) + vec(1, i) * n_pui(yzel2)
+				MAS_PUI(2) = MAS_PUI(2) + vec(1, i) * T_pui(yzel2)
+			else
+				MAS_PUI = 0.0
+				EXIT
+			end if
+		end do
+	end if
 	
 	end subroutine Int2_Get_par_fast2
 	

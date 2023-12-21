@@ -58,7 +58,6 @@ module Monte_Karlo
 	
 	
 	subroutine M_K_start()
-
 		USE OMP_LIB
 		!$MPI include 'mpif.h'
 		! Variables
@@ -73,11 +72,30 @@ module Monte_Karlo
 		real(8), allocatable :: buff(:, :, :)  ! ДЛЯ MPI
 		real(8), allocatable :: M_K_Moment_print(:, :, :)
 		!$MPI integer :: mpi_status(MPI_STATUS_SIZE)
+		real(8) :: PAR(9), MAS_PUI(2)
+		integer :: nk
 		
 		call M_K_Set()    ! Создали массивы
 		call M_K_init()   ! Инициализируем веса и т.д.
+
+		!! PUI
+		pui_Sm = 0.0   ! Нужно обнулить массивы, в которые будем накапливать всё.
+		pui_Sp = 0.0
 		
-		call PUI_Set()
+		! call PUI_f_Set()
+		! call PUI_f_Set2()
+		! call PUI_Set()                !! PUI
+		! call PUI_F_integr_Set()       !! PUI
+		! call PUI_Read_for_MK_bin(9)   !! PUI
+		! call PUI_Culc_h0()            !! PUI
+
+		! nk = 206852
+		! call Int2_Get_par_fast(-6.133_8, -40.0_8, 9.688_8, nk, PAR, MAS_PUI = MAS_PUI)
+		! print*, PAR
+		! print*, "____________________"
+		! print*, MAS_PUI
+
+		! pause
 		
 		print*, "Vesa = ", MK_mu1, MK_mu2, MK_mu3, MK_mu4
 		print*, "MK_k_multiply = ", MK_k_multiply
@@ -164,7 +182,8 @@ module Monte_Karlo
 					end if
 				end do
 
-				call M_K_Fly(potok)
+				!call M_K_Fly(potok)
+				call M_K_Fly_PUI(potok)    !! PUI
 				
 			end do
 			
@@ -206,7 +225,8 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				call M_K_Fly(potok)
+				!call M_K_Fly(potok)
+				call M_K_Fly_PUI(potok)    !! PUI
 
 			end do
 			
@@ -236,7 +256,8 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				call M_K_Fly(potok)
+				!call M_K_Fly(potok)
+				call M_K_Fly_PUI(potok)    !! PUI
 			end do
 			
 			! Запускаем частицы четвёрного типа (вылет спереди с части плоскости)
@@ -265,17 +286,15 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				call M_K_Fly(potok)
-				
+				!call M_K_Fly(potok)
+				call M_K_Fly_PUI(potok)    !! PUI
 			end do
-			
-			
-			
-			
 		end do
 		!$omp end do
 
 		!$omp end parallel
+
+		print*, "END ALL particle"
 		
 		end_time = omp_get_wtime()
 		
@@ -1054,7 +1073,8 @@ module Monte_Karlo
 		
 		real(8) :: time ! Оценочное время до вылета частицы из ячейки
 		
-		real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
+		real(8) :: cp, vx, vy, vz, ro, PAR(9), MAS_PUI(2), p, ro_pui  ! Параметры плазмы в ячейке
+		real(8) :: pui_less
 		real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
 		real(8) :: nu_ex_pui, kappa_pui, mu_ex_pui
 		real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
@@ -1099,14 +1119,24 @@ module Monte_Karlo
 				call Int2_Time_fly(particle(1:3), particle(4:6), time, cell, next)  ! Находим время time до вылета из ячейки
 				
 				time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
-				cell2 = INT(cell/6.0) + 1  ! Номер ячейки, где брать pui
+				cell2 = int2_all_tetraendron_point(1, cell) ! INT(cell/6) + 1  ! Номер ячейки, где брать pui
 
 				area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
 
+				! if(cell == 334030) then
+				! 	print*, "cell = ", cell
+				! 	print*, particle(1:3)
+				! 	print*, area2
+				! 	pause
+				! end if
+
 				kappa = 0.0
 				kappa_pui = 0.0
+				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+				pui_less = 1.0
+
 				do ijk = 1, 3  ! Разбиение траектории на 3 части для более точной перезарядки
-					
+					pui_less = 1.0
 					select case (ijk)
 						case(1)
 							ddt = 1.0/6.0                                      
@@ -1119,20 +1149,58 @@ module Monte_Karlo
 							STOP
 					end select
 					
-					call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
-						particle(3) + time * ddt * particle(6), cell, PAR)
+					if(area2 <= 2) then
+						call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
+							particle(3) + time * ddt * particle(6), cell, PAR, MAS_PUI = MAS_PUI)
+					else
+						call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
+							particle(3) + time * ddt * particle(6), cell, PAR)
+					end if
 				
-					cp = sqrt(PAR(5)/PAR(1))
+					! cp = sqrt(PAR(5)/PAR(1))
+					if(area2 <= 2) then
+						p = PAR(5) - MAS_PUI(2) * MAS_PUI(1)
+						if(p < 0.0) p = 4286.72/((r/par_1ae)**(2.0 * ggg))
+						ro_pui = MAS_PUI(1)
+						ro = PAR(1) - ro_pui
+						if(ro < 0.000001) then
+							ro = 0.000001
+							p = 0.000001
+							ro_pui = PAR(1) - ro
+							pui_less = ro_pui/MAS_PUI(1)
+						end if
+					else
+						p = PAR(5)
+						ro = PAR(1)
+						ro_pui = 0.0
+					end if
+
+					cp = sqrt(p/ro)
 					vx = PAR(2)
 					vy = PAR(3)
 					vz = PAR(4)
-					ro = PAR(1)
+					
 					!! Нужно учесть изменение температуры и плотности протонов из-за отдельного учёта пикапов
 				
 					if(ro <= 0.0 .or. ro > 1000.0) then
+						print*, "ro =", ro
+						print*, area2
+						print*, "___"
+						print*, particle(1:3)
+						print*, "___"
+						print*, MAS_PUI
+						print*, "___"
 						print*, PAR
 						print*, "___"
 						print*, cell, int2_all_tetraendron_point(:, cell)
+						print*, "___"
+						print*, n_pui(f_pui_num2(104308))
+						print*, "___"
+						print*, n_pui(f_pui_num2(104368))
+						print*, "___"
+						print*, n_pui(f_pui_num2(34788))
+						print*, "___"
+						print*, n_pui(f_pui_num2(104366))
 						pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
 					end if
 				
@@ -1150,12 +1218,12 @@ module Monte_Karlo
 						nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
 					end if
 
-					if(area2 <= 2) kappa_pui = kappa_pui + PUI_get_nu_integr(cell2, u)/ par_Kn * time/3.0
+					if(area2 <= 2) kappa_pui = kappa_pui + pui_less * PUI_get_nu_integr(f_pui_num2(cell2), u)/ par_Kn * time/3.0  
 			
 					kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
 				end do
 
-				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+				
 				
 				if(MK_photoionization) then
 					nu_ph = par_nu_ph * (par_1ae/r)**2
@@ -1170,11 +1238,11 @@ module Monte_Karlo
 				t_ex = -(time / kappa_all) * log(1.0 - ksi * (1.0 - exp(-kappa_all)))  ! Время до перезарядки
 				t2 = time - t_ex  ! Время сколько лететь после того, как атом перезарядился
 				mu_perez = mu * (1.0 - exp(-kappa_all)) ! вес перезаряженного атома по всем процессам
-				mu2 = max(mu - mu_perez, 0.0)   !mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома 
-				mu_ph = 0.0
+				mu2 = max(mu - mu_perez, 0.0_8)   !mu * exp(-kappa_all)  ! вес оставшегося неперезаряженного атома 
+				mu_ph = 0.0_8
 				if(MK_photoionization) mu_ph = (kappa_ph / kappa_all) * mu_perez  ! Вес ионизированного атома
 				mu_ex = (kappa / kappa_all) * mu_perez  ! mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
-				mu_ex_pui = (kappa_pui / kappa_all) * mu_perez  ! mu_perez - mu_ph      ! Вес перезаряженного на протонах атома
+				mu_ex_pui = (kappa_pui / kappa_all) * mu_perez  ! mu_perez - mu_ph      ! Вес перезаряженного на пикапах атома
 				
 				
 				if(mu2 < 0.0) then
@@ -1279,18 +1347,27 @@ module Monte_Karlo
 				! Добавим интегралы по перезарядке на пикапах !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			
 				if(area2 <= 2) then
-					k1 = PUI_get_nu_integr(cell2, u)
-					uz_M = PUI_get_Mz_integr(cell2, u)/k1
-					uz_E = PUI_get_E_integr(cell2, u)/k1
+					if(f_pui_num2(cell2) < 1) then
+						print*, "(__________________________)"
+						print*, cell2
+						print*, cell
+						print*, f_pui_num2(cell2)
+						print*, area2
+						pause "Error 1344 MK"
+					end if
+
+					k1 = PUI_get_nu_integr(f_pui_num2(cell2), u)
+					uz_M = PUI_get_Mz_integr(f_pui_num2(cell2), u)/k1
+					uz_E = PUI_get_E_integr(f_pui_num2(cell2), u)/k1
 					uz_M = 1.0 - uz_M/u
 					k1 = (particle(4) - vx) * uz_M
 					k2 = (particle(5) - vy) * uz_M
 					k3 = (particle(6) - vz) * uz_M
-					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + k1
-					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + k2
-					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + k3
-					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + u**2 / 2.0 + &
-					(k1 * vx + k2 * vy + k3 * vz) - uz_E
+					M_K_Moment(6, particle_2(2), cell, n_potok) = M_K_Moment(6, particle_2(2), cell, n_potok) + k1 * mu_ex_pui
+					M_K_Moment(7, particle_2(2), cell, n_potok) = M_K_Moment(7, particle_2(2), cell, n_potok) + k2 * mu_ex_pui
+					M_K_Moment(8, particle_2(2), cell, n_potok) = M_K_Moment(8, particle_2(2), cell, n_potok) + k3 * mu_ex_pui
+					M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + mu_ex_pui * (u**2 / 2.0 + &
+					(k1 * vx + k2 * vy + k3 * vz) - uz_E)
 				end if
 
 				! Добавим интегралы по фотоионизации  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1322,7 +1399,7 @@ module Monte_Karlo
 				end if
 
 				if(area2 <= 2) then  !! Нужно перезаряжать с пикапами
-					call MK_pui_charge_exchange_velocity(n_potok, vx, vy, vz, particle(4), particle(5), particle(6), cell2, k1, k2, k3)
+					call MK_pui_charge_exchange_velocity(n_potok, vx, vy, vz, particle(4), particle(5), particle(6), f_pui_num2(cell2), k1, k2, k3)
 					! Функция возвращает сразу декартовые компоненты новой скорости
 					V = (/ k1, k2, k3 /)
 					call MK_Distination(r_ex, V, to_i, to_j, r_peregel)
@@ -1440,28 +1517,27 @@ module Monte_Karlo
 			
 			
 		end do
-		
+	
 	end subroutine M_K_Fly_PUI
 	
 	subroutine M_K_rand(s1, s2, s3, b)
-	
-	integer(4), intent(in out) :: s1, s2, s3
-	real(8), intent(out) :: b
-	integer(4):: ic15 = 32768, ic10 = 1024
-	integer(4):: mz = 710, my = 17784, mx = 11973
-	real(8):: xi = 9.0949470177292824E-13, c = 1.073741824E9
-	integer(4) :: i13, i12, i11, ii
-	i13 = mz * s1 + my * s2 + mx * s3
-	i12 = my * s1 + mx * s2
-	i11 = mx * s1
-	ii = i11 / ic15
-	i12 = i12 + ii
-	s1 = i11 - ic15 * ii
-	ii = i12 / ic15
-	i13 = i13 + ii
-	s2 = i12 - ic15 * ii
-	s3 = mod(i13,ic10)
-	b = xi * (c * s3 + ic15 * s2 + s1)
+		integer(4), intent(in out) :: s1, s2, s3
+		real(8), intent(out) :: b
+		integer(4):: ic15 = 32768, ic10 = 1024
+		integer(4):: mz = 710, my = 17784, mx = 11973
+		real(8):: xi = 9.0949470177292824E-13, c = 1.073741824E9
+		integer(4) :: i13, i12, i11, ii
+		i13 = mz * s1 + my * s2 + mx * s3
+		i12 = my * s1 + mx * s2
+		i11 = mx * s1
+		ii = i11 / ic15
+		i12 = i12 + ii
+		s1 = i11 - ic15 * ii
+		ii = i12 / ic15
+		i13 = i13 + ii
+		s2 = i12 - ic15 * ii
+		s3 = mod(i13,ic10)
+		b = xi * (c * s3 + ic15 * s2 + s1)
 	end subroutine M_K_rand
 	
 	subroutine M_K_Set()
@@ -1605,212 +1681,211 @@ module Monte_Karlo
 	end subroutine MK_pui_charge_exchange_velocity
 	
 	subroutine M_K_Change_Velosity4(potok, Ur, Uthe, Uphi, Vr, Vthe, Vphi, Wr_, Wthe_, Wphi_, mu_, cp, r, I_, x_ex, y_ex, z_ex, bb)
-	! Как первая часть, но розыгрышь идёт по-частям
-	! Запускаесть один основной и I_ дополнительных атомов
-	
-	integer(4), intent(in) :: potok, I_
-	real(8), intent(in) ::  Ur, Uthe, Uphi, Vr, Vthe, Vphi, cp, r, x_ex, y_ex, z_ex
-	real(8), intent(out) ::   Wr_(I_ + 1), Wthe_(I_ + 1), Wphi_(I_ + 1), mu_(I_ + 1)
-	logical, intent(out) :: bb
-	
-	real(8) :: X, uu
-	real(8) :: gamma_(I_), Wa_(I_), Mho_(I_)
-	real(8) :: ksi, gam1, gam2, Wr1, Wr2, Wr0, ksi1, ksi2, W1, W2, Wa, pp1, pp2, c, p, u
-	real(8) :: p4, om1, om2, om3, lo, y1, y2, y3, v1, v2, v3, u1, u2, u3, uuu, yy, h, ksi3, ksi4, ksi5, ksi6, D, ko, gg
-	integer(4) :: ii, met, k
-	
-	X = sqrt( (Vr - Ur)**2 + (Vthe - Uthe)**2 + (Vphi - Uphi)**2 )
-	uu = exp(-(X**2)) / par_sqrtpi + (X + 1.0 / (2.0 * X)) * erf(X)
-	Wr0 = -1.0
-	met = 0
-
-	do ii = 1, I_
-		gamma_(ii) = 1.0 / ( (r / MK_R_zone(ii))**2 - 1.0)
-	end do
-
-	
-
-	! Разыграем Wr
-	
-	do ii = 1, I_
+		! Как первая часть, но розыгрышь идёт по-частям
+		! Запускаесть один основной и I_ дополнительных атомов
 		
-		if (ii == 1) then
-			gam1 = 0.0
-			gam2 = gamma_(ii)
-		else
-			gam1 = gamma_(ii - 1)
-			gam2 = gamma_(ii)
-		end if
+		integer(4), intent(in) :: potok, I_
+		real(8), intent(in) ::  Ur, Uthe, Uphi, Vr, Vthe, Vphi, cp, r, x_ex, y_ex, z_ex
+		real(8), intent(out) ::   Wr_(I_ + 1), Wthe_(I_ + 1), Wphi_(I_ + 1), mu_(I_ + 1)
+		logical, intent(out) :: bb
 		
+		real(8) :: X, uu
+		real(8) :: gamma_(I_), Wa_(I_), Mho_(I_)
+		real(8) :: ksi, gam1, gam2, Wr1, Wr2, Wr0, ksi1, ksi2, W1, W2, Wa, pp1, pp2, c, p, u
+		real(8) :: p4, om1, om2, om3, lo, y1, y2, y3, v1, v2, v3, u1, u2, u3, uuu, yy, h, ksi3, ksi4, ksi5, ksi6, D, ko, gg
+		integer(4) :: ii, met, k
 		
-		
-		pp1 = MK_for_Wr_1(0.0_8, gam2, Ur) - MK_for_Wr_1(0.0_8, gam1, Ur)
-		pp2 = MK_for_Wr_2(0.0_8, gam2, Ur, Uthe) - MK_for_Wr_2(0.0_8, gam1, Ur, Uthe)
-		
-		
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
+		X = sqrt( (Vr - Ur)**2 + (Vthe - Uthe)**2 + (Vphi - Uphi)**2 )
+		uu = exp(-(X**2)) / par_sqrtpi + (X + 1.0 / (2.0 * X)) * erf(X)
+		Wr0 = -1.0
+		met = 0
 
-		if (ksi < pp1 / (pp1 + pp2)) then
-			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
-			Wr1 = -3.0;
-			Wr2 = 0.0;
+		do ii = 1, I_
+			gamma_(ii) = 1.0 / ( (r / MK_R_zone(ii))**2 - 1.0)
+		end do
 
-			do while (MK_H_Wr_1(gam1, gam2, Wr1, Ur, pp1, ksi) >= 0.0)
-				Wr1 = Wr1 - 1.0
-			end do
-				
-			k = 0
-			do while (dabs(Wr2 - Wr1) > 0.0001)     ! Деление пополам, иначе разваливается
-				Wr0 = (Wr1 + Wr2) / 2.0
-				if (MK_H_Wr_1(gam1, gam2, Wr0, Ur, pp1, ksi) < 0) then
-					Wr1 = Wr0
-				else
-					Wr2 = Wr0
-				end if
-				k = k + 1
-			end do
-			Wr_(ii) = Wr1
-		else
-			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
-			Wr1 = -3.0
-			Wr2 = 0.0
+		
 
-			do while (MK_H_Wr_2(gam1, gam2, Wr1, Ur, Uthe, pp2, ksi) >= 0.0)
-				Wr1 = Wr1 - 1.0
-			end do
+		! Разыграем Wr
+		
+		do ii = 1, I_
 			
-			k = 0
-			do while (dabs(Wr2 - Wr1) > 0.0001)     ! Деление пополам, иначе разваливается
-				Wr0 = (Wr1 + Wr2) / 2.0
-				if (MK_H_Wr_2(gam1, gam2, Wr0, Ur, Uthe, pp2, ksi) < 0) then
-					Wr1 = Wr0
-				else
-					Wr2 = Wr0
-				end if
-				k = k + 1
-			end do
-			Wr_(ii) = Wr1
-		end if
-	end do
+			if (ii == 1) then
+				gam1 = 0.0
+				gam2 = gamma_(ii)
+			else
+				gam1 = gamma_(ii - 1)
+				gam2 = gamma_(ii)
+			end if
+			
+			
+			
+			pp1 = MK_for_Wr_1(0.0_8, gam2, Ur) - MK_for_Wr_1(0.0_8, gam1, Ur)
+			pp2 = MK_for_Wr_2(0.0_8, gam2, Ur, Uthe) - MK_for_Wr_2(0.0_8, gam1, Ur, Uthe)
+			
+			
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
 
-	
-	! Разыгрываем  Wa
-	do ii = 1, I_
+			if (ksi < pp1 / (pp1 + pp2)) then
+				call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
+				Wr1 = -3.0;
+				Wr2 = 0.0;
+
+				do while (MK_H_Wr_1(gam1, gam2, Wr1, Ur, pp1, ksi) >= 0.0)
+					Wr1 = Wr1 - 1.0
+				end do
+					
+				k = 0
+				do while (dabs(Wr2 - Wr1) > 0.0001)     ! Деление пополам, иначе разваливается
+					Wr0 = (Wr1 + Wr2) / 2.0
+					if (MK_H_Wr_1(gam1, gam2, Wr0, Ur, pp1, ksi) < 0) then
+						Wr1 = Wr0
+					else
+						Wr2 = Wr0
+					end if
+					k = k + 1
+				end do
+				Wr_(ii) = Wr1
+			else
+				call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi)
+				Wr1 = -3.0
+				Wr2 = 0.0
+
+				do while (MK_H_Wr_2(gam1, gam2, Wr1, Ur, Uthe, pp2, ksi) >= 0.0)
+					Wr1 = Wr1 - 1.0
+				end do
+				
+				k = 0
+				do while (dabs(Wr2 - Wr1) > 0.0001)     ! Деление пополам, иначе разваливается
+					Wr0 = (Wr1 + Wr2) / 2.0
+					if (MK_H_Wr_2(gam1, gam2, Wr0, Ur, Uthe, pp2, ksi) < 0) then
+						Wr1 = Wr0
+					else
+						Wr2 = Wr0
+					end if
+					k = k + 1
+				end do
+				Wr_(ii) = Wr1
+			end if
+		end do
+
 		
-		if (ii == 1) then
-			gam1 = 0.0
-			gam2 = gamma_(ii)
+		! Разыгрываем  Wa
+		do ii = 1, I_
+			
+			if (ii == 1) then
+				gam1 = 0.0
+				gam2 = gamma_(ii)
+			else
+				gam1 = gamma_(ii - 1)
+				gam2 = gamma_(ii)
+			end if
+
+			do while(.True.)
+				call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
+				call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi2)
+				W1 = sqrt(gam1 * (Wr_(ii)**2))
+				W2 = sqrt(gam2 * (Wr_(ii)**2))
+				Wa = sqrt(-log(exp(-(W1**2)) - ksi1 * (exp(-(W1**2)) - exp(-(W2**2)))))
+				if ((1.0 + (Uthe * Wa)**2) / (1.0 + (Uthe * W2)**2) >= ksi2) EXIT
+			end do
+			Wa_(ii) = Wa
+		end do
+
+		
+		! Считаем веса и Mho
+		do ii = 1, I_
+			c = Uthe * Wa_(ii)
+			p = MK_norm_mho(c)
+			
+			Mho_(ii) = MK_play_mho(potok, c)
+			
+
+			Wthe_(ii) = Wa_(ii) * cos(Mho_(ii))
+			Wphi_(ii) = Wa_(ii) * sin(Mho_(ii))
+			
+			if (ii == 1) then
+				gam1 = 0.0
+				gam2 = gamma_(ii)
+			else
+				gam1 = gamma_(ii - 1)
+				gam2 = gamma_(ii)
+			end if
+
+			u = sqrt( (Vr - Wr_(ii))**2 + (Vthe - Wthe_(ii))**2 +(Vphi - Wphi_(ii))**2 )
+
+			if (X > 7.0) then
+				mu_(ii) = (u * MK_sigma2(u, cp) / (uu * MK_sigma2(uu, cp))) * (MK_f2(0.0_8, gam1, Ur, Uthe) - MK_f2(0.0_8, gam2, Ur, Uthe)) * exp(-(Uthe**2)) * (p) / (1.0 + (c**2))
+			else
+				mu_(ii) = (u * MK_sigma2(u, cp) / (MK_int_1(X * cp, cp) / cp)) * (MK_f2(0.0_8, gam1, Ur, Uthe) - MK_f2(0.0_8, gam2, Ur, Uthe)) * exp(-(Uthe**2)) * (p) / (1.0 + (c**2))
+			end if
+		end do
+
+
+		! Розыгрыш основного атома
+		p4 = 0.5 * par_sqrtpi * X / (1.0 + 0.5 * par_sqrtpi * X)
+		
+
+		if (I_ > 0) then
+			gg = gamma_(I_)
 		else
-			gam1 = gamma_(ii - 1)
-			gam2 = gamma_(ii)
+			gg = 0.0
 		end if
 
 		do while(.True.)
 			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
 			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi2)
-			W1 = sqrt(gam1 * (Wr_(ii)**2))
-			W2 = sqrt(gam2 * (Wr_(ii)**2))
-			Wa = sqrt(-log(exp(-(W1**2)) - ksi1 * (exp(-(W1**2)) - exp(-(W2**2)))))
-			if ((1.0 + (Uthe * Wa)**2) / (1.0 + (Uthe * W2)**2) >= ksi2) EXIT
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi3)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi4)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi5)
+			call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi6)
+			
+			if (p4 < ksi1) then
+				om1 = 1.0 - 2.0 * ksi4
+				om2 = sqrt(1.0 - (om1**2)) * cos(2.0 * par_pi_8 * ksi5)
+				om3 = sqrt(1.0 - (om1**2)) * sin(2.0 * par_pi_8 * ksi5)
+
+				lo = sqrt(-log(ksi2 * ksi3))
+				y1 = lo * om1
+				y2 = lo * om2
+				y3 = lo * om3
+			else
+				y1 = sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3)
+				y2 = sqrt(-log(ksi4)) * cos(2.0 * par_pi_8 * ksi5)
+				y3 = sqrt(-log(ksi4)) * sin(2.0 * par_pi_8 * ksi5)
+			end if
+			
+			v1 = y1 + Ur
+			v2 = y2 + Uthe
+			v3 = y3 + Uphi
+			u1 = Vr - v1
+			u2 = Vthe - v2
+			u3 = Vphi - v3
+			uuu = sqrt(kvv(u1, u2, u3))
+			yy = sqrt(kvv(y1, y2, y3))
+			h = ((uuu * MK_sigma2(uuu, cp)) / (MK_sigma2(X, cp) * (X + yy)))
+			
+			if (h >= ksi6) EXIT
 		end do
-		Wa_(ii) = Wa
-	end do
 
-	
-	! Считаем веса и Mho
-	do ii = 1, I_
-		c = Uthe * Wa_(ii)
-		p = MK_norm_mho(c)
-		
-		Mho_(ii) = MK_play_mho(potok, c)
-		
 
-		Wthe_(ii) = Wa_(ii) * cos(Mho_(ii))
-		Wphi_(ii) = Wa_(ii) * sin(Mho_(ii))
-		
-		if (ii == 1) then
-			gam1 = 0.0
-			gam2 = gamma_(ii)
+		Wr_(I_ + 1) = v1
+		Wthe_(I_ + 1) = v2
+		Wphi_(I_ + 1) = v3
+
+
+		if (Wr_(I_ + 1) >= 0.0 .or. (Wthe_(I_ + 1)**2) + (Wphi_(I_ + 1)**2) > gg * (Wr_(I_ + 1)**2)) then
+			mu_(I_ + 1) = 1.0
+			bb = .True.
+			return
 		else
-			gam1 = gamma_(ii - 1)
-			gam2 = gamma_(ii)
+			mu_(I_ + 1) = 0.0  ! Чтобы не запускать этот атом
+			bb = .False.
+			return
 		end if
 
-		u = sqrt( (Vr - Wr_(ii))**2 + (Vthe - Wthe_(ii))**2 +(Vphi - Wphi_(ii))**2 )
-
-		if (X > 7.0) then
-			mu_(ii) = (u * MK_sigma2(u, cp) / (uu * MK_sigma2(uu, cp))) * (MK_f2(0.0_8, gam1, Ur, Uthe) - MK_f2(0.0_8, gam2, Ur, Uthe)) * exp(-(Uthe**2)) * (p) / (1.0 + (c**2))
-		else
-			mu_(ii) = (u * MK_sigma2(u, cp) / (MK_int_1(X * cp, cp) / cp)) * (MK_f2(0.0_8, gam1, Ur, Uthe) - MK_f2(0.0_8, gam2, Ur, Uthe)) * exp(-(Uthe**2)) * (p) / (1.0 + (c**2))
-		end if
-	end do
-
-
-	! Розыгрыш основного атома
-	p4 = 0.5 * par_sqrtpi * X / (1.0 + 0.5 * par_sqrtpi * X)
-	
-
-	if (I_ > 0) then
-		gg = gamma_(I_)
-	else
-		gg = 0.0
-	end if
-
-	do while(.True.)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi1)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi2)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi3)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi4)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi5)
-		call M_K_rand(sensor(1, 2, potok), sensor(2, 2, potok), sensor(3, 2, potok), ksi6)
-		
-		if (p4 < ksi1) then
-			om1 = 1.0 - 2.0 * ksi4
-			om2 = sqrt(1.0 - (om1**2)) * cos(2.0 * par_pi_8 * ksi5)
-			om3 = sqrt(1.0 - (om1**2)) * sin(2.0 * par_pi_8 * ksi5)
-
-			lo = sqrt(-log(ksi2 * ksi3))
-			y1 = lo * om1
-			y2 = lo * om2
-			y3 = lo * om3
-		else
-			y1 = sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3)
-			y2 = sqrt(-log(ksi4)) * cos(2.0 * par_pi_8 * ksi5)
-			y3 = sqrt(-log(ksi4)) * sin(2.0 * par_pi_8 * ksi5)
-		end if
-		
-		v1 = y1 + Ur
-		v2 = y2 + Uthe
-		v3 = y3 + Uphi
-		u1 = Vr - v1
-		u2 = Vthe - v2
-		u3 = Vphi - v3
-		uuu = sqrt(kvv(u1, u2, u3))
-		yy = sqrt(kvv(y1, y2, y3))
-		h = ((uuu * MK_sigma2(uuu, cp)) / (MK_sigma2(X, cp) * (X + yy)))
-		
-		if (h >= ksi6) EXIT
-	end do
-
-
-	Wr_(I_ + 1) = v1
-	Wthe_(I_ + 1) = v2
-	Wphi_(I_ + 1) = v3
-
-
-	if (Wr_(I_ + 1) >= 0.0 .or. (Wthe_(I_ + 1)**2) + (Wphi_(I_ + 1)**2) > gg * (Wr_(I_ + 1)**2)) then
-		mu_(I_ + 1) = 1.0
 		bb = .True.
 		return
-	else
-		mu_(I_ + 1) = 0.0  ! Чтобы не запускать этот атом
-		bb = .False.
-		return
-	end if
-
-	bb = .True.
-	return
-
 	end subroutine M_K_Change_Velosity4
 
 	subroutine MK_Velosity_initial2(potok, Vx, Vy, Vz)
@@ -1830,29 +1905,28 @@ module Monte_Karlo
 		z = 0
 		p1 = 0.5 * dabs(par_Velosity_inf) * par_sqrtpi / (0.5 + 0.5 * dabs(par_Velosity_inf) * par_sqrtpi);
 
-	do
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
+		do
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
 
-		if (p1 > ksi3) then
-			z = cos(par_pi_8 * ksi5) * sqrt(-log(ksi4))
-		else
-			z = sqrt(-log(1.0 - ksi4))
+			if (p1 > ksi3) then
+				z = cos(par_pi_8 * ksi5) * sqrt(-log(ksi4))
+			else
+				z = sqrt(-log(1.0 - ksi4))
+			end if
+			
+			if((dabs(z + par_Velosity_inf) / (dabs(par_Velosity_inf) + dabs(z)) > ksi6 .and. z >= -par_Velosity_inf)) EXIT
+		end do
+
+		Vx = z + par_Velosity_inf
+		
+		if (Vx <= 0.0) then
+			print*, "Error iuygvbnmklo9890pljiouytrtyjhg"
 		end if
 		
-		if((dabs(z + par_Velosity_inf) / (dabs(par_Velosity_inf) + dabs(z)) > ksi6 .and. z >= -par_Velosity_inf)) EXIT
-	end do
-
-	Vx = z + par_Velosity_inf
-	
-	if (Vx <= 0.0) then
-		print*, "Error iuygvbnmklo9890pljiouytrtyjhg"
-	end if
-	
-	return
-	
+		return
 	end subroutine MK_Velosity_initial2
 	
 	subroutine MK_Velosity_initial(potok, Vx, Vy, Vz)
@@ -1872,248 +1946,245 @@ module Monte_Karlo
 		z = 0
 		p1 = dabs(par_Velosity_inf) * par_sqrtpi / (1.0 + dabs(par_Velosity_inf) * par_sqrtpi)
 
-	do
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
+		do
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
 
-		if (p1 > ksi3) then
-			z = cos(par_pi_8 * ksi5) * sqrt(-log(ksi4))
-		else
-			if (ksi4 <= 0.5) then
-				z = -sqrt(-log(2.0 * ksi4))
+			if (p1 > ksi3) then
+				z = cos(par_pi_8 * ksi5) * sqrt(-log(ksi4))
 			else
-				z = sqrt(-log(2.0 * (1.0 - ksi4)))
+				if (ksi4 <= 0.5) then
+					z = -sqrt(-log(2.0 * ksi4))
+				else
+					z = sqrt(-log(2.0 * (1.0 - ksi4)))
+				end if
 			end if
-		end if
-		
-		if(dabs(z + par_Velosity_inf) / (dabs(par_Velosity_inf) + dabs(z)) >= ksi6 .and. z <= -par_Velosity_inf) EXIT
-	end do
+			
+			if(dabs(z + par_Velosity_inf) / (dabs(par_Velosity_inf) + dabs(z)) >= ksi6 .and. z <= -par_Velosity_inf) EXIT
+		end do
 
-	Vx = z + par_Velosity_inf
-	
-	return
-	
+		Vx = z + par_Velosity_inf
+		
+		return
 	end subroutine MK_Velosity_initial
 	
 	subroutine MK_Init_Parametrs(potok, mu_, Wt_, Wp_, Wr_, X_, bb)
-	! Розыгрышь атомов на начальной сфере (скорости и положения)
-	integer(4), intent(in) :: potok
-	real(8), intent(out) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
-	logical, intent(out) :: bb
-	
-	real(8) :: Y, Wr1, Wr2, Wr0, W1, W2, Wa, Yt, c, p
-	real(8) :: ksi, ksi1, ksi2
-	real(8) :: X1
-	real(8) :: X2
-	real(8) :: X0                ! для метода хорд
-	real(8) :: split, gam1, gam2
-	real(8) :: Wa_(par_n_zone + 1)
-	real(8) :: Mho_(par_n_zone + 1)
-	integer(4) :: i
-	real(8) :: p1, ksi3, ksi4, z, h, gg, p4_, ksi5, ksi6
-	
-	
-	X0 = 1.0
-	Y = dabs(par_Velosity_inf)
-	p1 = erf(Y) / (MK_A1_ * (Y**2))
-	
-	
-
-	! Разыгрываем  X
-	do i = 1, par_n_zone
+		! Розыгрышь атомов на начальной сфере (скорости и положения)
+		integer(4), intent(in) :: potok
+		real(8), intent(out) :: mu_(par_n_zone + 1), Wt_(par_n_zone + 1), Wp_(par_n_zone + 1), Wr_(par_n_zone + 1), X_(par_n_zone + 1)
+		logical, intent(out) :: bb
 		
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
-		X1 = 0.0
-		X2 = 1.0
+		real(8) :: Y, Wr1, Wr2, Wr0, W1, W2, Wa, Yt, c, p
+		real(8) :: ksi, ksi1, ksi2
+		real(8) :: X1
+		real(8) :: X2
+		real(8) :: X0                ! для метода хорд
+		real(8) :: split, gam1, gam2
+		real(8) :: Wa_(par_n_zone + 1)
+		real(8) :: Mho_(par_n_zone + 1)
+		integer(4) :: i
+		real(8) :: p1, ksi3, ksi4, z, h, gg, p4_, ksi5, ksi6
 		
-		if (i == 1) then
-			gam1 = 0.0
-			gam2 = MK_gam_zone(i)
-		else
-			gam1 = MK_gam_zone(i - 1)
-			gam2 = MK_gam_zone(i)
-		end if
+		
+		X0 = 1.0
+		Y = dabs(par_Velosity_inf)
+		p1 = erf(Y) / (MK_A1_ * (Y**2))
+		
 		
 
-		do while (dabs(X2 - X1) > 0.0000001)     ! Деление пополам, иначе разваливается
-			X0 = (X1 + X2) / 2.0
-			if (MK_Hx(gam1, gam2, X0, Y, ksi) < 0.0) then
-				X1 = X0
-			else
-				X2 = X0
-			end if
-		end do
-		X_(i) = X0
-	end do
-
-	! Разыгрываем  Wr
-	do i = 1, par_n_zone
-		
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
-		
-		Wr1 = -5.0
-		Wr2 = 0.0
-		
-		if (i == 1) then
-			gam1 = 0.0
-			gam2 = MK_gam_zone(i)
-		else
-			gam1 = MK_gam_zone(i - 1)
-			gam2 = MK_gam_zone(i)
-		end if
-		
-		do while (MK_Hwr(gam1, gam2, Wr1, X_(i), Y, ksi) >= 0.0)
-			Wr1 = Wr1 - 1.0
-		end do
+		! Разыгрываем  X
+		do i = 1, par_n_zone
 			
-		do while (dabs(Wr2 - Wr1) > 0.000001)     ! Деление пополам, иначе разваливается
-			Wr0 = (Wr1 + Wr2) / 2.0
-			if (MK_Hwr(gam1, gam2, Wr0, X_(i), Y, ksi) < 0) then
-				Wr1 = Wr0
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
+			X1 = 0.0
+			X2 = 1.0
+			
+			if (i == 1) then
+				gam1 = 0.0
+				gam2 = MK_gam_zone(i)
 			else
-				Wr2 = Wr0
+				gam1 = MK_gam_zone(i - 1)
+				gam2 = MK_gam_zone(i)
 			end if
+			
+
+			do while (dabs(X2 - X1) > 0.0000001)     ! Деление пополам, иначе разваливается
+				X0 = (X1 + X2) / 2.0
+				if (MK_Hx(gam1, gam2, X0, Y, ksi) < 0.0) then
+					X1 = X0
+				else
+					X2 = X0
+				end if
+			end do
+			X_(i) = X0
 		end do
 
-		Wr_(i) = Wr0
-	end do
+		! Разыгрываем  Wr
+		do i = 1, par_n_zone
+			
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi)
+			
+			Wr1 = -5.0
+			Wr2 = 0.0
+			
+			if (i == 1) then
+				gam1 = 0.0
+				gam2 = MK_gam_zone(i)
+			else
+				gam1 = MK_gam_zone(i - 1)
+				gam2 = MK_gam_zone(i)
+			end if
+			
+			do while (MK_Hwr(gam1, gam2, Wr1, X_(i), Y, ksi) >= 0.0)
+				Wr1 = Wr1 - 1.0
+			end do
+				
+			do while (dabs(Wr2 - Wr1) > 0.000001)     ! Деление пополам, иначе разваливается
+				Wr0 = (Wr1 + Wr2) / 2.0
+				if (MK_Hwr(gam1, gam2, Wr0, X_(i), Y, ksi) < 0) then
+					Wr1 = Wr0
+				else
+					Wr2 = Wr0
+				end if
+			end do
 
-	
-	! Разыгрываем  Wa
-	
-	do i = 1, par_n_zone
-		Yt = Y * sqrt(1.0 - (X_(i)**2))
+			Wr_(i) = Wr0
+		end do
+
 		
-		if (i == 1) then
-			gam1 = 0.0
-			gam2 = MK_gam_zone(i)
-		else
-			gam1 = MK_gam_zone(i - 1)
-			gam2 = MK_gam_zone(i)
-		end if
+		! Разыгрываем  Wa
+		
+		do i = 1, par_n_zone
+			Yt = Y * sqrt(1.0 - (X_(i)**2))
+			
+			if (i == 1) then
+				gam1 = 0.0
+				gam2 = MK_gam_zone(i)
+			else
+				gam1 = MK_gam_zone(i - 1)
+				gam2 = MK_gam_zone(i)
+			end if
 
+			do while(.True.)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				W1 = sqrt(gam1 * (Wr_(i)**2))
+				W2 = sqrt(gam2 * (Wr_(i)**2))
+				Wa = sqrt(-log(exp(-(W1**2)) - ksi1 * (exp(-(W1**2)) - exp(-(W2**2)))))
+				if ((1.0 + (Yt * Wa)**2) / (1.0 + (Yt * W2)**2) >= ksi2) EXIT
+			end do
+
+
+			Wa_(i) = Wa
+		end do
+
+		! Считаем веса
+		do i = 1, par_n_zone
+			
+			c = Y * sqrt(1.0 - (X_(i)**2)) * Wa_(i)
+			p = MK_norm_mho(c)
+			
+			
+			Mho_(i) = MK_play_mho(potok, c)
+			
+
+			Wt_(i) = Wa_(i) * cos(Mho_(i))
+			Wp_(i) = Wa_(i) * sin(Mho_(i))
+			
+			if (i == 1) then
+				gam1 = 0.0
+				gam2 = MK_gam_zone(i)
+			else
+				gam1 = MK_gam_zone(i - 1)
+				gam2 = MK_gam_zone(i)
+			end if
+			
+			mu_(i) = (MK_F(1.0_8, gam2, Y) - MK_F(1.0_8, gam1, Y)) * (p) / (MK_A0_ * (1.0 + (c**2)))
+		end do
+
+		! Разыгрываем основной атом
+
+		! Розыгрыш X целиком из препринта
+
+		
+		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
+		
+		
+		if (p1 < ksi1) then
+			
+			do while(.True.)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
+				X2 = sqrt(ksi2)
+				h = (1.0 + erf(X2 * Y)) / (1.0 + erf(Y))
+				if (h > ksi3) EXIT
+			end do
+		else
+			do
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
+				call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
+				X2 = (1.0 / Y) * sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3 / 2.0)
+				if(X2 < 1.0) EXIT
+			end do
+		end if
+		
+
+		X_(par_n_zone + 1) = X2
+
+		gg = 0.0
+		
+		if (par_n_zone > 0) gg = MK_gam_zone(par_n_zone)
+		
+		p4_ = par_sqrtpi * (Y * X2) / (1.0 + par_sqrtpi * (Y * X2))                 ! Для розыгрыша основного атома на границе по препринту Маламы
+		
 		do while(.True.)
 			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
 			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-			W1 = sqrt(gam1 * (Wr_(i)**2))
-			W2 = sqrt(gam2 * (Wr_(i)**2))
-			Wa = sqrt(-log(exp(-(W1**2)) - ksi1 * (exp(-(W1**2)) - exp(-(W2**2)))))
-			if ((1.0 + (Yt * Wa)**2) / (1.0 + (Yt * W2)**2) >= ksi2) EXIT
-		end do
-
-
-		Wa_(i) = Wa
-	end do
-
-	! Считаем веса
-	do i = 1, par_n_zone
-		
-		c = Y * sqrt(1.0 - (X_(i)**2)) * Wa_(i)
-		p = MK_norm_mho(c)
-		
-		
-		Mho_(i) = MK_play_mho(potok, c)
-		
-
-		Wt_(i) = Wa_(i) * cos(Mho_(i))
-		Wp_(i) = Wa_(i) * sin(Mho_(i))
-		
-		if (i == 1) then
-			gam1 = 0.0
-			gam2 = MK_gam_zone(i)
-		else
-			gam1 = MK_gam_zone(i - 1)
-			gam2 = MK_gam_zone(i)
-		end if
-		
-		mu_(i) = (MK_F(1.0_8, gam2, Y) - MK_F(1.0_8, gam1, Y)) * (p) / (MK_A0_ * (1.0 + (c**2)))
-	end do
-
-	! Разыгрываем основной атом
-
-	! Розыгрыш X целиком из препринта
-
-	
-	call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
-	
-	
-	if (p1 < ksi1) then
-		
-		do while(.True.)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
 			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-			X2 = sqrt(ksi2)
-			h = (1.0 + erf(X2 * Y)) / (1.0 + erf(Y))
-			if (h > ksi3) EXIT
-		end do
-	else
-		do
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-			X2 = (1.0 / Y) * sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3 / 2.0)
-		    if(X2 < 1.0) EXIT
-		end do
-	end if
-	
-
-	X_(par_n_zone + 1) = X2
-
-	gg = 0.0
-	
-	if (par_n_zone > 0) gg = MK_gam_zone(par_n_zone)
-	
-	p4_ = par_sqrtpi * (Y * X2) / (1.0 + par_sqrtpi * (Y * X2))                 ! Для розыгрыша основного атома на границе по препринту Маламы
-	
-	do while(.True.)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi1)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi2)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi3)
-		if (p4_ > ksi1) then
-			z = sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3)
-		else
-			if (ksi2 <= 0.5) then
-				z = -sqrt(-log(2.0 * ksi2))
+			if (p4_ > ksi1) then
+				z = sqrt(-log(ksi2)) * cos(par_pi_8 * ksi3)
 			else
-				z = sqrt(-log(2.0 * (1.0 - ksi2)))
+				if (ksi2 <= 0.5) then
+					z = -sqrt(-log(2.0 * ksi2))
+				else
+					z = sqrt(-log(2.0 * (1.0 - ksi2)))
+				end if
+			end if
+
+			Wr_(par_n_zone + 1) = z - (Y * X2)
+			h = dabs(-(Y * X2) + z) / ((Y * X2) + dabs(z))
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
+			if (h > ksi4 .and. z < (Y * X2)) EXIT
+		end do
+
+			
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
+			call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
+
+			Wt_(par_n_zone + 1) = Y * sqrt(1.0 - (X_(par_n_zone + 1)**2)) + sqrt(-log(ksi5)) * cos(2.0 * par_pi_8 * ksi6)
+			Wp_(par_n_zone + 1) = sqrt(-log(ksi5)) * sin(2.0 * par_pi_8 * ksi6)
+
+
+		if (par_n_zone == 0) then
+			mu_(par_n_zone + 1) = 1.0
+			bb = .True.
+			return
+		else
+			if (Wr_(par_n_zone + 1) >= 0.0 .or. Wt_(par_n_zone + 1)**2 + Wp_(par_n_zone + 1)**2 > &
+				MK_gam_zone(par_n_zone) * Wr_(par_n_zone + 1)**2) then
+				mu_(par_n_zone + 1) = 1.0
+			else
+				mu_(par_n_zone + 1) = 0.0  ! Чтобы не запускать этот атом
+				bb = .False.
+				return
 			end if
 		end if
 
-		Wr_(par_n_zone + 1) = z - (Y * X2)
-		h = dabs(-(Y * X2) + z) / ((Y * X2) + dabs(z))
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi4)
-		if (h > ksi4 .and. z < (Y * X2)) EXIT
-	end do
-
-		
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi5)
-		call M_K_rand(sensor(1, 1, potok), sensor(2, 1, potok), sensor(3, 1, potok), ksi6)
-
-		Wt_(par_n_zone + 1) = Y * sqrt(1.0 - (X_(par_n_zone + 1)**2)) + sqrt(-log(ksi5)) * cos(2.0 * par_pi_8 * ksi6)
-		Wp_(par_n_zone + 1) = sqrt(-log(ksi5)) * sin(2.0 * par_pi_8 * ksi6)
-
-
-	if (par_n_zone == 0) then
-		mu_(par_n_zone + 1) = 1.0
 		bb = .True.
 		return
-	else
-		if (Wr_(par_n_zone + 1) >= 0.0 .or. Wt_(par_n_zone + 1)**2 + Wp_(par_n_zone + 1)**2 > &
-			MK_gam_zone(par_n_zone) * Wr_(par_n_zone + 1)**2) then
-			mu_(par_n_zone + 1) = 1.0
-		else
-			mu_(par_n_zone + 1) = 0.0  ! Чтобы не запускать этот атом
-			bb = .False.
-			return
-		end if
-	end if
-
-	bb = .True.
-	return
-	
 	end subroutine MK_Init_Parametrs
-	
 	
 	subroutine MK_Distination(r, V, to_i, to_j, rr)
 		! Variables
@@ -2180,68 +2251,62 @@ module Monte_Karlo
 		
 	end function MK_alpha_zones
 	
-	
-integer(4) pure function MK_geo_zones(r, k)
-	! В какой геометрической зоне сейчас находится атом (зоны считаются с нуля)
-	real(8), intent (in) :: r, k
-	integer(4) :: i
+	integer(4) pure function MK_geo_zones(r, k)
+		! В какой геометрической зоне сейчас находится атом (зоны считаются с нуля)
+		real(8), intent (in) :: r, k
+		integer(4) :: i
 
-	do i = 1, par_n_zone
-		if (r < k * MK_R_zone(i)) then
-			MK_geo_zones = i
-			return
-		end if
-	end do
-	
-	MK_geo_zones = par_n_zone + 1
-	
-end function MK_geo_zones
-	
+		do i = 1, par_n_zone
+			if (r < k * MK_R_zone(i)) then
+				MK_geo_zones = i
+				return
+			end if
+		end do
+		
+		MK_geo_zones = par_n_zone + 1
+		
+	end function MK_geo_zones
 	
 	real(8) pure function MK_F(X, gam, Y)
-	
-	real(8), intent (in) :: X, gam, Y
-	real(8) :: bb, gg, Y2, Y4, X2, A, B, C, D
-	
-	bb = sqrt(1.0 + gam)
-	gg = 1.0 + gam
-	Y2 = Y**2
-	Y4 = Y**4
-	X2 = X**2
-	A = exp(-Y2) / (2.0 * par_sqrtpi * Y * bb**7)
-	B = 2 * X * Y * bb**3 * (2.0 + gam * (3.0 + (X2 - 1.0) * Y2 + gam))
-	C = par_sqrtpi * gg * (gg * (gg * (4.0 + gam) + Y2 * (2.0 + 3.0 * gam)) + &
-		exp(X2 * Y2 / gg) * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - (gg**2) * (4.0 + gam) + &
-			Y2 * gg * (-2.0 - 3.0 * gam + X2 * (2.0 + gam))))
-	D = par_sqrtpi * gg * exp(X2 * Y2 / gg) * &
-		(-2.0 * X2 * (X2 - 1.0) * Y4 * gam + gg**2 * (4.0 + gam) - Y2 * gg * (-2.0 - 3.0 * gam + X2 * (2.0 + gam))) * &
-		erf(X * Y / bb)
+		real(8), intent (in) :: X, gam, Y
+		real(8) :: bb, gg, Y2, Y4, X2, A, B, C, D
 		
-	MK_F =  A * (B + C - D)
-	
+		bb = sqrt(1.0 + gam)
+		gg = 1.0 + gam
+		Y2 = Y**2
+		Y4 = Y**4
+		X2 = X**2
+		A = exp(-Y2) / (2.0 * par_sqrtpi * Y * bb**7)
+		B = 2 * X * Y * bb**3 * (2.0 + gam * (3.0 + (X2 - 1.0) * Y2 + gam))
+		C = par_sqrtpi * gg * (gg * (gg * (4.0 + gam) + Y2 * (2.0 + 3.0 * gam)) + &
+			exp(X2 * Y2 / gg) * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - (gg**2) * (4.0 + gam) + &
+				Y2 * gg * (-2.0 - 3.0 * gam + X2 * (2.0 + gam))))
+		D = par_sqrtpi * gg * exp(X2 * Y2 / gg) * &
+			(-2.0 * X2 * (X2 - 1.0) * Y4 * gam + gg**2 * (4.0 + gam) - Y2 * gg * (-2.0 - 3.0 * gam + X2 * (2.0 + gam))) * &
+			erf(X * Y / bb)
+			
+		MK_F =  A * (B + C - D)
 	end function MK_F
 	
 	real(8) pure function MK_FI(Z, X, gam, Y)
-	
-	real(8), intent (in) :: Z, X, gam, Y
-	real(8) :: bb, gg, X2, Y2, Y4, Z2, A, B, C, D, ee
-	
-	bb = sqrt(1.0 + gam)
-	gg = 1.0 + gam
-	X2 = X**2
-	Y2 = Y**2
-	Y4 = Y**4
-	Z2 = Z**2
-	A = exp(-Y2 - 2.0 * X * Y * Z - Z2 * gg) / (par_sqrtpi * bb**7)
-	ee = exp((X * Y + Z + Z * gam)**2 / gg)
-	B = ee * par_sqrtpi * X * Y * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - 2.0 * gg**2 + (X2 - 1.0) * Y2 * gg * (2.0 + 5.0 * gam))
-	C = 2.0 * bb * (X2 * (X2 - 1.0) * Y4 * gam - X * (X2 - 1.0) * Y**3 * Z * gam * gg - gg**2 +  &
-		(X2 - 1.0) * Y2 * gg * (1 + gam * (2.0 + Z2 * gg)))
-	D = ee * par_sqrtpi * X * Y * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - 2.0 * gg**2 + (X2 - 1.0) * Y2 * gg * (2.0 + 5.0 * gam)) * &
-		erf((X * Y + Z + Z * gam) / bb)
+		real(8), intent (in) :: Z, X, gam, Y
+		real(8) :: bb, gg, X2, Y2, Y4, Z2, A, B, C, D, ee
 		
-	MK_FI =  A * (B + C + D)
-	
+		bb = sqrt(1.0 + gam)
+		gg = 1.0 + gam
+		X2 = X**2
+		Y2 = Y**2
+		Y4 = Y**4
+		Z2 = Z**2
+		A = exp(-Y2 - 2.0 * X * Y * Z - Z2 * gg) / (par_sqrtpi * bb**7)
+		ee = exp((X * Y + Z + Z * gam)**2 / gg)
+		B = ee * par_sqrtpi * X * Y * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - 2.0 * gg**2 + (X2 - 1.0) * Y2 * gg * (2.0 + 5.0 * gam))
+		C = 2.0 * bb * (X2 * (X2 - 1.0) * Y4 * gam - X * (X2 - 1.0) * Y**3 * Z * gam * gg - gg**2 +  &
+			(X2 - 1.0) * Y2 * gg * (1 + gam * (2.0 + Z2 * gg)))
+		D = ee * par_sqrtpi * X * Y * (2.0 * X2 * (X2 - 1.0) * Y4 * gam - 2.0 * gg**2 + (X2 - 1.0) * Y2 * gg * (2.0 + 5.0 * gam)) * &
+			erf((X * Y + Z + Z * gam) / bb)
+			
+		MK_FI =  A * (B + C + D)
 	end function MK_FI
 	
 	real(8) pure function MK_Hx(gam1, gam2, X, Y, ksi)
@@ -2264,15 +2329,15 @@ end function MK_geo_zones
 		cc = 1.0
 		nn = 1.0
 		
-	do i = 1, 99
-		cc = cc * c
-		nn = nn * i
-		d = (cc / nn)**2
-		s = s + d
-		if (d < 0.00001) then
-			EXIT
-		end if
-	end do
+		do i = 1, 99
+			cc = cc * c
+			nn = nn * i
+			d = (cc / nn)**2
+			s = s + d
+			if (d < 0.00001) then
+				EXIT
+			end if
+		end do
 		
 		MK_norm_mho = s
 	end function MK_norm_mho
@@ -2289,8 +2354,7 @@ end function MK_geo_zones
 			if(exp(2.0 * c * cos(x)) > ksi * exp(2.0 * dabs(c)) ) EXIT
 		end do
 
-	MK_play_mho = x
-		
+		MK_play_mho = x
 	end function MK_play_mho
 
 	
@@ -2421,7 +2485,7 @@ end function MK_geo_zones
 				0.0010108688120876522 * x * x * x * x * x + 0.00001864423130429156 * x * x * x * x * x * x
 		end if
 			 
-	return
+		return
 	end function MK_int_1_f3
 	
 	real(8) pure function MK_int_1(x, cp)
@@ -2434,7 +2498,6 @@ end function MK_geo_zones
 	end function MK_int_1
 	
 	real(8) pure function MK_int_2_f1(x)
-
 		real(8), intent (in) :: x
 	
 		if (x <= 1.0) then
@@ -2461,9 +2524,7 @@ end function MK_geo_zones
 		end if
 	
 		MK_int_2_f1 =  0.0
-	
 	end  function MK_int_2_f1
-	
 	
 	real(8) pure function MK_int_2_f2(x)
 
@@ -2494,12 +2555,9 @@ end function MK_geo_zones
 		end if
 			 
 		MK_int_2_f2 = 0.0
-		
 	end function MK_int_2_f2
 		
-		
 	real(8) pure function MK_int_2_f3(x)
-	
         real(8), intent (in) :: x
 		if (x <= 1.0) then
 			MK_int_2_f3 =  2.6106039258326 * x - 0.0008357997793049243 * x * x + &
@@ -2539,215 +2597,258 @@ end function MK_geo_zones
 			2.0 * par_a_2 * b * MK_int_2_f2(x / cp) + (par_a_2**2) * MK_int_2_f3(x / cp))
 	end function MK_int_2
 	
-	
-real(8) pure function MK_int_3(x, cp)
-	real(8), intent (in) :: x, cp
-	real(8) :: b
-	
-	b = 1.0 - par_a_2 * log(cp)
-	MK_int_3 = (cp**3 / (par_sqrtpi**3)) * (b * b * MK_int_3_f1(x / cp) - 2.0 * par_a_2 * b * MK_int_3_f2(x / cp) + (par_a_2**2) * MK_int_3_f3(x / cp))
-	
-end function MK_int_3
-
-real(8) pure function MK_int_3_f1(x)
-	real(8), intent (in) :: x
-	
-	if (x <= 1.0) then
-		MK_int_3_f1 = 12.566370586001975 - 0.00001944816384202852 * x + 12.567558607381049 * x**2 - &
-			0.010507444068349692 * x**3 + 1.2911398125420694 * x**4 - 0.05048482363937502 * x**5 - &
-			0.029947937607835744 * x**6
-	else if (x <= 3.0) then
-		MK_int_3_f1 = 12.451555448799724 + 0.40252674353016715 * x + 12.081033298182223 * x**2 + 0.12939193776331415 * x**3 + &
-			1.478876561367302 * x**4 - 0.2237491583356496 * x**5 + 0.014474521138620033 * x**6
-	else if (x <= 5.0) then
-		MK_int_3_f1 = 8.281962852844913 + 9.783032429527339 * x + 3.165848344887614 * x**2 + 4.711462666119614 * x**3 + &
-			0.13739453130827392 * x**4 - 0.012096015315889195 * x**5 + 0.0004514225555943018 * x**6
-	else if (x <= 7.0) then
-		MK_int_3_f1 = 17.29966669035025 + 2.1457227895928668 * x + 5.572082327920818 * x**2 + 4.4083748449004645 * x**3 + &
-			0.13640200155890422 * x**4 - 0.00854302147917508 * x**5 + 0.00022205921430504255 * x**6
-	end if
-	
-end function MK_int_3_f1
-
-real(8) pure function MK_int_3_f2(x)
-	real(8), intent (in) :: x
-	
-	if (x <= 1.0) then
-		MK_int_3_f2 = 5.798024979296493 - 0.00001772671478406096 * x + 9.98769025405073 * x**2 - 0.0073593516014156535 * x**3 + &
-			2.27820901023418 * x**4 - 0.03135086958655956 * x**5 - 0.030403716978821237 * x**6
-	else if (x <= 3.0) then
-		MK_int_3_f2 = 5.864728705834779 - 0.34799875480550213 * x + 10.760249318358127 * x**2 - 0.9493738978205943 * x**3 + &
-			2.948810798239708 * x**4 - 0.29690823082625284 * x**5 + 0.015284639719532296 * x**6
-	else if (x <= 5.0) then
-		MK_int_3_f2 = -3.21810405152587 + 17.08054504204813 * x - 3.43427364926184 * x**2 + 5.342946243936558 * x**3 + &
-			1.3459970589832742 * x**4 - 0.07448103623442687 * x**5 + 0.0021616888853670958 * x**6
-	else if (x <= 7.0) then
-		MK_int_3_f2 = -59.42860988375287 + 79.24709914283142 * x - 32.304295129821256 * x**2 + 12.558114389999929 * x**3 + &
-			0.32138208180756495 * x**4 + 0.003976327853989966 * x**5 - 0.0003703205838879336 * x**6
-	end if
-	
-end function MK_int_3_f2
-
-real(8) pure function MK_int_3_f3(x)
-	real(8), intent(in) :: x
-	
-	if (x <= 1.0) then
-		MK_int_3_f3 = 3.915885322797866 + 0.000044284982651632276 * x + 7.778946280540595 * x**2 + 0.01990833982643192 * x**3 + &
-			2.710531013102172 * x**4 + 0.09480498076917274 * x**5 + 0.026454483470905545 * x**6
-	else if (x <= 3.0) then
-		MK_int_3_f3 = 4.371710139648201 - 1.787430730965795 * x + 10.530386754306065 * x**2 - 1.9945949141813966 * x**3 + &
-			3.310710912254515 * x**4 + 0.1356460090430464 * x**5 - 0.019853464614841342 * x**6
-	else if (x <= 5.0) then
-		MK_int_3_f3 = 4.6940208896644435 - 6.423081982183987 * x + 18.137713177954524 * x**2 - 7.298291873534797 * x**3 + &
-			5.202095367169497 * x**4 - 0.20620743501245353 * x**5 + 0.005094092519200813 * x**6
-	else if (x <= 7.0) then
-		MK_int_3_f3 = 194.2826492092263 - 195.77327124311523 * x + 95.83253215419927 * x**2 - 23.99281397751645 * x**3 + &
-			7.170549820159753 * x**4 - 0.32568903981020303 * x**5 + 0.007955090180048264 * x**6
-	end if
-	
-end function MK_int_3_f3
-
-real(8) pure function MK_for_Wr_1(Z, gam, ur)
-!! Для розыгрыша Wr в перезарядке по-частям (первая часть)
-	real(8), intent (in) :: Z, gam, ur
-	
-	MK_for_Wr_1 = -exp(-gam * ur**2 / (gam + 1.0)) * (1.0 + erf((-ur + gam * Z + Z) / sqrt(gam + 1.0))) / (2.0 * sqrt(gam + 1.0))
-end function MK_for_Wr_1
-
-
-real(8) pure function MK_for_Wr_2(Z, gam, ur, ut)
-!! Для розыгрыша Wr в перезарядке по-частям 
-	real(8), intent (in) :: Z, gam, ur, ut
-	real(8) :: gam1, ur2
-	
-	gam1 = gam + 1.0  ! gam + 1
-	ur2 = ur**2
-	
-	MK_for_Wr_2 =  1.0 / (4.0 * gam1 * gam1 * gam1 * par_sqrtpi) * ut**2 * exp((-1.0 - gam / gam1) * ur2 - gam1 * Z * Z) * &
-		(2.0 * exp(ur * (gam * ur / gam1 + 2.0 * Z)) * gam * gam1 * (ur + Z + gam * Z) + &
-			exp(ur2 + gam1 * Z * Z) * sqrt(gam1) * par_sqrtpi * (2.0 + gam * (5.0 + 3.0 * gam + 2.0 * ur2)) * &
-			(-1.0 - erf((-ur + Z + gam * Z) / sqrt(gam1))))
-end function MK_for_Wr_2
-
-real(8) pure function MK_H_Wr_1(gam1, gam2,	V, ur, p, ksi)
-	real(8), intent (in) :: gam1, gam2, V, ur, p, ksi
-	MK_H_Wr_1 = MK_for_Wr_1(V, gam2, ur) - MK_for_Wr_1(V, gam1, ur) - ksi * p
-end function MK_H_Wr_1
-
-real(8) pure function MK_H_Wr_2(gam1, gam2, V, ur, ut, p, ksi)
-	! Для розыгрыша Wr в перезарядке по-частям 
-	real(8), intent (in) :: gam1, gam2, V, ur, ut, p, ksi
-	MK_H_Wr_2 =  MK_for_Wr_2(V, gam2, ur, ut) - MK_for_Wr_2(V, gam1, ur, ut) - ksi * p
-end function MK_H_Wr_2
-
-!real(8) pure function MK_sigma(x)
-!	real(8), intent (in) :: x
-!	MK_sigma = (1.0 - par_a_2 * log(x))**2
-!end function MK_sigma
-!
-!real(8) pure function MK_sigma2(x, y)
-!	real(8), intent (in) :: x, y
-!	MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
-!end function MK_sigma2
-
-
-real(8) pure function MK_f2(V, gam, ur, ut)
-	real(8), intent (in) :: V, gam, ur, ut
-	real(8) :: b, b4, b2, A
-	
-	b = sqrt(1.0 + gam)
-	b4 = b**4
-	b2 = b**2
-
-	A = (exp(2.0 * V * ur - (ur**2) - (V**2) * b2) / (2.0 * par_sqrtpi * b4))
-	
-	if (A <= 0.0000000000001) then
-		MK_f2 = 0.0
-		return
-	end if
+	real(8) pure function MK_int_3(x, cp)
+		real(8), intent (in) :: x, cp
+		real(8) :: b
 		
-	MK_f2 = A * (-gam * (ut**2) * (ur + gam * V + V) + &
-		(par_sqrtpi / (2.0 * b)) * exp( (V + gam * V - ur)**2 / b2) * (2.0 * b4 + (ut**2) * (b2 * (3.0 * gam + 2.0) + 2.0 * gam * (ur**2))) * &
-		(1.0 + erf((-ur + gam * V + V) / b)))
-end function MK_f2
+		b = 1.0 - par_a_2 * log(cp)
+		MK_int_3 = (cp**3 / (par_sqrtpi**3)) * (b * b * MK_int_3_f1(x / cp) - 2.0 * par_a_2 * b * MK_int_3_f2(x / cp) + (par_a_2**2) * MK_int_3_f3(x / cp))
+	end function MK_int_3
 
+	real(8) pure function MK_int_3_f1(x)
+		real(8), intent (in) :: x
+		
+		if (x <= 1.0) then
+			MK_int_3_f1 = 12.566370586001975 - 0.00001944816384202852 * x + 12.567558607381049 * x**2 - &
+				0.010507444068349692 * x**3 + 1.2911398125420694 * x**4 - 0.05048482363937502 * x**5 - &
+				0.029947937607835744 * x**6
+		else if (x <= 3.0) then
+			MK_int_3_f1 = 12.451555448799724 + 0.40252674353016715 * x + 12.081033298182223 * x**2 + 0.12939193776331415 * x**3 + &
+				1.478876561367302 * x**4 - 0.2237491583356496 * x**5 + 0.014474521138620033 * x**6
+		else if (x <= 5.0) then
+			MK_int_3_f1 = 8.281962852844913 + 9.783032429527339 * x + 3.165848344887614 * x**2 + 4.711462666119614 * x**3 + &
+				0.13739453130827392 * x**4 - 0.012096015315889195 * x**5 + 0.0004514225555943018 * x**6
+		else if (x <= 7.0) then
+			MK_int_3_f1 = 17.29966669035025 + 2.1457227895928668 * x + 5.572082327920818 * x**2 + 4.4083748449004645 * x**3 + &
+				0.13640200155890422 * x**4 - 0.00854302147917508 * x**5 + 0.00022205921430504255 * x**6
+		end if
+		
+	end function MK_int_3_f1
 
+	real(8) pure function MK_int_3_f2(x)
+		real(8), intent (in) :: x
+		
+		if (x <= 1.0) then
+			MK_int_3_f2 = 5.798024979296493 - 0.00001772671478406096 * x + 9.98769025405073 * x**2 - 0.0073593516014156535 * x**3 + &
+				2.27820901023418 * x**4 - 0.03135086958655956 * x**5 - 0.030403716978821237 * x**6
+		else if (x <= 3.0) then
+			MK_int_3_f2 = 5.864728705834779 - 0.34799875480550213 * x + 10.760249318358127 * x**2 - 0.9493738978205943 * x**3 + &
+				2.948810798239708 * x**4 - 0.29690823082625284 * x**5 + 0.015284639719532296 * x**6
+		else if (x <= 5.0) then
+			MK_int_3_f2 = -3.21810405152587 + 17.08054504204813 * x - 3.43427364926184 * x**2 + 5.342946243936558 * x**3 + &
+				1.3459970589832742 * x**4 - 0.07448103623442687 * x**5 + 0.0021616888853670958 * x**6
+		else if (x <= 7.0) then
+			MK_int_3_f2 = -59.42860988375287 + 79.24709914283142 * x - 32.304295129821256 * x**2 + 12.558114389999929 * x**3 + &
+				0.32138208180756495 * x**4 + 0.003976327853989966 * x**5 - 0.0003703205838879336 * x**6
+		end if
+		
+	end function MK_int_3_f2
 
-	
-	
+	real(8) pure function MK_int_3_f3(x)
+		real(8), intent(in) :: x
+		
+		if (x <= 1.0) then
+			MK_int_3_f3 = 3.915885322797866 + 0.000044284982651632276 * x + 7.778946280540595 * x**2 + 0.01990833982643192 * x**3 + &
+				2.710531013102172 * x**4 + 0.09480498076917274 * x**5 + 0.026454483470905545 * x**6
+		else if (x <= 3.0) then
+			MK_int_3_f3 = 4.371710139648201 - 1.787430730965795 * x + 10.530386754306065 * x**2 - 1.9945949141813966 * x**3 + &
+				3.310710912254515 * x**4 + 0.1356460090430464 * x**5 - 0.019853464614841342 * x**6
+		else if (x <= 5.0) then
+			MK_int_3_f3 = 4.6940208896644435 - 6.423081982183987 * x + 18.137713177954524 * x**2 - 7.298291873534797 * x**3 + &
+				5.202095367169497 * x**4 - 0.20620743501245353 * x**5 + 0.005094092519200813 * x**6
+		else if (x <= 7.0) then
+			MK_int_3_f3 = 194.2826492092263 - 195.77327124311523 * x + 95.83253215419927 * x**2 - 23.99281397751645 * x**3 + &
+				7.170549820159753 * x**4 - 0.32568903981020303 * x**5 + 0.007955090180048264 * x**6
+		end if
+		
+	end function MK_int_3_f3
+
+	real(8) pure function MK_for_Wr_1(Z, gam, ur)
+		!! Для розыгрыша Wr в перезарядке по-частям (первая часть)
+		real(8), intent (in) :: Z, gam, ur
+		
+		MK_for_Wr_1 = -exp(-gam * ur**2 / (gam + 1.0)) * (1.0 + erf((-ur + gam * Z + Z) / sqrt(gam + 1.0))) / (2.0 * sqrt(gam + 1.0))
+	end function MK_for_Wr_1
+
+	real(8) pure function MK_for_Wr_2(Z, gam, ur, ut)
+		!! Для розыгрыша Wr в перезарядке по-частям 
+		real(8), intent (in) :: Z, gam, ur, ut
+		real(8) :: gam1, ur2
+		
+		gam1 = gam + 1.0  ! gam + 1
+		ur2 = ur**2
+		
+		MK_for_Wr_2 =  1.0 / (4.0 * gam1 * gam1 * gam1 * par_sqrtpi) * ut**2 * exp((-1.0 - gam / gam1) * ur2 - gam1 * Z * Z) * &
+			(2.0 * exp(ur * (gam * ur / gam1 + 2.0 * Z)) * gam * gam1 * (ur + Z + gam * Z) + &
+				exp(ur2 + gam1 * Z * Z) * sqrt(gam1) * par_sqrtpi * (2.0 + gam * (5.0 + 3.0 * gam + 2.0 * ur2)) * &
+				(-1.0 - erf((-ur + Z + gam * Z) / sqrt(gam1))))
+	end function MK_for_Wr_2
+
+	real(8) pure function MK_H_Wr_1(gam1, gam2,	V, ur, p, ksi)
+		real(8), intent (in) :: gam1, gam2, V, ur, p, ksi
+		MK_H_Wr_1 = MK_for_Wr_1(V, gam2, ur) - MK_for_Wr_1(V, gam1, ur) - ksi * p
+	end function MK_H_Wr_1
+
+	real(8) pure function MK_H_Wr_2(gam1, gam2, V, ur, ut, p, ksi)
+		! Для розыгрыша Wr в перезарядке по-частям 
+		real(8), intent (in) :: gam1, gam2, V, ur, ut, p, ksi
+		MK_H_Wr_2 =  MK_for_Wr_2(V, gam2, ur, ut) - MK_for_Wr_2(V, gam1, ur, ut) - ksi * p
+	end function MK_H_Wr_2
+
+	!real(8) pure function MK_sigma(x)
+	!	real(8), intent (in) :: x
+	!	MK_sigma = (1.0 - par_a_2 * log(x))**2
+	!end function MK_sigma
+	!
+	!real(8) pure function MK_sigma2(x, y)
+	!	real(8), intent (in) :: x, y
+	!	MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
+	!end function MK_sigma2
+
+	real(8) pure function MK_f2(V, gam, ur, ut)
+		real(8), intent (in) :: V, gam, ur, ut
+		real(8) :: b, b4, b2, A
+		
+		b = sqrt(1.0 + gam)
+		b4 = b**4
+		b2 = b**2
+
+		A = (exp(2.0 * V * ur - (ur**2) - (V**2) * b2) / (2.0 * par_sqrtpi * b4))
+		
+		if (A <= 0.0000000000001) then
+			MK_f2 = 0.0
+			return
+		end if
+			
+		MK_f2 = A * (-gam * (ut**2) * (ur + gam * V + V) + &
+			(par_sqrtpi / (2.0 * b)) * exp( (V + gam * V - ur)**2 / b2) * (2.0 * b4 + (ut**2) * (b2 * (3.0 * gam + 2.0) + 2.0 * gam * (ur**2))) * &
+			(1.0 + erf((-ur + gam * V + V) / b)))
+	end function MK_f2
+
 	subroutine Get_sensor(mpi_rank)
-	! Считываем датчики случайных чисел из файла
-	! Variables
-	integer, intent(in) :: mpi_rank
-	logical :: exists
-	integer(4) :: i, a, b, c, j
-    
+		! Считываем датчики случайных чисел из файла
+		! Variables
+		integer, intent(in) :: mpi_rank
+		logical :: exists
+		integer(4) :: i, a, b, c, j
+		
+		
+		inquire(file="rnd_my.txt", exist=exists)
+		
+		if (exists == .False.) then
+			pause "net faila!!!  345434wertew21313edftr3e"
+			STOP "net faila!!!"
+		end if
+		
+		if (par_n_claster * par_n_potok * 2 > 1021) then
+			print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
+			pause
+		end if
+		
+		open(1, file = "rnd_my.txt", status = 'old')
+		
+		do j = 1, mpi_rank + 1
+			do i = 1, par_n_potok
+				read(1,*) a, b, c
+				sensor(:, 1, i) = (/ a, b, c /)
+				read(1,*) a, b, c
+				sensor(:, 2, i) = (/ a, b, c /)
+			end do
+		end do
+		
+		close(1)
+	end subroutine Get_sensor
 	
-    inquire(file="rnd_my.txt", exist=exists)
-    
-    if (exists == .False.) then
-		pause "net faila!!!  345434wertew21313edftr3e"
-        STOP "net faila!!!"
-    end if
-	
-	if (par_n_claster * par_n_potok * 2 > 1021) then
-		print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
-		pause
-	end if
-	
-	open(1, file = "rnd_my.txt", status = 'old')
-    
-	do j = 1, mpi_rank + 1
+	subroutine Get_sensor_sdvig(sdvig)
+		! Считываем датчики случайных чисел из файла
+		! Variables
+		integer, intent(in) :: sdvig
+		logical :: exists
+		integer(4) :: i, a, b, c, j
+		
+		
+		inquire(file="rnd_my.txt", exist=exists)
+		
+		if (exists == .False.) then
+			pause "net faila!!!  345434wertew21313edftr3e"
+			STOP "net faila!!!"
+		end if
+		
+		if (par_n_claster * par_n_potok * 2 > 1021) then
+			print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
+			pause
+		end if
+		
+		open(1, file = "rnd_my.txt", status = 'old')
+		
+		do i = 1, sdvig
+			read(1,*) a, b, c
+			read(1,*) a, b, c
+		end do
+		
 		do i = 1, par_n_potok
 			read(1,*) a, b, c
 			sensor(:, 1, i) = (/ a, b, c /)
 			read(1,*) a, b, c
 			sensor(:, 2, i) = (/ a, b, c /)
 		end do
-	end do
-	
-	close(1)
-	
-	end subroutine Get_sensor
-	
-	
-	subroutine Get_sensor_sdvig(sdvig)
-	! Считываем датчики случайных чисел из файла
-	! Variables
-	integer, intent(in) :: sdvig
-	logical :: exists
-	integer(4) :: i, a, b, c, j
-    
-	
-    inquire(file="rnd_my.txt", exist=exists)
-    
-    if (exists == .False.) then
-		pause "net faila!!!  345434wertew21313edftr3e"
-        STOP "net faila!!!"
-    end if
-	
-	if (par_n_claster * par_n_potok * 2 > 1021) then
-		print*, "NE XVATAET DATCHIKOV 31 miuhi8789pok9"
-		pause
-	end if
-	
-	open(1, file = "rnd_my.txt", status = 'old')
-    
-	do i = 1, sdvig
-		read(1,*) a, b, c
-		read(1,*) a, b, c
-	end do
-	
-	do i = 1, par_n_potok
-		read(1,*) a, b, c
-		sensor(:, 1, i) = (/ a, b, c /)
-		read(1,*) a, b, c
-		sensor(:, 2, i) = (/ a, b, c /)
-	end do
-	
-	close(1)
-	
+		
+		close(1)
 	end subroutine Get_sensor_sdvig
+
+	subroutine PUI_proverka(x, y, z)
+		implicit none
+		real(8), intent(in) :: x, y, z
+		integer(4) :: n1, cell2
+		real(8) :: uH, vH, wH, u, uz, nu_ex, r, u1, u2, u3, skalar
+		real(8) :: cp, vx, vy, vz, ro, PAR(9), MAS_PUI(2), p, ro_pui  ! Параметры плазмы в ячейке
+
+		print*, "PUI_proverka = ", x, y, z
+		uH = -2.3
+		vH = 0.0
+		wH = 0.0
+		r = sqrt(x**2 + y**2 + z**2)
+		n1 = 3
+		call Int2_Get_tetraedron_inner(x, y, z, n1)
+		! n1 - номер тетраэдра
+		call Int2_Get_par_fast2(x, y, z, n1, PAR, MAS_PUI = MAS_PUI)
+		cell2 = int2_all_tetraendron_point(1, n1)
+
+		p = PAR(5) - MAS_PUI(2) * MAS_PUI(1)
+		if(p < 0.0) p = 4286.72/((r/par_1ae)**(2.0 * ggg))
+		ro_pui = MAS_PUI(1)
+		ro = PAR(1) - ro_pui
+		if(ro < 0.000001) then
+			ro = 0.000001
+			p = 0.000001
+		end if
+		cp = sqrt(p/ro)
+		vx = PAR(2)
+		vy = PAR(3)
+		vz = PAR(4)
+
+		! Найдём время до перезарядки и веса частиц  ****************************************************************************************
+		u = sqrt(kvv(uH - vx, vH - vy, wH - vz))
+		u1 =  vx - uH
+		u2 =  vy - vH
+		u3 =  vz - wH
+		skalar = uH * u1 + vH * u2 + wH * u3
+
+		print*, "ro, p, ro_pui, cp", ro, p, MAS_PUI(1), cp
+	
+		if (u / cp > 7.0) then
+			uz = MK_Velosity_1(u, cp);
+			nu_ex = (ro * uz * MK_sigma(uz)) / par_Kn
+		else
+			nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
+		end if
+		print*, "pui_num, u = ", f_pui_num2(cell2), u
+		print*, "Chastota ex_p = ", nu_ex
+		print*, "Chastota ex_pui = ", PUI_get_nu_integr(f_pui_num2(cell2), u)/ par_Kn
+
+		print*, "END _____________________________________________"
+
+	end subroutine PUI_proverka
 	
 end module Monte_Karlo 
 	

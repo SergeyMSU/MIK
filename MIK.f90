@@ -6922,8 +6922,11 @@
         real(8) :: c(3), Mach
         real(8) :: PAR(9)     ! Выходные параметры
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
+        real(8) :: MAS_PUI(2)
         real(8) :: Dr, DI1, DI2, DI3
+        real(8) :: Tpui, rho, rhoHe, rhopui, Tp, pp, p_th, rho_th, T_th
         
+        print*, "Start Print_par_1D_PUI"
         Dr = 1.0/par_R0
         DI1 = 0.0264
         DI2 = 0.007622
@@ -6934,16 +6937,29 @@
 
         open(1, file = 'print_par_1D_PUI.txt')
         write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, Ur, u, v, w, p, p+BB, BB, Bx, By, Bz, n_He,"
-        write(1,*) "Max, In, Iu, IT, T, n_pui, T_pui, p_pui"
+        write(1,*) "Max, In, Iu, IT, T, n_pui, T_pui, p_pui, T_th, rho_th, p_th"
 
 
         do j = 1, N
             c = gl_Cell_center(:, gl_Cell_A(j, 1, 1))
             m = gl_Cell_A(j, 1, 1)
             
+            MAS_PUI = 0.0
             if(allocated(int2_Moment)) then
-                call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT)
+                call Int2_Get_par_fast(c(1), c(2), c(3), num, PAR, PAR_MOMENT = PAR_MOMENT, MAS_PUI = MAS_PUI)
             end if
+
+            rho = gl_Cell_par(1, m)
+            rhopui = MAS_PUI(1)
+            rhoHe = gl_Cell_par2(1, m )
+            Tpui = MAS_PUI(2)
+            pp = gl_Cell_par(5, m )
+
+            rho_th = rho - rhopui - rhoHe
+
+            p_th = 4.0 * rho_th * (pp - rhopui * Tpui)/(8.0 * rho - 5.0 * rhoHe - 4.0 * rhopui)
+            T_th = p_th/rho_th
+
             
             write(1,*) norm2(c) * Dr, gl_Cell_par(1, m ), DOT_PRODUCT(c, gl_Cell_par(2:4, m ))/norm2(c),&
                 gl_Cell_par(2, m ), gl_Cell_par(3, m ), gl_Cell_par(4, m ), &
@@ -6952,7 +6968,7 @@
                 gl_Cell_par2(1, m ), &
                 norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
                 sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3, &
-                gl_Cell_par(5, m )/gl_Cell_par(1, m )!, !TODO 
+                gl_Cell_par(5, m )/gl_Cell_par(1, m ), MAS_PUI(1), MAS_PUI(2), MAS_PUI(1) * MAS_PUI(2), T_th, rho_th, p_th
         end do
         
         close(1)
@@ -7230,7 +7246,6 @@
 
         close(1)
 	end subroutine Print_par_2D
-	
 	
 	subroutine Print_par_y_2D()  ! Печатает 2Д сетку с линиями в Техплот
         use GEO_PARAM
@@ -7933,7 +7948,7 @@
             call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
             if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
             gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
-            gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd
+            gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
             
             if(num < 1) then
                 print*, "mini-problem with interpolation", x, y, z
@@ -8323,7 +8338,7 @@
 	    real(8) :: PAR_MOMENT(18, par_n_sort), uz, u, cp
 		
         
-		name = 533 !? Номер файла основной сетки
+		name = 535 !? 534 Номер файла основной сетки   533 - до PUI
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 132 до экспериментов  134  138
         ! 152 (до того, как поменять сгущение после HP)		
@@ -8339,10 +8354,10 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 8 !? Номер интерполяционного файла сетки с источниками
+		name2 = 15 !? 9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 3  !? Номер алгоритма
-		
+		step = 4  !? 3 Номер алгоритма
+
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
 		
@@ -8538,7 +8553,7 @@
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 	        call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
-		else if(step == 1) then !----------------------------------------------------------------------------------------
+		else if(step == 1) then ! CUDA MHD ----------------------------------------------------------------------------
 			! ЗАГРУЗКА СЕТКИ
 			print*, "Download"
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -8580,8 +8595,8 @@
 			!return
 			!go to 101
 			
-			call Print_tok_layer()
-			return
+			! call Print_tok_layer()
+			! return
 			
 		    !@cuf call CUDA_info()
 			print*, "Start"
@@ -8621,7 +8636,8 @@
 			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
-			! Создаём все необходимые файлы из файла основной сетки
+			! РАБОТА С МОНТЕ-КАРЛО
+            ! Создаём все необходимые файлы из файла основной сетки
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
@@ -8710,11 +8726,28 @@
 			call Int2_Print_center()
 			call Int2_Print_point_plane()
 			call Int2_Print_setka_2()
+            
+            ! Считываем нормальную сетку
+
+            call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+
+            !! PUI 
+            call PUI_Set()                !! PUI
+            call PUI_f_Set()              !! PUI
+            call PUI_f_Set2()             !! PUI
+            call PUI_Read_bin(13)
+            call PUI_Read_f_bin(14)
+            call PUI_Culc_h0()            !! PUI
+            call PUI_F_integr_Set()       !! PUI
+            call PUI_Read_for_MK_bin(14)   !! PUI
+            call Print_par_1D_PUI()
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
 			call Helium_off()
 			call M_K_start()
+            ! call PUI_proverka(20.0_8, 0.0_8, 0.0_8)
+
 			!call M_K_sum()
 			call Int2_culc_k()
 			call Helium_on()
@@ -8723,10 +8756,10 @@
 			call Int_2_Print_par_1D()
 			
 			! Сохраняем интерполяционный файл - мини - сетки
-			call Int2_Save_bin(name2)			 ! Сохранение полной сетки интерполяции
-			call Int2_Save_interpol_for_all_MK(name2)
+			call Int2_Save_bin(15)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_interpol_for_all_MK(15)
 			call Int_2_Print_par_2D_set()	
-	        call PUI_Save_bin(name2)
+	        call PUI_Save_bin(15)
 			! call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
@@ -8739,37 +8772,164 @@
 			call Int2_Read_bin(name2)
 			call PUI_Set()
 			call PUI_f_Set()
-			call PUI_Read_bin(name2)
-			call PUI_Read_bin(9)
+			call PUI_f_Set2()
+			call PUI_Read_bin(name2 + 1)
+			! call PUI_Read_bin(9)
 
 			! call PUI_calc_Sm()
-            ! call PUI_Save_bin(9)
+            ! call PUI_Save_bin(name2 + 1)
 
-			call Culc_f_pui()
-            call Cut_f_pui()
-            call PUI_Save_f_bin(9)
-            ! call PUI_Read_f_bin(9)
+			! call Culc_f_pui()
+            ! call Cut_f_pui()
+            ! call PUI_Save_f_bin(name2 + 1)
+            call PUI_Read_f_bin(name2 + 1)
 
             call PUI_Culc_h0()
             call PUI_F_integr_Set()
-            call PUI_n_T_culc()
-			call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
-			call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
-            call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
-            call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
-            call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
-            call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
-            call PUI_print(1, 18.0_8, 10.00001_8, 0.00001_8)
-            call PUI_print(2, 1.0_8, 22.00001_8, 0.00001_8)
-            call PUI_print(3, -40.0_8, 20.00001_8, 0.00001_8)
+
+            ! call PUI_F_integr_Culc()
+            ! call PUI_n_T_culc()
+            ! call PUI_Save_for_MK_bin(name2 + 1)
+            call PUI_Read_for_MK_bin(name2 + 1)
+            
+            
+			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(3, 15.1_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(4, 15.2_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(5, 15.3_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
+            
             ! call Int_2_Print_par_1D()
+            call Print_par_1D_PUI()
 
 			!call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			!call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
+        else if(step == 4) then
+            !? Посчитали МГД, теперь ходим посчитать PUI, используя новые поля плазмы и старые S+, S-
+			! СОЗДАЁМ СЕТКУ
+			! задаём параметры мини-сетки
+			par_l_phi = 40
+			par_m_A = 20! 30      ! Количество лучей A в плоскости
+            par_m_BC = 10! 18      ! Количество лучей B/C в плоскости
+            par_m_O = 10! 17      ! Количество лучей O в плоскости
+            par_m_K = 8! 7      ! Количество лучей K в плоскости
+            ! Количество точек по лучам A
+            par_n_TS =  27! 26                    ! Количество точек до TS (TS включается)
+            par_n_HP =  37! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
+            par_n_BS =  57! 60! 5                 ! Количество точек BS (BS включается)
+            par_n_END = 65! 72! 6                ! Количество точек до конца сетки (конец включается)
+            par_n_IA =  12! 12                   ! Количество точек, которые входят во внутреннюю область
+	        par_n_IB =  14! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			
-		end if !----------------------------------------------------------------------------------------
+			call Set_STORAGE()                 ! Выделяем память под все массивы программы
+            call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
+    
+            call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+            call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+            call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                               ! предыдущей функции)
+            call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+			
+			! Считываем файл поверхностей разрыва и двигаем сетку
+			
+			call Surf_Read_setka_bin(name)
+			
+	        print*, "Nachinaem dvizhenie setki"
+	        do i = 1, 120
+	        	call Surf_Set_surf(20.0_8)
+	        end do
+	        
+	        do i = 1, 55
+	        	call Surf_Set_surf(1.0_8)
+	        end do
+	        
+	        do i = 1, 35
+	        	call Surf_Set_surf(0.2_8)
+	        end do
+	        
+	        do i = 1, 35
+	        	call Surf_Set_surf(0.03_8)
+			end do
+			
+			do i = 1, 35
+	        	call Surf_Set_surf(0.003_8)
+			end do
+			
+            call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
+            call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
+            call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
+                                               ! предыдущей функции)
+            call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
+			
+			print*, "Dvizhenie setki zaversheno" 
+			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
+			call Int2_Read_bin(name)
+			call Int2_Re_interpol()
+			call Int2_Dell_interpolate()
+			par_n_moment = 19
+			print*, "End Interpolatiya" 
+			! Печатаем сетку (для просмотра)
+			call PRINT_ALL()
+			
+			! Делаем файл интерполяции № 2 из мини-сетки
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+		    call Int2_Initial()			     ! Создание сетки интерполяции
+		    call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			
+			call Int2_Print_setka_2()
+		    call Int2_Print_sosed()
+			
+			
+			call Dell_STORAGE()  ! Удаляем основную сетку (т.к. считается только монте-карло - для экономии памяти)
+            
+            ! Считываем нормальную сетку
+
+            call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+
+            !! PUI 
+            call PUI_Set()                !! PUI
+            call PUI_f_Set()              !! PUI
+            call PUI_f_Set2()             !! PUI
+            call PUI_Read_bin(16)
+
+            call Culc_f_pui()
+            call Cut_f_pui()
+            call PUI_Save_f_bin(17)
+
+            call PUI_Culc_h0()
+            call PUI_F_integr_Set()
+
+            call PUI_F_integr_Culc()
+            call PUI_n_T_culc()
+            call PUI_Save_for_MK_bin(17)
+            
+            
+			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
+			! call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(3, 15.1_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(4, 15.2_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(5, 15.3_8, 0.00001_8, 0.00001_8)
+            ! call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
+            
+            call Print_par_1D_PUI()
+        end if !----------------------------------------------------------------------------------------
 		
         101     continue
 		print*, "********************************************************************************************"

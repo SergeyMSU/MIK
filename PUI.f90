@@ -14,17 +14,12 @@ module PUI
 	!! Плюс ещё в том, что значения можно интерполировать по тетраэдрам 
 	!TODO (нужно написать свою программу интерполяции)
 
-	integer :: pui_nW = 40      ! 50
-	real(8) :: pui_wR = 100.0    ! 150.0
 
     !! Ntetr - число тетраэдров во внутри HP (области 1 и 2)
 	integer, allocatable :: pui_num_tetr(:)        ! По номеру интерполяционного тетраэдра определяем номер S
 	integer, allocatable :: pui_num_tetr_2(:)	   ! Обратно по номеру S определяем номер интерполяционного тетраэдра
 	real(8), allocatable :: pui_Sm(:, :)           ! (pui_nW, Ntetr)
 	real(8), allocatable :: pui_Sp(:, :)           ! (pui_nW, Ntetr)
-	real(8), allocatable :: f_pui(:, :)           ! (pui_nW, :)
-	real(8), allocatable :: f_pui_num(:)           ! По номеру в массиве пуи, определяем номер узла в интерполяционной сетке
-	real(8), allocatable :: f_pui_num2(:)		   ! По номеру узла в интерполяционной сетке, определяем номер в массиве PUI
 	integer (kind=omp_lock_kind), allocatable :: pui_lock(:)  ! Для openMP
 
 	!! Переменные для обработки функции распределения PUI для последующего розыгрыша
@@ -41,12 +36,9 @@ module PUI
 	! т.е. мы будем разыгрывать ksi от 0 до 1 и брать значения скорости при этой ksi. 
 	! интеграл посчитан для dksi = 1.0/pui_F_n а в значениях между придётся линейно интерполировать
 	real(8), allocatable :: F_integr_pui(:, :)           ! (pui_F_n, :) первообразная для розыгрыша
-	real(8), allocatable :: pui_rho(:)           	 ! (:)  Концентрация PUI
 	real(8), allocatable :: nu_integr_pui(:, :)           ! (pui_F_n, :)   частота перезарядки
 	real(8), allocatable :: Mz_integr_pui(:, :)           ! (pui_F_n, :)   источник импульса
 	real(8), allocatable :: E_integr_pui(:, :)           ! (pui_F_n, :)	   источник энергии
-	real(8), allocatable :: n_pui(:)           ! (:)	   Концентрация пикапов   !TODO это ещё не посчитано!
-	real(8), allocatable :: T_pui(:)           ! (:)	   Температура пикапов
 
 
 	contains
@@ -113,7 +105,7 @@ module PUI
 	end subroutine PUI_Set
 
 	subroutine PUI_f_Set()
-		! Создаём массивы для функции распределения
+		! Создаём вспомогательные массивы для функции распределения
 		integer :: N, i, k, j, N2
 
 		allocate(f_pui_num2(size(int2_Cell_par2(1, :))))
@@ -129,14 +121,12 @@ module PUI
 			end if
 		end do
 
-		allocate(f_pui(pui_nW, N2))
 		allocate(n_pui(N2))
 		allocate(T_pui(N2))
 		allocate(f_pui_num(N2))
 		allocate(f_pui_cut(N2))
 		
 		f_pui_cut = pui_nW
-		f_pui = 0.0
 		n_pui = 0.0
 		T_pui = 0.0
 
@@ -149,6 +139,22 @@ module PUI
 		end do
 
 	end subroutine PUI_f_Set
+
+	subroutine PUI_f_Set2()
+		! Создаём массивы для самой функции распределения
+		integer :: N, i, k, j, N2
+
+		N2 = 0
+		k = 1
+		do i = 1, size(int2_Cell_par2(1, :))
+			if(int2_Cell_par2(1, i) <= 2) then
+				N2 = N2 + 1
+			end if
+		end do
+
+		allocate(f_pui(pui_nW, N2))
+		f_pui = 0.0
+	end subroutine PUI_f_Set2
 
 	subroutine PUI_n_T_culc()
 		integer :: n2, N, i
@@ -184,12 +190,22 @@ module PUI
 
 		print*, "PUI_F_integr_Set  START"
 		N = size(f_pui(1, :))
-
 		allocate(F_integr_pui(pui_F_n, N))
-		allocate(pui_rho(N))
 		allocate(nu_integr_pui(pui_F_n, N))
 		allocate(Mz_integr_pui(pui_F_n, N))
 		allocate(E_integr_pui(pui_F_n, N))
+		print*, "PUI_F_integr_Set  END"
+	end subroutine PUI_F_integr_Set
+
+	subroutine PUI_F_integr_Culc()
+		! Создаём массивы для интегрирования функции распределения для последующего розыгрыша
+		! и сразу вычисляет их
+		! Также считаем концентрацию PUI
+		integer :: N, n2, i, step, j, k
+		real(8) :: S, SS, w, S1, S2, ff, UH, u, the
+
+		print*, "PUI_F_integr_Culc  START"
+		N = size(f_pui(1, :))
 
 		step = 0
 		! Посчитаем этот интеграл (см. документацию PUI \rho_w)
@@ -203,16 +219,12 @@ module PUI
 				end if
 			!$omp end critical
 			SS = 0.0
-			S = 0.0
 
 			do i = 1, 10000
 				w = (i-0.5) * pui_wR/10000
 				ff = PUI_get_f(n2, w)
 				SS = SS + ff * w**2 * (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc) * (pui_wR/10000)
-				S = S + ff * w**2 * (pui_wR/10000)
 			end do
-			S = S * 4.0 * par_pi_8
-			pui_rho(n2) = S
 
 			S1 = 0.0
 			w = 0.0
@@ -236,12 +248,12 @@ module PUI
 				S1 = 0.0
 				UH = (i - 0.5) * pui_wR/pui_F_n
 				do j = 1, 1000
-					w = (i - 0.5) * pui_wR/1000
+					w = (j - 0.5) * pui_wR/1000
 					ff = PUI_get_f(n2, w)
 					do k = 1, 180
 						the = par_pi_8 * k/180	
 						u = sqrt(w**2 * sin(the)**2 + (w * cos(the) - UH)**2)
-						u = max(u, 0.000001)
+						u = max(u, 0.000001_8)
 						S = S + 2.0 * par_pi_8 * ff * w**2 * u * MK_sigma(u) * sin(the) * (par_pi_8/180) * (pui_wR/1000)
 						SS = SS + 2.0 * par_pi_8 * ff * w**2 * u * MK_sigma(u) * sin(the) * w * cos(the) * (par_pi_8/180) * (pui_wR/1000)
 						S1 = S1 + par_pi_8 * ff * w**2 * u * MK_sigma(u) * sin(the) * w**2 * (par_pi_8/180) * (pui_wR/1000)   !TODO 
@@ -258,8 +270,8 @@ module PUI
 		end do
 		!$omp end do
 		!$omp end parallel
-		print*, "PUI_F_integr_Set  END"
-	end subroutine PUI_F_integr_Set
+		print*, "PUI_F_integr_Culc  END"
+	end subroutine PUI_F_integr_Culc
 
 	subroutine PUI_Culc_h0()
 		implicit none
@@ -284,7 +296,7 @@ module PUI
 		!$omp end do
 		!$omp end parallel
 
-		open(1, file = "n0_PUI.txt")
+		open(1, file = "h0_PUI.txt")
 		do k = 1, pui_h0_n
 			UH = (k - 0.5) * pui_wR/pui_h0_n
 			write(1, *) UH, h0_pui(k)
@@ -303,7 +315,6 @@ module PUI
 				write(1, *) w, the, S
 			end do
 		end do
-			
 		close(1)
 
 	end subroutine PUI_Culc_h0
@@ -394,6 +405,7 @@ module PUI
 			k = f_pui_num(i)      ! Номер узла сетки интерполяции, в которой считаем PUI
 			if(int2_Cell_par2(1, k) == 1) CYCLE   ! Пропускаем ячейки до TS
 			rho0 = int2_Cell_par(1, k)
+			rho = rho0
 			f0_pui = 0.0
 			mas_Sm = 0.0
 
@@ -612,10 +624,10 @@ module PUI
 
 		integer :: k1, k2
 		real(8) :: x1, x2,  f1, f2
-		k1 = max(min(INT(ksi * pui_h0_n + 0.5), pui_h0_n), 1)
-		k2 = min(k1 + 1, pui_h0_n)
-		x1 = (k1 - 0.5) * 1.0/pui_h0_n
-		x2 = (k2 - 0.5) * 1.0/pui_h0_n
+		k1 = max(min(INT(ksi * pui_F_n + 0.5), pui_F_n), 1)
+		k2 = min(k1 + 1, pui_F_n)
+		x1 = (k1 - 0.5) * 1.0/pui_F_n
+		x2 = (k2 - 0.5) * 1.0/pui_F_n
 		f1 = F_integr_pui(k1, n)
 		f2 = F_integr_pui(k2, n)
 
@@ -738,7 +750,7 @@ module PUI
 
 		dthe = par_pi_8/40.0
 		num_all = 0
-
+		print*, "Start PUI_calc_Sm"
 	 	!$omp parallel
 
 	 	!$omp do private(pui_Sm2, ij, j, k, ff, Vh, the, d, w)
@@ -769,10 +781,12 @@ module PUI
 				pui_Sm2(ij) = pui_Sm2(ij) / (4.0 * par_pi_8)
 			end do
 
-			pui_Sm(:, i) = pui_Sm2/par_Kn/2.0  !TODO НУЖНО БУДЕТ УБРАТЬ ДЕЛЕНИЕ НА ДВА В СЛЕДУЮЩИЙ РАЗ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			pui_Sm(:, i) = pui_Sm2/par_Kn !/2.0  !TODO НУЖНО БУДЕТ УБРАТЬ ДЕЛЕНИЕ НА ДВА В СЛЕДУЮЩИЙ РАЗ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		end do
 		!$omp end do
 		!$omp end parallel
+
+		print*, "End PUI_calc_Sm"
 
 	end subroutine PUI_calc_Sm
 
@@ -822,114 +836,130 @@ module PUI
 		call Int2_Get_tetraedron_inner(x, y, z, n1)
 		write(unit=name,fmt='(i5.5)') num
 
-		open(1, file = "S+_" // name // ".txt")
-		n2 = pui_num_tetr(n1)
-		if(n2 > 0) then
-			do i = 1, pui_nW
-				w = (i-0.5) * pui_wR/pui_nW
-				write(1,*) w, pui_Sp(i, n2)
-			end do
-		end if
+		print*, "Nomer = ", num, " tetraedr = ", n1, " cell number = ", int2_all_tetraendron_point(1, n1), &
+			"   nomer f_pui = ", f_pui_num2(int2_all_tetraendron_point(1, n1)), "area = ", int2_Cell_par2(1, f_pui_num(f_pui_num2(int2_all_tetraendron_point(1, n1))))
 
-		close(1)
+		! open(1, file = "S+_" // name // ".txt")
+		! n2 = pui_num_tetr(n1)
+		! if(n2 > 0) then
+		! 	do i = 1, pui_nW
+		! 		w = (i-0.5) * pui_wR/pui_nW
+		! 		write(1,*) w, pui_Sp(i, n2)
+		! 	end do
+		! end if
 
-		open(2, file = "S-_" // name // ".txt")
-		if(n2 > 0) then
-			do i = 1, pui_nW
-				w = (i-0.5) * pui_wR/pui_nW
-				write(2,*) w, pui_Sm(i, n2)
-			end do
-		end if
+		! close(1)
 
-		close(2)
+		! open(2, file = "S-_" // name // ".txt")
+		! if(n2 > 0) then
+		! 	do i = 1, pui_nW
+		! 		w = (i-0.5) * pui_wR/pui_nW
+		! 		write(2,*) w, pui_Sm(i, n2)
+		! 	end do
+		! end if
+
+		! close(2)
 
 		n2 = f_pui_num2(int2_all_tetraendron_point(1, n1))
 		print*, n1, n2
 
 		open(3, file = "f_PUI_" // name // ".txt")
-		open(32, file = "f_PUI_cut_" // name // ".txt")
 		if(n2 > 0) then
 			do i = 1, pui_nW
 				w = (i-0.5) * pui_wR/pui_nW
 				write(3,*) w, f_pui(i, n2)
 			end do
 
-			do i = 1, f_pui_cut(n2)
-				w = (i-0.5) * pui_wR/pui_nW
-				write(32,*) w, f_pui(i, n2)
-			end do
-
 		end if
 
 		close(3)
-		close(32)
 
 		S = 0.0
 		!? Печатаем концентрацию пикапов (в виде графика от скорости, чтобы посмотреть, на каких скоростях накапливается максимум)
-		open(4, file = "n_pui_" // name // ".txt")
-		if(n2 > 0) then
-			do i = 1, pui_nW
-				w = (i-0.5) * pui_wR/pui_nW
-				S = S + f_pui(i, n2) * 4 * par_pi_8 * w**2
-				write(4,*) w, S
-			end do
-		end if
-		close(4)
+		! open(4, file = "n_pui_" // name // ".txt")
+		! if(n2 > 0) then
+		! 	do i = 1, pui_nW
+		! 		w = (i-0.5) * pui_wR/pui_nW
+		! 		S = S + f_pui(i, n2) * 4 * par_pi_8 * w**2
+		! 		write(4,*) w, S
+		! 	end do
+		! end if
+		! close(4)
 
-		SS = 0.0
-		!? Также печаетаем температуру пикапов
-		open(5, file = "T_pui_" // name // ".txt")
-		if(n2 > 0) then
-			do i = 1, pui_nW
-				w = (i-0.5) * pui_wR/pui_nW
-				SS = SS + f_pui(i, n2) * 4 * par_pi_8 * w**4 /(3.0 * S)
-				write(5,*) w, SS
-			end do
-		end if
-		close(5)
+		! SS = 0.0
+		! !? Также печаетаем температуру пикапов
+		! open(5, file = "T_pui_" // name // ".txt")
+		! if(n2 > 0) then
+		! 	do i = 1, pui_nW
+		! 		w = (i-0.5) * pui_wR/pui_nW
+		! 		SS = SS + f_pui(i, n2) * 4 * par_pi_8 * w**4 /(3.0 * S)
+		! 		write(5,*) w, SS
+		! 	end do
+		! end if
+		! close(5)
 
 		!? Печатаем функцию розыгрыша (см. документацию "PUI")
-		open(5, file = "F(w)_" // name // ".txt")
-		SS = 0.0
-		if(n2 > 0) then
-			do i = 1, pui_F_n
-				w = (i-0.5) * pui_wR/pui_F_n
-				ff = PUI_get_f(n2, w)
-				SS = SS + ff * w**2 * (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc)
-				!write(5,*) w, SS
-			end do
+		! open(5, file = "F(w)_" // name // ".txt")
+		! SS = 0.0
+		! if(n2 > 0) then
+		! 	do i = 1, pui_F_n
+		! 		w = (i-0.5) * pui_wR/pui_F_n
+		! 		ff = PUI_get_f(n2, w)
+		! 		SS = SS + ff * w**2 * (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc)
+		! 		!write(5,*) w, SS
+		! 	end do
 
-			S = 0.0
-			do i = 1, pui_F_n
-				w = (i-0.5) * pui_wR/pui_F_n
-				ff = PUI_get_f(n2, w)
-				S = S + ff * w**2 * (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc)/SS
-				if(ff < 0) then
-					print*, "ERROR  PUI_print  594 uikjhgbn"	
-					print*, n2, w, ff
-					print*, f_pui(:, n2)
-					pause
-				end if
-				write(5,*) S, w
-			end do
-		end if
-		close(5)
+		! 	S = 0.0
+		! 	do i = 1, pui_F_n
+		! 		w = (i-0.5) * pui_wR/pui_F_n
+		! 		ff = PUI_get_f(n2, w)
+		! 		S = S + ff * w**2 * (w + pui_h0_wc) * MK_sigma(w + pui_h0_wc)/SS
+		! 		if(ff < 0) then
+		! 			print*, "ERROR  PUI_print  594 uikjhgbn"	
+		! 			print*, n2, w, ff
+		! 			print*, f_pui(:, n2)
+		! 			pause
+		! 		end if
+		! 		write(5,*) S, w
+		! 	end do
+		! end if
+		! close(5)
 
 		!? Печатаем интеграллы (частоту и источники импульса и энергии, см. документацию)
-		open(5, file = "nu_pui_" // name // ".txt")
-		open(6, file = "Mz_pui_" // name // ".txt")
-		open(7, file = "E_pui_" // name // ".txt")
-		do i = 1, pui_F_n
-			UH = (i - 0.5) * pui_wR/pui_F_n
-			write(5,*) UH, nu_integr_pui(i, n2)
-			write(6,*) UH, Mz_integr_pui(i, n2)/nu_integr_pui(i, n2)
-			write(7,*) UH, E_integr_pui(i, n2)/nu_integr_pui(i, n2)
-		end do
-		close(5)
-		close(6)
-		close(7)
+		! open(5, file = "nu_pui_" // name // ".txt")
+		! open(6, file = "Mz_pui_" // name // ".txt")
+		! open(7, file = "E_pui_" // name // ".txt")
+		! do i = 1, pui_F_n
+		! 	UH = (i - 0.5) * pui_wR/pui_F_n
+		! 	write(5,*) UH, nu_integr_pui(i, n2)
+		! 	write(6,*) UH, Mz_integr_pui(i, n2)/nu_integr_pui(i, n2)
+		! 	write(7,*) UH, E_integr_pui(i, n2)/nu_integr_pui(i, n2)
+		! end do
+		! close(5)
+		! close(6)
+		! close(7)
 
 	end subroutine PUI_print
+
+	subroutine PUI_print_in_cell(num, cell)
+		implicit none
+		integer, intent(in) :: num, cell
+		
+		real(8) :: w, S, SS, ff, UH
+		character(len=5) :: name
+		integer(4) :: n1, i, n2
+
+		write(unit=name,fmt='(i5.5)') num
+
+
+		open(3, file = "f_PUI_" // name // ".txt")
+		do i = 1, pui_nW
+			w = (i-0.5) * pui_wR/pui_nW
+			write(3,*) w, f_pui(i, cell)
+		end do
+		close(3)
+
+	end subroutine PUI_print_in_cell
 
 	subroutine PUI_Save_bin(num)
 		implicit none
@@ -966,6 +996,73 @@ module PUI
 		close(1)
 
 	end subroutine PUI_Save_bin
+
+	subroutine PUI_Save_for_MK_bin(num)
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+
+		write(unit=name,fmt='(i5.5)') num
+
+		open(1, file = "pui_save_for_MK_" // name // ".bin", FORM = 'BINARY')
+
+
+		write(1) pui_F_n, pui_nW, pui_wR
+		write(1) F_integr_pui
+		write(1) nu_integr_pui
+		write(1) Mz_integr_pui
+		write(1) E_integr_pui
+		write(1) n_pui
+		write(1) T_pui
+
+
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+
+		close(1)
+
+	end subroutine PUI_Save_for_MK_bin
+
+	subroutine PUI_Read_for_MK_bin(num)
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		logical :: exists
+		integer :: n1, n2
+		real(8) :: a
+
+		write(unit=name,fmt='(i5.5)') num
+
+		inquire(file="pui_save_for_MK_" // name // ".bin", exist=exists)
+
+		if (exists == .False.) then
+			pause "ERROR net faila 171 PUI!!!"
+			STOP "ERROR net faila 171 PUI!!!"
+		end if
+
+		print*, "PUI_Read_for_MK_bin"
+		open(1, file = "pui_save_for_MK_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+
+		read(1) n1, n2, a
+		read(1) F_integr_pui
+		read(1) nu_integr_pui
+		read(1) Mz_integr_pui
+		read(1) E_integr_pui
+		read(1) n_pui
+		read(1) T_pui
+
+		close(1)
+		print*, "END PUI_Read_for_MK_bin"
+
+	end subroutine PUI_Read_for_MK_bin
 
 	subroutine PUI_Save_f_bin(num)
 		!? Сохранение функций распределения атомов (если они уже были посчитаны, чтобы второй раз не считать)
@@ -1017,8 +1114,8 @@ module PUI
 		inquire(file="pui_save_" // name // ".bin", exist=exists)
 
 		if (exists == .False.) then
-			pause "ERROR net faila 171 PUI!!!"
-			STOP "ERROR net faila 171 PUI!!!"
+			pause "ERROR net faila 174444 PUI!!!"
+			STOP "ERROR net faila 174444 PUI!!!"
 		end if
 
 		open(1, file = "pui_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")

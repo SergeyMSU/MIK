@@ -73,7 +73,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 6 * 11! 17   ! 1 = 10 минут счёта
+	integer(4), parameter :: MK_k_multiply = 3 * 12!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -263,6 +263,19 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
 	real(8), allocatable :: gl_Cell_par_inter(:, :)			  ! (9, :)
     real(8), allocatable :: gl_Cell_par_MF_inter(:,:,:)		  ! (5, 4,:) 
 	real(8), allocatable :: gl_Cell_dist_inter(:)
+
+
+    !! Набор массивов для программы PUI 
+    ! Всё определение и заполнение массивов делается в модуле PUI, здесь они лежат
+    ! только для того, чтобы их можно было использовать в других модулях
+
+    integer :: pui_nW = 40      ! 50
+	real(8) :: pui_wR = 100.0    ! 150.0
+    real(8), allocatable :: f_pui(:, :)           ! (pui_nW, :)
+	integer, allocatable :: f_pui_num(:)           ! По номеру в массиве пуи, определяем номер узла в интерполяционной сетке
+	integer, allocatable :: f_pui_num2(:)		   ! По номеру узла в интерполяционной сетке, определяем номер в массиве PUI
+    real(8), allocatable :: n_pui(:)           ! (:)	   Концентрация пикапов
+	real(8), allocatable :: T_pui(:)           ! (:)	   Температура пикапов
     
     contains
     
