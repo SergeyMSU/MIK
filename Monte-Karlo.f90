@@ -1161,9 +1161,9 @@ module Monte_Karlo
 					if(area2 <= 2) then
 						ro = PAR(1) + rho_He
 						p = PAR(5) * (8.0 * PAR(1)  + 3.0 * rho_He) / (8.0 * PAR(1))
-
+						ro_pui = MAS_PUI(1)
 						
-						p = 8.0 * (ro - ro_pui - rho_He) * (p - MAS_PUI(2) * MAS_PUI(1)) /&
+						p = 4.0 * (ro - ro_pui - rho_He) * (p - MAS_PUI(2) * MAS_PUI(1)) /&
 						(8 * ro - 5.0 * rho_He - 4.0 * ro_pui)
 
 						ro = ro - ro_pui - rho_He
@@ -1179,13 +1179,14 @@ module Monte_Karlo
 							ro_pui = PAR(1) - ro
 							pui_less = ro_pui/MAS_PUI(1)
 						end if
+						cp = sqrt(2.0 * p/ro)
 					else
 						p = PAR(5)
 						ro = PAR(1)
 						ro_pui = 0.0
+						cp = sqrt(p/ro)
 					end if
 
-					cp = sqrt(p/ro)
 					vx = PAR(2)
 					vy = PAR(3)
 					vz = PAR(4)

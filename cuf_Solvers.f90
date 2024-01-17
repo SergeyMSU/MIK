@@ -525,38 +525,38 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на лучах B
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
-	use GEO_PARAM
-	use cudafor
-	
-	implicit none
-	integer, intent(in) :: now
-	
-	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt, kkk
-    real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
-    integer :: i, j, k
-	
-	integer(4):: N2, N3
-	integer(4) :: yzel, yzel2, yzel3, yzel22, yzel33, yzel222, yzel333, yzel2222, yzel3333
-	
-	N3 = size(gl_RAY_B(1, 1, :))
-    N2 = size(gl_RAY_B(1, :, 1))
-	  
-	Time = time_step
-	
-	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
-	
-	if(k > N3 .or. j > N2) return
-	
-	ddt = Time/0.000127
-	! Ударная волна
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
+		use GEO_PARAM
+		use cudafor
+		
+		implicit none
+		integer, intent(in) :: now
+		
+		real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt, kkk
+		real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+		integer :: i, j, k
+		
+		integer(4):: N2, N3
+		integer(4) :: yzel, yzel2, yzel3, yzel22, yzel33, yzel222, yzel333, yzel2222, yzel3333
+		
+		N3 = size(gl_RAY_B(1, 1, :))
+		N2 = size(gl_RAY_B(1, :, 1))
+		
+		Time = time_step
+		
+		k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+		
+		if(k > N3 .or. j > N2) return
+		
+		ddt = Time/0.000127
+		! Ударная волна
 			
 			yzel = gl_RAY_B(par_n_TS, j, k)
 			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
@@ -1205,125 +1205,125 @@
 	
 	
 	attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение на лучах O 
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, gl_Vn => dev_gl_Vn
-	use GEO_PARAM
-	use cudafor
-	
-	implicit none
-	integer, intent(in) :: now
-	
-	real(8) :: Time, dist,  r, rr, r1, r2, r3, r4, ddt, nd, nd2, kk
-    real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
-    integer :: i, j, k
-	
-	integer(4):: N2, N3
-	integer(4) :: yzel, yzel2
-	
-	
-	N3 = size(gl_RAY_O(1, 1, :))
-    N2 = size(gl_RAY_O(1, :, 1))
-	  
-	Time = time_step
-	
-	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
-	
-	if(k > N3 .or. j > N2) return
-	
-	!if (k /= 1 .and. j == 1) then
- !           return
-	!end if
-	
-	ddt = Time/0.000127
-	
-	kk = 0.5  ! 1.0
-	
-	if(k > 6 .and. kk < 19) kk = 1.5  !  3.0
-	
-	if(k > 31 .and. kk < 44) kk = 1.5 !
-			
-	! Контакт
-	yzel = gl_RAY_O(1, j, k)
-	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-	! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
-	r = sqrt(Ak(2)**2 + Ak(3)**2)
-			
-	if (j < N2) then
-		yzel2 = gl_RAY_O(1, j + 1, k)
-	else
-		yzel2 = yzel
-	end if
-	Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-	! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r1 = sqrt(Bk(2)**2 + Bk(3)**2)
-			
-	if (k > 1) then
-		yzel2 = gl_RAY_O(1, j, k - 1)
-	else
-		yzel2 = gl_RAY_O(1, j, N3)
-	end if
-	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-	! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r2 = sqrt(Ck(2)**2 + Ck(3)**2)
-			
-	if (j > 1) then
-		yzel2 = gl_RAY_O(1, j - 1, k)
-	else
-		yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
-	end if
-	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
-	! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r3 = sqrt(Dk(2)**2 + Dk(3)**2)
-			
-	if(k < N3) then
-		yzel2 = gl_RAY_O(1, j, k + 1)
-	else
-		yzel2 = gl_RAY_O(1, j, 1)
-	end if
-	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-	! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
-	r4 = sqrt(Ek(2)**2 + Ek(3)**2)
-	
-	!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
-	!dist = max(dist, 1.0_8)
-	
-	rr = (r1 + r2 + r3 + r4)/4.0
-	
-	!rr = (r1 + r3)/2.0
-	
-	
-	
-			
-	if (gl_Point_num(yzel) > 0) then
-		!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, gl_Vn => dev_gl_Vn
+		use GEO_PARAM
+		use cudafor
 		
-		!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
-		!vel(1) = 0.0
+		implicit none
+		integer, intent(in) :: now
 		
-		vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+		real(8) :: Time, dist,  r, rr, r1, r2, r3, r4, ddt, nd, nd2, kk
+		real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+		integer :: i, j, k
 		
-	else
-		!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+		integer(4):: N2, N3
+		integer(4) :: yzel, yzel2
 		
-		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
-		!vel(1) = 0.0
 		
-		vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00003 0.0012
-	end if
-	
-	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
-	!nd = norm2(Ak)
-	!vel = 10.0 * gl_Vn * (Ak)/nd
+		N3 = size(gl_RAY_O(1, 1, :))
+		N2 = size(gl_RAY_O(1, :, 1))
+		
+		Time = time_step
+		
+		k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+		
+		if(k > N3 .or. j > N2) return
+		
+		!if (k /= 1 .and. j == 1) then
+		!           return
+		!end if
+		
+		ddt = Time/0.000127
+		
+		kk = 0.5  ! 1.0
+		
+		if(k > 6 .and. kk < 19) kk = 1.5  !  3.0
+		
+		if(k > 31 .and. kk < 44) kk = 1.5 !
+				
+		! Контакт
+		yzel = gl_RAY_O(1, j, k)
+		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+		! Ak = (/gl_x2(yzel, now), gl_y2(yzel, now), gl_z2(yzel, now)/)
+		r = sqrt(Ak(2)**2 + Ak(3)**2)
+				
+		if (j < N2) then
+			yzel2 = gl_RAY_O(1, j + 1, k)
+		else
+			yzel2 = yzel
+		end if
+		Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+		! Bk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+		r1 = sqrt(Bk(2)**2 + Bk(3)**2)
+				
+		if (k > 1) then
+			yzel2 = gl_RAY_O(1, j, k - 1)
+		else
+			yzel2 = gl_RAY_O(1, j, N3)
+		end if
+		Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+		! Ck = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+		r2 = sqrt(Ck(2)**2 + Ck(3)**2)
+				
+		if (j > 1) then
+			yzel2 = gl_RAY_O(1, j - 1, k)
+		else
+			yzel2 = gl_RAY_C(1, size(gl_RAY_C(1, :, k)), k)
+		end if
+		Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+		! Dk = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+		r3 = sqrt(Dk(2)**2 + Dk(3)**2)
+				
+		if(k < N3) then
+			yzel2 = gl_RAY_O(1, j, k + 1)
+		else
+			yzel2 = gl_RAY_O(1, j, 1)
+		end if
+		Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+		! Ek = (/gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now)/)
+		r4 = sqrt(Ek(2)**2 + Ek(3)**2)
+		
+		!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+		!dist = max(dist, 1.0_8)
+		
+		rr = (r1 + r2 + r3 + r4)/4.0
+		
+		!rr = (r1 + r3)/2.0
+		
+		
+		
+				
+		if (gl_Point_num(yzel) > 0) then
+			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
 			
-	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-	gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+			!vel = par_nat_HP * 0.0001 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt   ! 0.0003
+			!vel(1) = 0.0
+			
+			vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! надо ещё уменьшать
+			
+		else
+			!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time
+			
+			!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
+			!vel(1) = 0.0
+			
+			vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00003 0.0012
+		end if
+		
+		!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
+		!nd = norm2(Ak)
+		!vel = 10.0 * gl_Vn * (Ak)/nd
+				
+		gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+		gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+		gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 		
 	
 	end subroutine Cuda_Move_all_4
@@ -1337,57 +1337,57 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	attributes(global) subroutine Cuda_Move_all_5(now)   ! Отдельное поверхностное натяжение для точки на оси симметрии
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
-	use GEO_PARAM
-	use cudafor
-	
-	implicit none
-	integer, intent(in) :: now
-	
-	real(8) :: Time, r, r2
-    real(8) :: Ak(3), Bk(3)
-    integer :: i, j, k
-	
-	integer(4) :: yzel, yzel2
-	
-	
-	  
-	Time = time_step
-	
-	i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	
-	if (i > 1) return
-	
-	r2 = 0.0
-	k = size(gl_RAY_A(1, 1, :))
-	yzel = gl_RAY_A(par_n_TS, 1, 1)
-	Bk(1) = gl_x2(yzel, now)
-	Bk(2) = gl_y2(yzel, now)
-	Bk(3) = gl_z2(yzel, now)
-	
-	r = norm2(Bk)
-	
-	do j = 1, k
-		yzel2 = gl_RAY_A(par_n_TS, 2, k)
-		Ak(1) = gl_x2(yzel2, now)
-		Ak(2) = gl_y2(yzel2, now)
-		Ak(3) = gl_z2(yzel2, now)
-		r2 = r2 + norm2(Ak)
-	end do
-	
-	r2 = r2/k
-	
-	gl_Vx(yzel) = (r2 - r)/Time
-	gl_Vy(yzel) = 0.0
-	gl_Vz(yzel) = 0.0
-	
-	gl_Point_num(yzel) = 1
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
+		use GEO_PARAM
+		use cudafor
+		
+		implicit none
+		integer, intent(in) :: now
+		
+		real(8) :: Time, r, r2
+		real(8) :: Ak(3), Bk(3)
+		integer :: i, j, k
+		
+		integer(4) :: yzel, yzel2
+		
+		
+		
+		Time = time_step
+		
+		i = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		
+		if (i > 1) return
+		
+		r2 = 0.0
+		k = size(gl_RAY_A(1, 1, :))
+		yzel = gl_RAY_A(par_n_TS, 1, 1)
+		Bk(1) = gl_x2(yzel, now)
+		Bk(2) = gl_y2(yzel, now)
+		Bk(3) = gl_z2(yzel, now)
+		
+		r = norm2(Bk)
+		
+		do j = 1, k
+			yzel2 = gl_RAY_A(par_n_TS, 2, k)
+			Ak(1) = gl_x2(yzel2, now)
+			Ak(2) = gl_y2(yzel2, now)
+			Ak(3) = gl_z2(yzel2, now)
+			r2 = r2 + norm2(Ak)
+		end do
+		
+		r2 = r2/k
+		
+		gl_Vx(yzel) = (r2 - r)/Time
+		gl_Vy(yzel) = 0.0
+		gl_Vz(yzel) = 0.0
+		
+		gl_Point_num(yzel) = 1
 	
 	end subroutine Cuda_Move_all_5
 	

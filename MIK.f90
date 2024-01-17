@@ -6193,8 +6193,7 @@
 
         close(1)
 	end subroutine Print_Setka_2D
-	
-	
+
 	subroutine Print_Setka_3D_part()  ! Печатает 2Д сетку с линиями в Техплот
         use GEO_PARAM
         use STORAGE
@@ -6257,7 +6256,6 @@
 
 
 	end subroutine Print_Setka_3D_part
-	
 	
 	subroutine Print_Setka_y_2D()  ! Печатает 2Д сетку с линиями в Техплот
         use GEO_PARAM
@@ -6457,7 +6455,6 @@
         close(1)
 	
 	end subroutine Print_Contact_3D
-	
 	
 	subroutine Print_TS_3D()
         use GEO_PARAM
@@ -7921,14 +7918,21 @@
 	
 	end subroutine Download_setka
 	
-	subroutine Get_MK_to_MHD()
+	subroutine Get_MK_to_MHD(koeff)
         ! Получим результаты работы Монте-Карло для использования их в МГД расчётах
         use Interpolate2
+        LOGICAL, intent(in), OPTIONAL :: koeff
         integer(4) :: i, num, s1, j
         real(8) :: x, y, z, dd
         real(8) :: PAR(9)     ! Выходные параметры
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
         real(8) :: PAR_k(5)
+        LOGICAL :: koeff_local
+
+        koeff_local = .True.
+        if(present(koeff)) then
+            koeff_local = koeff
+        end if
         
         num = 3
         gl_Cell_par_MK(1:5, :, :) = 0.0
@@ -7948,8 +7952,10 @@
             call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
             if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
             gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
-            gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
+
+            if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
             
+
             if(num < 1) then
                 print*, "mini-problem with interpolation", x, y, z
                 num = 3
@@ -7957,7 +7963,7 @@
                 if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
                 s1 = int2_all_tetraendron_point(1, num)
                 gl_Cell_par_MK(1:5, 1:4, i) = int2_Moment(1:5, :, s1) * dd
-                gl_Cell_par_MK(6:10, 1, i) = int2_Moment_k(:, s1) * dd
+                if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = int2_Moment_k(:, s1) * dd
             end if
             
             
@@ -8342,7 +8348,9 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 535 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 536 !? 534 Номер файла основной сетки   533 - до PUI
+        !? 535 - до того, как поменять определение давления в PUI
+
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
 		! 132 до экспериментов  134  138
         ! 152 (до того, как поменять сгущение после HP)		
@@ -8358,9 +8366,9 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 15 !? 9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 19 !? 9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 2  !? 3 Номер алгоритма
+		step = 5  !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8739,11 +8747,11 @@
             call PUI_Set()                !! PUI
             call PUI_f_Set()              !! PUI
             call PUI_f_Set2()             !! PUI
-            call PUI_Read_bin(16)
-            call PUI_Read_f_bin(17)
+            call PUI_Read_bin(name2)
+            call PUI_Read_f_bin(name2)
             call PUI_Culc_h0()            !! PUI
             call PUI_F_integr_Set()       !! PUI
-            call PUI_Read_for_MK_bin(17)   !! PUI
+            call PUI_Read_for_MK_bin(name2)   !! PUI
             call Print_par_1D_PUI()
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
@@ -8758,12 +8766,16 @@
 			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			call Int_2_Print_par_1D()
+
+
 			
 			! Сохраняем интерполяционный файл - мини - сетки
-			call Int2_Save_bin(15)			 ! Сохранение полной сетки интерполяции
-			call Int2_Save_interpol_for_all_MK(15)
+			call Int2_Save_bin(name2 + 1)			 ! Сохранение полной сетки интерполяции
+			call Int2_Save_interpol_for_all_MK(name2 + 1)
 			call Int_2_Print_par_2D_set()	
-	        call PUI_Save_bin(15)
+            ! call PUI_Save_bin(name2 + 1)
+            call PUI_calc_Sm()
+	        call PUI_Save_bin(name2 + 1)
 			! call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
@@ -8777,24 +8789,31 @@
 			call PUI_Set()
 			call PUI_f_Set()
 			call PUI_f_Set2()
-			call PUI_Read_bin(name2 + 1)
+			call PUI_Read_bin(name2)
+            
+            open(11, file = "pui_num_tetr.bin", FORM = 'BINARY')
+            write(11) size(pui_num_tetr)
+            write(11) pui_num_tetr
+            close(11)
+
+            return
 			! call PUI_Read_bin(9)
 
-			call PUI_calc_Sm()
-            call PUI_Save_bin(name2 + 1)
+			! call PUI_calc_Sm()
+            ! call PUI_Save_bin(name2 + 1)
 
-			! call Culc_f_pui()
-            ! call Cut_f_pui()
-            ! call PUI_Save_f_bin(name2 + 1)
-            call PUI_Read_f_bin(name2 + 1)
+			call Culc_f_pui()
+            call Cut_f_pui()
+            call PUI_Save_f_bin(name2)
+            ! call PUI_Read_f_bin(name2 + 1)
 
             call PUI_Culc_h0()
             call PUI_F_integr_Set()
 
-            ! call PUI_F_integr_Culc()
-            ! call PUI_n_T_culc()
-            ! call PUI_Save_for_MK_bin(name2 + 1)
-            call PUI_Read_for_MK_bin(name2 + 1)
+            call PUI_F_integr_Culc()
+            call PUI_n_T_culc()
+            call PUI_Save_for_MK_bin(name2)
+            ! call PUI_Read_for_MK_bin(name2 + 1)
             
             
 			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
@@ -8933,6 +8952,15 @@
             ! call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
             
             call Print_par_1D_PUI()
+        else if(step == 5) then
+            ! Считаем дивергенцию скорости для игоря
+            call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+            call Int2_Save_interpol_for_all_MHD(name)
+
+
         end if !----------------------------------------------------------------------------------------
 		
         101     continue

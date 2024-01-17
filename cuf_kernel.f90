@@ -1327,7 +1327,7 @@ module MY_CUDA
 		
 		! Нужно обновить источники MK
 		print*, "Renew MK "
-		call Get_MK_to_MHD()
+		call Get_MK_to_MHD()!.False.)
 		dev_gl_Cell_par_MK = gl_Cell_par_MK
 	end if
 	
