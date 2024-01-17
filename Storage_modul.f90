@@ -202,6 +202,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
     real(8), allocatable :: gl_Cell_par2(:, :)           ! (1?, :) (n_He, div(V))
+    real(8), allocatable :: gl_Cell_par_div(:)           ! (:) (div(V))
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
 	real(8), allocatable :: gl_Cell_par_MK(:,:,:)           ! Набор параметров (10, сортов,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
     character, allocatable :: gl_Cell_type(:)           ! Тип каждой ячейки А, Б, С
@@ -328,6 +329,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
 	
     if(par_helium) allocate( gl_Cell_par2(1, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+    if(par_helium) allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
 	
     allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
 	allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
@@ -413,6 +415,8 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
 	gl_Gran_scheme = 3
 	gl_zone_Cell = 2
 	if(par_helium) gl_Cell_par2 = 0.0
+
+    gl_Cell_par_div = 0.0
     
     
     gl_Cell_A = -1

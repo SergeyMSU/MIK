@@ -24,6 +24,7 @@
 	
 	real(8), allocatable :: int2_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
 	real(8), allocatable :: int2_Cell_par_2(:, :)           ! (1?, :) (n_He)
+	real(8), allocatable :: int2_Cell_par_div(:)           ! div V
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)                        INFO
 	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
 	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, : число точек)
@@ -81,6 +82,7 @@
 					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_div(gl_Cell_A(i, j, k)) = gl_Cell_par_div(gl_Cell_A(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 					
 				end do
@@ -94,6 +96,7 @@
 					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_div(gl_Cell_A(i, j, k)) = gl_Cell_par_div(gl_Cell_A(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 						
 				end do
@@ -107,6 +110,7 @@
 					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_div(gl_Cell_A(i, j, k)) = gl_Cell_par_div(gl_Cell_A(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 				end do
 			end do
@@ -119,6 +123,7 @@
 					int2_coord(:, gl_Cell_A(i, j, k)) = gl_Cell_center(:, gl_Cell_A(i, j, k))
 					int2_Cell_par(:, gl_Cell_A(i, j, k)) = gl_Cell_par(:, gl_Cell_A(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_A(i, j, k)) = gl_Cell_par2(:, gl_Cell_A(i, j, k) )
+					int2_Cell_par_div(gl_Cell_A(i, j, k)) = gl_Cell_par_div(gl_Cell_A(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_A(i, j, k)) = gl_zone_Cell(gl_Cell_A(i, j, k))
 				end do
 			end do
@@ -138,6 +143,7 @@
 					int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 					int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par_div(gl_Cell_B(i, j, k)) = gl_Cell_par_div(gl_Cell_B(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
 				end do
 			end do
@@ -150,6 +156,7 @@
 					int2_coord(:, gl_Cell_B(i, j, k)) = gl_Cell_center(:, gl_Cell_B(i, j, k))
 					int2_Cell_par(:, gl_Cell_B(i, j, k)) = gl_Cell_par(:, gl_Cell_B(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_B(i, j, k)) = gl_Cell_par2(:, gl_Cell_B(i, j, k) )
+					int2_Cell_par_div(gl_Cell_B(i, j, k)) = gl_Cell_par_div(gl_Cell_B(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_B(i, j, k)) = gl_zone_Cell(gl_Cell_B(i, j, k))
 				end do
 			end do
@@ -169,6 +176,7 @@
 					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_div(gl_Cell_C(i, j, k)) = gl_Cell_par_div(gl_Cell_C(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 				end do
 			end do
@@ -181,6 +189,7 @@
 					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_div(gl_Cell_C(i, j, k)) = gl_Cell_par_div(gl_Cell_C(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 				end do
 			end do
@@ -193,6 +202,7 @@
 					int2_coord(:, gl_Cell_C(i, j, k)) = gl_Cell_center(:, gl_Cell_C(i, j, k))
 					int2_Cell_par(:, gl_Cell_C(i, j, k)) = gl_Cell_par(:, gl_Cell_C(i, j, k) )
 					int2_Cell_par_2(:, gl_Cell_C(i, j, k)) = gl_Cell_par2(:, gl_Cell_C(i, j, k) )
+					int2_Cell_par_div(gl_Cell_C(i, j, k)) = gl_Cell_par_div(gl_Cell_C(i, j, k) )
 					int2_Cell_par2(1, gl_Cell_C(i, j, k)) = gl_zone_Cell(gl_Cell_C(i, j, k))
 				end do
 			end do
@@ -206,6 +216,7 @@
 		int2_coord(:, N + 1) = (/ 0.0, 0.0, 0.0 /)
 		int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(1, 1, 1) )
 		int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(1, 1, 1) )
+		int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(1, 1, 1) )
 		int2_Cell_par2(:, N + 1) = 1
 		N = N + 1
 		
@@ -220,6 +231,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS - 1, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS - 1, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(par_n_TS - 1, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS - 1, j, k) )
 				N = N + 1
 				
@@ -227,6 +239,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_TS - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_TS, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_TS, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(par_n_TS, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_TS, j, k) )
 				N = N + 1
 			end do
@@ -238,6 +251,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP - 1, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP - 1, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(par_n_HP - 1, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP - 1, j, k) )
 				N = N + 1
 				
@@ -245,6 +259,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(par_n_HP, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(par_n_HP, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(par_n_HP, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(par_n_HP, j, k) )
 				N = N + 1
 			end do
@@ -271,6 +286,7 @@
 					
 					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_A(i - 1, j, k) )
 					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_A(i - 1, j, k) )
+					int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_A(i - 1, j, k) )
 					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_A(i - 1, j, k))
 					N = N + 1
 				end do
@@ -289,6 +305,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS - 1, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS - 1, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_B(par_n_TS - 1, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS - 1, j, k) )
 				N = N + 1
 				
@@ -296,6 +313,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_B(par_n_TS - 1, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(par_n_TS, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(par_n_TS, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_B(par_n_TS, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(par_n_TS, j, k) )
 				N = N + 1 
 			end do
@@ -311,6 +329,7 @@
 					int2_coord(:, N + 1) = (/par_R_LEFT, aa(2), aa(3)/)
 					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_B(i - 1, j, k) )
 					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_B(i - 1, j, k) )
+					int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_B(i - 1, j, k) )
 					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_B(i - 1, j, k))
 					N = N + 1 
 				end do
@@ -328,6 +347,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_C(par_n_HP - par_n_TS, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS, j, k) )
 				N = N + 1
 				
@@ -335,6 +355,7 @@
 				int2_coord(:, N + 1) = gl_Gran_center(:, gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k) ))
 				int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 				int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
+				int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 				int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(par_n_HP - par_n_TS + 1, j, k) )
 				N = N + 1 
 			end do
@@ -352,6 +373,7 @@
 					int2_coord(:, N + 1) = aa
 					int2_Cell_par(:, N + 1) = gl_Cell_par(:, gl_Cell_C(i - 1, j, k) )
 					int2_Cell_par_2(:, N + 1) = gl_Cell_par2(:, gl_Cell_C(i - 1, j, k) )
+					int2_Cell_par_div(N + 1) = gl_Cell_par_div(gl_Cell_C(i - 1, j, k) )
 					int2_Cell_par2(1, N + 1) = gl_zone_Cell(gl_Cell_C(i - 1, j, k))
 					N = N + 1 
 				end do
@@ -2309,6 +2331,9 @@
 	
 	write(1) size(int2_Cell_par_2(:, 1)), size(int2_Cell_par_2(1, :))
     write(1) int2_Cell_par_2
+
+	write(1) size(int2_Cell_par_div)
+	write(1) int2_Cell_par_div
 	
 	do i = 1, size(int2_Cell_par(1, :))
 		zone = int2_Cell_par2(1, i)
@@ -3543,6 +3568,7 @@
 	
 	allocate(int2_Cell_par( size(gl_Cell_par(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Cell_par_2( size(gl_Cell_par2(:, 1)), size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
+	allocate(int2_Cell_par_div(size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Cell_par2( 1, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C) ))
 	allocate(int2_Moment(par_n_moment, par_n_sort, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
 	allocate(int2_Moment_k(5, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))

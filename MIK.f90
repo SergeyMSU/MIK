@@ -7140,6 +7140,48 @@
 	
 	end subroutine Print_tok_layer
 
+    subroutine Cucl_div_V()
+    USE STORAGE
+    ! Посчитаем дивергенцию скорости для ИГОРЯ
+    integer(4) :: i, N, j, gr, sosed
+    real(8) :: V1(3), V2(3), DIV, d1, d2, SS
+
+    N = size(gl_all_Cell(1, :))
+
+    do i = 1, N
+        V = 0.0
+        V1 = gl_Cell_par(2:4, i)
+        do j = 1, 6
+            gr = gl_Cell_gran(j, i)
+            if(gr == 0) CYCLE
+
+            d1 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, i))
+
+            sosed = gl_Gran_neighbour(1, gr)
+            if(sosed == i) sosed = gl_Gran_neighbour(2, gr)
+
+            SS = gl_Gran_square(gr)
+
+            if(sosed > 0) then
+                V2 = gl_Cell_par(2:4, sosed)
+                d2 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, sosed))
+
+                V = V + DOT_PRODUCT(gl_Gran_normal(:, gr), (d2 * V1 + d1 * V2)/(d1 + d2)) * SS
+            else
+                V = V + DOT_PRODUCT(gl_Gran_normal(:, gr), V1) * SS
+            end if
+
+        end do
+
+        DIV = V/gl_Cell_Volume(i)
+        gl_Cell_par_div(i) = DIV
+    end do
+
+
+    end subroutine Cucl_div_V
+
+
+
     subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
         use GEO_PARAM
         use STORAGE
@@ -8955,10 +8997,12 @@
         else if(step == 5) then
             ! Считаем дивергенцию скорости для игоря
             call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+            call Cucl_div_V()
+
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-            call Int2_Save_interpol_for_all_MHD(name)
+            call Int2_Save_interpol_for_all_MHD(name + 1)
 
 
         end if !----------------------------------------------------------------------------------------
