@@ -394,6 +394,7 @@
 					int2_Cell_par(:, N + 1) = int2_Cell_par(:, int2_Point_C(i, j - 1, k))
 					int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, int2_Point_C(i, j - 1, k))
 					int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_C(i, j - 1, k))
+					int2_Cell_par_div(N + 1) = int2_Cell_par_div(int2_Point_C(i, j - 1, k))
 					N = N + 1 
 				end do
 			end do
@@ -410,16 +411,19 @@
 			int2_coord(:, N + 1) = 0.0
 			int2_Cell_par(:, N + 1) = 0.0
 			int2_Cell_par_2(:, N + 1) = 0.0
+			int2_Cell_par_div(N + 1) = 0.0
 			int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_A(i, 2, 1))
 			
 			do k = 1, N3
 				int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_A(i, 2, k)), 0.0_8, 0.0_8 /)
 				int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_A(i, 2, k))
 				int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_A(i, 2, k))
+				int2_Cell_par_div(N + 1) = int2_Cell_par_div(N + 1) + int2_Cell_par_div(int2_Point_A(i, 2, k))
 			end do
 			int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
 			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
 			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
+			int2_Cell_par_div(N + 1) = int2_Cell_par_div(N + 1)/N3
 			N = N + 1
 		end do
 		
@@ -433,16 +437,19 @@
 			int2_coord(:, N + 1) = 0.0
 			int2_Cell_par(:, N + 1) = 0.0
 			int2_Cell_par_2(:, N + 1) = 0.0
+			int2_Cell_par_div(N + 1) = 0.0
 			int2_Cell_par2(1, N + 1) = int2_Cell_par2(1, int2_Point_B(i, 2, 1))
 			
 			do k = 1, N3
 				int2_coord(:, N + 1) = int2_coord(:, N + 1) + (/ int2_coord(1, int2_Point_B(i, 2, k)), 0.0_8, 0.0_8 /)
 				int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1) + int2_Cell_par(:, int2_Point_B(i, 2, k))
 				int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1) + int2_Cell_par_2(:, int2_Point_B(i, 2, k))
+				int2_Cell_par_div(N + 1) = int2_Cell_par_div(N + 1) + int2_Cell_par_div(int2_Point_B(i, 2, k))
 			end do
 			int2_coord(:, N + 1) = int2_coord(:, N + 1)/N3
 			int2_Cell_par(:, N + 1) = int2_Cell_par(:, N + 1)/N3
 			int2_Cell_par_2(:, N + 1) = int2_Cell_par_2(:, N + 1)/N3
+			int2_Cell_par_div(N + 1) = int2_Cell_par_div(N + 1)/N3
 			N = N + 1
 		end do
 		
@@ -2636,6 +2643,7 @@
 	
 	if(num < 1) then
 		print*, "Net tetr"
+		num = 0
 		return
 	end if
 	
@@ -2942,19 +2950,21 @@
 	
 	subroutine Int_2_Print_par_1D()  ! Печатает 1Д сетку с линиями в Техплот
 		implicit none
-		integer :: i, num
+		integer :: i, num, yzel
 		real(8) :: x
 		real(8) :: PAR(9), PAR_MOMENT(par_n_moment, par_n_sort)
 	
 		num = 3
 		open(1, file = '_print_par_1D_interpolate.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4'"
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4', div(V)"
 		write(1,*) ", ZONE T= 'HP'"
 			
 		do i = 1, 2000
 			x = i * par_R_END/2001
 			call Int2_Get_par_fast(x, 0.0_8, 0.0_8, num, PAR, PAR_MOMENT)
-			write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4)
+			if(num < 1) CYCLE
+			yzel = int2_all_tetraendron_point(1, num)
+			write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), int2_Cell_par_div(yzel)
 			write(1, *) " "
 		end do
 		

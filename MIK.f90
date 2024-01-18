@@ -7141,45 +7141,95 @@
 	end subroutine Print_tok_layer
 
     subroutine Cucl_div_V()
-    USE STORAGE
-    ! Посчитаем дивергенцию скорости для ИГОРЯ
-    integer(4) :: i, N, j, gr, sosed
-    real(8) :: V1(3), V2(3), DIV, d1, d2, SS
+        USE STORAGE
+        ! Посчитаем дивергенцию скорости для ИГОРЯ
+        integer(4) :: i, N, j, gr, sosed
+        real(8) :: V1(3), V2(3), DIV, d1, d2, SS, normal(3)
 
-    N = size(gl_all_Cell(1, :))
+        N = size(gl_all_Cell(1, :))
 
-    do i = 1, N
-        V = 0.0
-        V1 = gl_Cell_par(2:4, i)
-        do j = 1, 6
-            gr = gl_Cell_gran(j, i)
-            if(gr == 0) CYCLE
+        do i = 1, N
+            V = 0.0
+            V1 = gl_Cell_par(2:4, i)
+            do j = 1, 6
+                gr = gl_Cell_gran(j, i)
+                if(gr == 0) CYCLE
 
-            d1 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, i))
+                d1 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, i))
 
-            sosed = gl_Gran_neighbour(1, gr)
-            if(sosed == i) sosed = gl_Gran_neighbour(2, gr)
+                sosed = gl_Gran_neighbour(1, gr)
+                if(sosed == i) sosed = gl_Gran_neighbour(2, gr)
 
-            SS = gl_Gran_square(gr)
+                SS = gl_Gran_square(gr)
 
-            if(sosed > 0) then
-                V2 = gl_Cell_par(2:4, sosed)
-                d2 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, sosed))
+                normal = gl_Gran_normal(:, gr)
 
-                V = V + DOT_PRODUCT(gl_Gran_normal(:, gr), (d2 * V1 + d1 * V2)/(d1 + d2)) * SS
-            else
-                V = V + DOT_PRODUCT(gl_Gran_normal(:, gr), V1) * SS
-            end if
+                if(gl_Gran_neighbour(1, gr) /= i) normal = -normal
 
+                if(sosed > 0) then
+                    if(gl_zone_Cell(sosed) == gl_zone_Cell(i)) then
+                        V2 = gl_Cell_par(2:4, sosed)
+                        d2 = norm2(gl_Gran_center(:, gr) - gl_Cell_center(:, sosed))
+
+                        V = V + DOT_PRODUCT(normal, (d2 * V1 + d1 * V2)/(d1 + d2)) * SS
+                    else
+                        V = V + DOT_PRODUCT(normal, V1) * SS
+                    end if
+                else
+                    V = V + DOT_PRODUCT(normal, V1) * SS
+                end if
+
+            end do
+
+            DIV = V/gl_Cell_Volume(i)
+            gl_Cell_par_div(i) = DIV
+            ! print*, "DIV = ", DIV
+            ! pause
         end do
-
-        DIV = V/gl_Cell_Volume(i)
-        gl_Cell_par_div(i) = DIV
-    end do
-
-
     end subroutine Cucl_div_V
 
+    subroutine Send_request()
+        ! Функция для передачи параметров в двумерную сетку
+
+        use STORAGE
+        use GEO_PARAM
+        use Interpolate2
+        implicit none
+        integer :: n, i, num
+        real(8) :: x, y
+        logical :: exists
+        real(8) :: PAR(9), PAR_MOMENT(par_n_moment, par_n_sort)
+        
+        
+        num = 3
+        inquire(file="request.bin", exist=exists)
+        
+        if (exists == .False.) then
+            pause "net faila!!! f fwf234r435234r3rw3r4"
+            STOP "net faila!!!"
+        end if
+        
+        
+        open(1, file = "request.bin", FORM = 'BINARY', ACTION = "READ")
+        open(2, file = "answer_request.bin", FORM = 'BINARY')
+
+        read(1) n
+        write(2) n
+
+        do i = 1, n
+            read(1) x, y
+            call Int2_Get_par_fast(x, y, 0.0001_8, num, PAR, PAR_MOMENT)
+            write(2) PAR(1), PAR(2), PAR(3), PAR(5)
+            write(2) PAR_MOMENT(1, 1), PAR_MOMENT(2, 1), PAR_MOMENT(3, 1), PAR_MOMENT(5, 1)
+            write(2) PAR_MOMENT(1, 2), PAR_MOMENT(2, 2), PAR_MOMENT(3, 2), PAR_MOMENT(5, 2)
+            write(2) PAR_MOMENT(1, 3), PAR_MOMENT(2, 3), PAR_MOMENT(3, 3), PAR_MOMENT(5, 3)
+            write(2) PAR_MOMENT(1, 4), PAR_MOMENT(2, 4), PAR_MOMENT(3, 4), PAR_MOMENT(5, 4)
+        end do
+
+        close(1)
+        close(2)
+
+    end subroutine Send_request
 
 
     subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
@@ -8998,11 +9048,16 @@
             ! Считаем дивергенцию скорости для игоря
             call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
             call Cucl_div_V()
-
+            !print*, gl_Cell_par_div
+            !call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+            call Int_2_Print_par_1D()
+            !print*, int2_Cell_par_div
+
             call Int2_Save_interpol_for_all_MHD(name + 1)
+            call Send_request()
 
 
         end if !----------------------------------------------------------------------------------------

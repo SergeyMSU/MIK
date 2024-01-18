@@ -201,6 +201,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     real(8), allocatable :: gl_Cell_dist(:)             ! Минимальное расстояние до грани в каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_center(:, :)             ! (3, :) Центр каждой ячейки  4444444444444444
     real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
+    ! ro u v w p bx by bz Q
     real(8), allocatable :: gl_Cell_par2(:, :)           ! (1?, :) (n_He, div(V))
     real(8), allocatable :: gl_Cell_par_div(:)           ! (:) (div(V))
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
