@@ -10,8 +10,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
 	logical, parameter :: par_PUI = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
 	
-	 real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
-	
+	real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
     real(8), parameter :: par_R_character = 35.6505         ! Характерный размер в задаче (расстояние до TS на начальном этапе построения сетки)
     real(8), parameter :: par_koeff_HP = 1.3            ! На сколько умножить характерный размер для получения HP
@@ -42,21 +41,21 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_a_2 = 0.130738_8        ! Параметр в сечении перезарядки
     real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_Kn = 49.9018   !0.4326569808         ! в перезарядке
-    real(8), parameter :: par_nu_ph = 12.2125 
-    real(8), parameter :: par_E_ph = 0.10878
+    real(8), parameter :: par_Kn = 35.9842!  49.9018   !0.4326569808         ! в перезарядке
+    real(8), parameter :: par_nu_ph = 9.46772!  12.2125 
+    real(8), parameter :: par_E_ph = 0.0557124!  0.10878
 	
     
-    real(8), parameter :: par_chi_real = 41.6479_8! 1.0_8      ! С каким хи считаем реально
-    real(8), parameter :: par_chi = 41.6479_8      ! С каким хи надо было бы считать
-    real(8), parameter :: par_Velosity_inf = -2.54279_8
-	real(8), parameter :: par_Mach_alf = 12.8816_8
+    real(8), parameter :: par_chi_real = 38.8686! 41.6479_8! 1.0_8      ! С каким хи считаем реально
+    real(8), parameter :: par_chi = 38.8686! 41.6479_8      ! С каким хи надо было бы считать
+    real(8), parameter :: par_Velosity_inf = -2.28322_8
+	real(8), parameter :: par_Mach_alf = 14.9521! 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
 	real(8), parameter :: par_p_0 = 4624.57_8 ! 4790.19! 4624.57_8
-	real(8), parameter :: par_B_inf = 13.9666_8
-	real(8), parameter :: par_alphaB_inf = 1.04719755_8   ! 60 градусов
+	real(8), parameter :: par_B_inf = 7.80959_8 !13.9666_8
+	real(8), parameter :: par_alphaB_inf = 0.6981!  1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
-	real(8), parameter :: par_1ae = 0.197035_8
+	real(8), parameter :: par_1ae = 0.237197! 0.197035_8
 	
 	! Параметры для Монте-Карло
 	integer(4), parameter :: par_n_potok = 32! 32  ! Число потоков (у каждого потока свой стек)
@@ -283,161 +282,161 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     
     
     subroutine Set_STORAGE()             ! Функция выделяет память для всех элементов модуля STORAGE, используя параметры из модуля GEO_PARAM
-    use GEO_PARAM
-    implicit none
-    
-    integer :: n1, n2
-	
-	
-    
-    if (par_developer_info) print *, "START Set_STORAGE"
-    ! Выделяем память под переменные
-    !gl_x = [real(8) ::]
-    !gl_y = [real(8) ::]
-    !gl_z = [real(8) ::]
-    
-    
-    if (allocated(gl_RAY_A) == .True.) then
-        STOP "Function Set_STORAGE vizvana neskolko raz!!! Dopustimo tolko 1 raz!"    
-    end if
-    
-    
-    allocate(gl_RAY_A(par_n_END, par_m_A, par_l_phi))
-    allocate(gl_RAY_B(par_n_HP, par_m_BC, par_l_phi))
-    allocate(gl_RAY_C(par_n_END - par_n_HP + 1, par_m_BC, par_l_phi))
-    allocate(gl_RAY_O(par_n_END - par_n_HP + 1, par_m_O, par_l_phi))
-    allocate(gl_RAY_K(par_n_TS, par_m_K, par_l_phi))
-    allocate(gl_RAY_D(par_m_O + 1, par_m_K + 1, par_l_phi))
-    allocate(gl_RAY_E(par_n_HP - par_n_TS + 1, par_m_O, par_l_phi))
-    
-    allocate(gl_Cell_A(par_n_END - 1, par_m_A + par_m_BC - 1, par_l_phi))
-    allocate(gl_Cell_B( (par_n_TS - 1) + par_m_O, par_m_K, par_l_phi) )
-    allocate(gl_Cell_C( par_n_END - par_n_TS, par_m_O, par_l_phi ))
-    
-    
-    allocate(gl_all_Cell(8, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-    allocate(gl_Cell_neighbour(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-    allocate(gl_Cell_gran(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    
-    allocate(gl_Cell_Volume(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    allocate(gl_Cell_dist(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    allocate( gl_Cell_center(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-    allocate(gl_Cell_info(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    allocate(gl_Cell_type(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    allocate(gl_Cell_number(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-	allocate(gl_zone_Cell(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    
-    allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-	
-    if(par_helium) allocate( gl_Cell_par2(1, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-    if(par_helium) allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-	
-    allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-	allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-    
-    ! Посчитаем число узлов в сетке
-    par_n_points = par_n_END * par_l_phi * (par_m_A + par_m_BC) + par_m_K * (par_n_TS + par_m_O) * par_l_phi + par_l_phi * (par_n_END - par_n_TS + 1) * par_m_O - &
-            (par_m_A + par_m_BC + par_m_K - 1) * par_l_phi - par_n_END * (par_l_phi - 1) - (par_n_TS + par_m_O - 1) * (par_l_phi - 1)  ! Всего точек в сетке
-    
-    allocate(gl_x(par_n_points))
-    allocate(gl_y(par_n_points))
-    allocate(gl_z(par_n_points))
-    !gl_x = [real(8) ::]
-    !gl_y = [real(8) ::]
-    !gl_z = [real(8) ::]
-    
-    n2 =  (par_n_END - 1) * (par_m_A + par_m_BC - 1) + (par_n_TS - 1 + par_m_O) * (par_m_K) + &
-        (par_n_END - par_n_TS) * par_m_O ! Число ячеек в 1 слое по углу
-    
-    n1 = 2 * (par_n_END - 1) * (par_m_A + par_m_BC - 1) - (par_n_END - 1) + 2 * (par_n_TS - 1 + par_m_O) * (par_m_K) + &
-        2 * (par_n_END - par_n_TS) * par_m_O + (par_n_END - par_n_TS)
-    n1 = (n1 + n2) * par_l_phi
-    
-    if (par_developer_info)print*, "1 sloy CELL ", n2 , " == ", size(gl_Cell_A(:,:,1)) + size(gl_Cell_B(:,:,1)) + size(gl_Cell_C(:,:,1))
-    
-    allocate(gl_all_Gran(4, n1))
-    allocate(gl_Gran_neighbour(2, n1))
-	allocate(gl_Gran_neighbour_TVD(2, n1))
-    allocate(gl_Gran_normal(3, n1))
-    allocate(gl_Gran_square(n1))
-    allocate(gl_Gran_info(n1))  
-	allocate(gl_Gran_type(n1))
-	allocate(gl_Gran_scheme(n1))
-    allocate(gl_Gran_POTOK(10, n1))
-    allocate(gl_Gran_POTOK2(size(gl_Cell_par2(:, 1)), n1))
-    allocate(gl_Gran_POTOK_MF(5, 4, n1))
-    allocate(gl_Gran_center(3, n1))
-    
-    allocate(gl_Contact( (par_m_O + par_m_A + par_m_BC -1) * par_l_phi ))   ! Выделяем память под контакт
-    allocate(gl_TS( (par_m_A + par_m_BC + par_m_K -1) * par_l_phi ))   ! Выделяем память под TS
-    allocate(gl_BS( (par_m_A - 1) * par_l_phi ))   ! Выделяем память под BS
-    
-    if (par_developer_info) print*, "Set_STORAGE: Ray A contains points: ", size(gl_RAY_A(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray B contains points: ", size(gl_RAY_B(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray C contains points: ", size(gl_RAY_C(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray O contains points: ", size(gl_RAY_O(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray K contains points: ", size(gl_RAY_K(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray D contains points: ", size(gl_RAY_D(:,1,1))
-    if (par_developer_info) print*, "Set_STORAGE: Ray E contains points: ", size(gl_RAY_E(:,1,1))
-    
-    if (par_developer_info) print*, "Set_STORAGE: all GRANS: ", n1
-    
-    if (par_developer_info) print*, "Set_STORAGE: all CELL: ", size(gl_all_Cell(1,:))
-    if (par_developer_info) print*, "Set_STORAGE: 1 sloy CELL: ", n2
-    if (par_developer_info) print*, "Kol-vo ploskostey po ygly =  ", size(gl_RAY_A(1, 1, :))
-    
-    
-    ! Заполняем начальными значениями
-    gl_x = 0.0
-    gl_y = 0.0
-    gl_z = 0.0
-    gl_Cell_Volume = 0.0
-    gl_RAY_A = -1
-    gl_RAY_B = -1
-    gl_RAY_C = -1
-    gl_RAY_O = -1
-    gl_RAY_K = -1
-    gl_RAY_D = -1
-    gl_RAY_E = -1
-    
-	gl_Cell_par_MK = 0.0
-	gl_Cell_par_MK(1, :, :) = 0.000001
-	
-    gl_Cell_dist = 0.0
-    gl_Cell_center = 0.0
-    gl_Gran_POTOK = 0.0
-	gl_Gran_POTOK2 = 0.0
-    gl_Cell_par = 0.0
-    gl_Gran_center = 0.0
-    gl_Gran_info = 0
-    gl_Cell_info = 2
-	gl_Gran_type = 0
-	!gl_Gran_scheme = 2
-	gl_Gran_scheme = 3
-	gl_zone_Cell = 2
-	if(par_helium) gl_Cell_par2 = 0.0
+        use GEO_PARAM
+        implicit none
+        
+        integer :: n1, n2
+        
+        
+        
+        if (par_developer_info) print *, "START Set_STORAGE"
+        ! Выделяем память под переменные
+        !gl_x = [real(8) ::]
+        !gl_y = [real(8) ::]
+        !gl_z = [real(8) ::]
+        
+        
+        if (allocated(gl_RAY_A) == .True.) then
+            STOP "Function Set_STORAGE vizvana neskolko raz!!! Dopustimo tolko 1 raz!"    
+        end if
+        
+        
+        allocate(gl_RAY_A(par_n_END, par_m_A, par_l_phi))
+        allocate(gl_RAY_B(par_n_HP, par_m_BC, par_l_phi))
+        allocate(gl_RAY_C(par_n_END - par_n_HP + 1, par_m_BC, par_l_phi))
+        allocate(gl_RAY_O(par_n_END - par_n_HP + 1, par_m_O, par_l_phi))
+        allocate(gl_RAY_K(par_n_TS, par_m_K, par_l_phi))
+        allocate(gl_RAY_D(par_m_O + 1, par_m_K + 1, par_l_phi))
+        allocate(gl_RAY_E(par_n_HP - par_n_TS + 1, par_m_O, par_l_phi))
+        
+        allocate(gl_Cell_A(par_n_END - 1, par_m_A + par_m_BC - 1, par_l_phi))
+        allocate(gl_Cell_B( (par_n_TS - 1) + par_m_O, par_m_K, par_l_phi) )
+        allocate(gl_Cell_C( par_n_END - par_n_TS, par_m_O, par_l_phi ))
+        
+        
+        allocate(gl_all_Cell(8, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        allocate(gl_Cell_neighbour(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        allocate(gl_Cell_gran(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        
+        allocate(gl_Cell_Volume(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate(gl_Cell_dist(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate( gl_Cell_center(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        allocate(gl_Cell_info(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate(gl_Cell_type(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate(gl_Cell_number(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate(gl_zone_Cell(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        
+        allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        
+        if(par_helium) allocate( gl_Cell_par2(1, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        if(par_helium) allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        
+        allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
+        
+        ! Посчитаем число узлов в сетке
+        par_n_points = par_n_END * par_l_phi * (par_m_A + par_m_BC) + par_m_K * (par_n_TS + par_m_O) * par_l_phi + par_l_phi * (par_n_END - par_n_TS + 1) * par_m_O - &
+                (par_m_A + par_m_BC + par_m_K - 1) * par_l_phi - par_n_END * (par_l_phi - 1) - (par_n_TS + par_m_O - 1) * (par_l_phi - 1)  ! Всего точек в сетке
+        
+        allocate(gl_x(par_n_points))
+        allocate(gl_y(par_n_points))
+        allocate(gl_z(par_n_points))
+        !gl_x = [real(8) ::]
+        !gl_y = [real(8) ::]
+        !gl_z = [real(8) ::]
+        
+        n2 =  (par_n_END - 1) * (par_m_A + par_m_BC - 1) + (par_n_TS - 1 + par_m_O) * (par_m_K) + &
+            (par_n_END - par_n_TS) * par_m_O ! Число ячеек в 1 слое по углу
+        
+        n1 = 2 * (par_n_END - 1) * (par_m_A + par_m_BC - 1) - (par_n_END - 1) + 2 * (par_n_TS - 1 + par_m_O) * (par_m_K) + &
+            2 * (par_n_END - par_n_TS) * par_m_O + (par_n_END - par_n_TS)
+        n1 = (n1 + n2) * par_l_phi
+        
+        if (par_developer_info)print*, "1 sloy CELL ", n2 , " == ", size(gl_Cell_A(:,:,1)) + size(gl_Cell_B(:,:,1)) + size(gl_Cell_C(:,:,1))
+        
+        allocate(gl_all_Gran(4, n1))
+        allocate(gl_Gran_neighbour(2, n1))
+        allocate(gl_Gran_neighbour_TVD(2, n1))
+        allocate(gl_Gran_normal(3, n1))
+        allocate(gl_Gran_square(n1))
+        allocate(gl_Gran_info(n1))  
+        allocate(gl_Gran_type(n1))
+        allocate(gl_Gran_scheme(n1))
+        allocate(gl_Gran_POTOK(10, n1))
+        allocate(gl_Gran_POTOK2(size(gl_Cell_par2(:, 1)), n1))
+        allocate(gl_Gran_POTOK_MF(5, 4, n1))
+        allocate(gl_Gran_center(3, n1))
+        
+        allocate(gl_Contact( (par_m_O + par_m_A + par_m_BC -1) * par_l_phi ))   ! Выделяем память под контакт
+        allocate(gl_TS( (par_m_A + par_m_BC + par_m_K -1) * par_l_phi ))   ! Выделяем память под TS
+        allocate(gl_BS( (par_m_A - 1) * par_l_phi ))   ! Выделяем память под BS
+        
+        if (par_developer_info) print*, "Set_STORAGE: Ray A contains points: ", size(gl_RAY_A(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray B contains points: ", size(gl_RAY_B(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray C contains points: ", size(gl_RAY_C(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray O contains points: ", size(gl_RAY_O(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray K contains points: ", size(gl_RAY_K(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray D contains points: ", size(gl_RAY_D(:,1,1))
+        if (par_developer_info) print*, "Set_STORAGE: Ray E contains points: ", size(gl_RAY_E(:,1,1))
+        
+        if (par_developer_info) print*, "Set_STORAGE: all GRANS: ", n1
+        
+        if (par_developer_info) print*, "Set_STORAGE: all CELL: ", size(gl_all_Cell(1,:))
+        if (par_developer_info) print*, "Set_STORAGE: 1 sloy CELL: ", n2
+        if (par_developer_info) print*, "Kol-vo ploskostey po ygly =  ", size(gl_RAY_A(1, 1, :))
+        
+        
+        ! Заполняем начальными значениями
+        gl_x = 0.0
+        gl_y = 0.0
+        gl_z = 0.0
+        gl_Cell_Volume = 0.0
+        gl_RAY_A = -1
+        gl_RAY_B = -1
+        gl_RAY_C = -1
+        gl_RAY_O = -1
+        gl_RAY_K = -1
+        gl_RAY_D = -1
+        gl_RAY_E = -1
+        
+        gl_Cell_par_MK = 0.0
+        gl_Cell_par_MK(1, :, :) = 0.000001
+        
+        gl_Cell_dist = 0.0
+        gl_Cell_center = 0.0
+        gl_Gran_POTOK = 0.0
+        gl_Gran_POTOK2 = 0.0
+        gl_Cell_par = 0.0
+        gl_Gran_center = 0.0
+        gl_Gran_info = 0
+        gl_Cell_info = 2
+        gl_Gran_type = 0
+        !gl_Gran_scheme = 2
+        gl_Gran_scheme = 3
+        gl_zone_Cell = 2
+        if(par_helium) gl_Cell_par2 = 0.0
 
-    gl_Cell_par_div = 0.0
-    
-    
-    gl_Cell_A = -1
-    gl_Cell_B = -1
-    gl_Cell_C = -1
-    
-    gl_all_Cell = -1
-    gl_Cell_neighbour = 0          ! 0 - нет соседа (при этом это НЕ граница - у границы свой номер)
-    gl_Cell_gran = 0
-    
-    gl_all_Gran = 0
-    gl_Gran_neighbour = 0
-	gl_Gran_neighbour_TVD = 0
-    
-    gl_Contact = 0
-    
-    gl_Gran_normal = 0.0;
-    gl_Gran_square = 0.0;
-    
-    if (par_developer_info) print *, "END Set_STORAGE"
+        gl_Cell_par_div = 0.0
+        
+        
+        gl_Cell_A = -1
+        gl_Cell_B = -1
+        gl_Cell_C = -1
+        
+        gl_all_Cell = -1
+        gl_Cell_neighbour = 0          ! 0 - нет соседа (при этом это НЕ граница - у границы свой номер)
+        gl_Cell_gran = 0
+        
+        gl_all_Gran = 0
+        gl_Gran_neighbour = 0
+        gl_Gran_neighbour_TVD = 0
+        
+        gl_Contact = 0
+        
+        gl_Gran_normal = 0.0;
+        gl_Gran_square = 0.0;
+        
+        if (par_developer_info) print *, "END Set_STORAGE"
     
 	end subroutine Set_STORAGE
 

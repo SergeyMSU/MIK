@@ -8,506 +8,506 @@
 
 	
 	attributes(global) subroutine Cuda_Move_all_1(now)  ! Поверхностное натяжение на А - лучах
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
-	use GEO_PARAM
-	use cudafor
-	
-	implicit none
-	integer, intent(in) :: now
-	
-	real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt, k1
-    real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
-    integer :: i, j, k
-	
-	integer(4):: N2, N3
-	integer(4) :: yzel, yzel2, yzel3, yzel22, yzel33, yzel222, yzel333
-	
-	  
-	Time = time_step
-	
-	k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
-	
-	N3 = size(gl_RAY_A(1, 1, :))
-    N2 = size(gl_RAY_A(1, :, 1))
-	
-	if(k > N3 .or. j > N2) return
-	
-	k1 = 0.002! 0.001
-	if(j <= 18) k1 = 0.03   ! 0.03
-	
-	
-	if (j == 1 .and. k/= 1) then
-                    return
-	end if
-	
-	ddt = Time/0.000127
-			
-	! Ударная волна
-	yzel = gl_RAY_A(par_n_TS, j, k)
-		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-			
-	if (j < N2) then
-		yzel2 = gl_RAY_A(par_n_TS, j + 1, k)
-	else
-		yzel2 = gl_RAY_B(par_n_TS, 1, k)
-	end if
-	!Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-	
-	if (j < N2 - 1) then
-		yzel22 = gl_RAY_A(par_n_TS, j + 2, k)
-	else if (j == N2 - 1) then
-		yzel22 = gl_RAY_B(par_n_TS, 1, k)
-	else
-		yzel22 = gl_RAY_B(par_n_TS, 2, k)
-	end if
-	
-	if (j < N2 - 2) then
-		yzel222 = gl_RAY_A(par_n_TS, j + 3, k)
-	else if (j == N2 - 2) then
-		yzel222 = gl_RAY_B(par_n_TS, 1, k)
-	else if (j == N2 - 1) then
-		yzel222 = gl_RAY_B(par_n_TS, 2, k)
-	else
-		yzel222 = gl_RAY_B(par_n_TS, 3, k)
-	end if
-			
-	if (j > 1) then
-		yzel3 = gl_RAY_A(par_n_TS, j - 1, k)
-	else
-		yzel3 = gl_RAY_A(par_n_TS, j + 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	end if
-	!Dk(1) = gl_x2(yzel3, now); Dk(2) = gl_y2(yzel3, now); Dk(3) = gl_z2(yzel3, now)
-	
-	if (j > 2) then
-		yzel33 = gl_RAY_A(par_n_TS, j - 2, k)
-	else if(j == 2) then
-		yzel33 = gl_RAY_A(par_n_TS, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	else
-		yzel33 = gl_RAY_A(par_n_TS, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	end if
-	
-	if (j > 3) then
-		yzel333 = gl_RAY_A(par_n_TS, j - 3, k)
-	else if(j == 3) then
-		yzel333 = gl_RAY_A(par_n_TS, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	else if(j == 2) then
-		yzel333 = gl_RAY_A(par_n_TS, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	else
-		yzel333 = gl_RAY_A(par_n_TS, 4, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	end if
-	
-	call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
-			gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-			Ak(1), Ak(2), Ak(3), &
-			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-			gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
-			Ek(1), Ek(2), Ek(3))
-	
-	
-	if (k > 1) then
-		yzel2 = gl_RAY_A(par_n_TS, j, k - 1)
-	else
-		yzel2 = gl_RAY_A(par_n_TS, j, N3)
-	end if
-	!Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-	
-	if (k > 2) then
-		yzel33 = gl_RAY_A(par_n_TS, j, k - 2)
-	else if(k == 2) then
-		yzel33 = gl_RAY_A(par_n_TS, j, N3)
-	else
-		yzel33 = gl_RAY_A(par_n_TS, j, N3 - 1)
-	end if
-	
-	if (k > 3) then
-		yzel333 = gl_RAY_A(par_n_TS, j, k - 3)
-	else if(k == 3) then
-		yzel333 = gl_RAY_A(par_n_TS, j, N3)
-	else if(k == 2) then
-		yzel333 = gl_RAY_A(par_n_TS, j, N3 - 1)
-	else
-		yzel333 = gl_RAY_A(par_n_TS, j, N3 - 2)
-	end if
-	
-	if(k < N3) then
-		yzel2 = gl_RAY_A(par_n_TS, j, k + 1)
-	else
-		yzel2 = gl_RAY_A(par_n_TS, j, 1)
-	end if
-	!Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-	
-	if(k < N3 - 1) then
-		yzel22 = gl_RAY_A(par_n_TS, j, k + 2)
-	else if(k == N3 - 1) then
-		yzel22 = gl_RAY_A(par_n_TS, j, 1)
-	else
-		yzel22 = gl_RAY_A(par_n_TS, j, 2)
-	end if
-	
-	if(k < N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_TS, j, k + 2)
-		else if(k == N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_TS, j, 1)
-		else if(k == N3 - 1) then
-			yzel222 = gl_RAY_A(par_n_TS, j, 2)
-		else
-			yzel222 = gl_RAY_A(par_n_TS, j, 3)
-		end if
-	
-	!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-	!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-	!		Ak(1), Ak(2), Ak(3), &
-	!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-	!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-	!		Ck(1), Ck(2), Ck(3))
-	
-	call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
-			gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-			Ak(1), Ak(2), Ak(3), &
-			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-			gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
-			Ck(1), Ck(2), Ck(3))
-			
-	!if (gl_Point_num(yzel) > 0) then
-	!	vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
-	!else
-	!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
-	!end if
-	
-	k1 = 50.0 !10
-	!if(j <= 5) k1 = 200.0   ! 0.03
-	
-	if (gl_Point_num(yzel) > 0) then
-		vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
-	else
-		vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt   ! 0.003
-	end if
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS
+		use GEO_PARAM
+		use cudafor
 		
-	if(j >= N2 - 1) then
-		if (gl_Point_num(yzel) > 0) then
-			vel = k1 * par_nat_TS * 0.006 * ( (Ck + 6.0 * Ek)/7.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
-		else
-			vel = k1 *  par_nat_TS * 0.006 * ( (Ck + 6.0 * Ek)/7.0 - Ak)/Time * ddt   ! 0.003
-		end if
-	end if
-	
-			
-	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-	gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
-	
-	
-	 ! Контакт !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	k1 = 1.0
-	if(.False.) then
-		yzel = gl_RAY_A(par_n_HP, j, k)
-		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+		implicit none
+		integer, intent(in) :: now
 		
+		real(8) :: Time, dist, r, rr, r1, r2, r3, r4, ddt, k1
+		real(8) :: vel(3), Ak(3), Bk(3), Ck(3), Dk(3), Ek(3)
+		integer :: i, j, k
+		
+		integer(4):: N2, N3
+		integer(4) :: yzel, yzel2, yzel3, yzel22, yzel33, yzel222, yzel333
+		
+		
+		Time = time_step
+		
+		k = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		j = blockDim%y * (blockIdx%y - 1) + threadIdx%y   ! Номер потока
+		
+		N3 = size(gl_RAY_A(1, 1, :))
+		N2 = size(gl_RAY_A(1, :, 1))
+		
+		if(k > N3 .or. j > N2) return
+		
+		k1 = 0.002! 0.001
+		if(j <= 18) k1 = 0.03   ! 0.03
+		
+		
+		if (j == 1 .and. k/= 1) then
+						return
+		end if
+		
+		ddt = Time/0.000127
+				
+		! Ударная волна
+		yzel = gl_RAY_A(par_n_TS, j, k)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+				
 		if (j < N2) then
-			yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+			yzel2 = gl_RAY_A(par_n_TS, j + 1, k)
 		else
-			yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			yzel2 = gl_RAY_B(par_n_TS, 1, k)
 		end if
-	
+		!Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+		
 		if (j < N2 - 1) then
-			yzel22 = gl_RAY_A(par_n_HP, j + 2, k)
+			yzel22 = gl_RAY_A(par_n_TS, j + 2, k)
 		else if (j == N2 - 1) then
-			yzel22 = gl_RAY_B(par_n_HP, 1, k)
+			yzel22 = gl_RAY_B(par_n_TS, 1, k)
 		else
-			yzel22 = gl_RAY_B(par_n_HP, 2, k)
-		end if
-	
-		if (j < N2 - 2) then
-			yzel222 = gl_RAY_A(par_n_HP, j + 3, k)
-		else if (j == N2 - 2) then
-			yzel222 = gl_RAY_B(par_n_HP, 1, k)
-		else if (j == N2 - 1) then
-			yzel222 = gl_RAY_B(par_n_HP, 2, k)
-		else
-			yzel222 = gl_RAY_B(par_n_HP, 3, k)
+			yzel22 = gl_RAY_B(par_n_TS, 2, k)
 		end if
 		
-		if (j > 1) then
-			yzel3 = gl_RAY_A(par_n_HP, j - 1, k)
+		if (j < N2 - 2) then
+			yzel222 = gl_RAY_A(par_n_TS, j + 3, k)
+		else if (j == N2 - 2) then
+			yzel222 = gl_RAY_B(par_n_TS, 1, k)
+		else if (j == N2 - 1) then
+			yzel222 = gl_RAY_B(par_n_TS, 2, k)
 		else
-			yzel3 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			yzel222 = gl_RAY_B(par_n_TS, 3, k)
 		end if
+				
+		if (j > 1) then
+			yzel3 = gl_RAY_A(par_n_TS, j - 1, k)
+		else
+			yzel3 = gl_RAY_A(par_n_TS, j + 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		end if
+		!Dk(1) = gl_x2(yzel3, now); Dk(2) = gl_y2(yzel3, now); Dk(3) = gl_z2(yzel3, now)
 		
 		if (j > 2) then
-			yzel33 = gl_RAY_A(par_n_HP, j - 2, k)
+			yzel33 = gl_RAY_A(par_n_TS, j - 2, k)
 		else if(j == 2) then
-			yzel33 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			yzel33 = gl_RAY_A(par_n_TS, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 		else
-			yzel33 = gl_RAY_A(par_n_HP, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			yzel33 = gl_RAY_A(par_n_TS, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 		end if
-	
-		if (j > 3) then
-			yzel333 = gl_RAY_A(par_n_HP, j - 3, k)
-		else if(j == 3) then
-			yzel333 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-		else if(j == 2) then
-			yzel333 = gl_RAY_A(par_n_HP, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-		else
-			yzel333 = gl_RAY_A(par_n_HP, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-		end if
-	
-		call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
-			gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-			Ak(1), Ak(2), Ak(3), &
-			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-			gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
-			Ek(1), Ek(2), Ek(3))
-	
-	!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-	!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-	!		Ak(1), Ak(2), Ak(3), &
-	!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-	!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-	!		Ek(1), Ek(2), Ek(3))
 		
-		!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Ek(1), Ek(2), Ek(3))
-		!
-		!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Bk(1), Bk(2), Bk(3))
+		if (j > 3) then
+			yzel333 = gl_RAY_A(par_n_TS, j - 3, k)
+		else if(j == 3) then
+			yzel333 = gl_RAY_A(par_n_TS, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		else if(j == 2) then
+			yzel333 = gl_RAY_A(par_n_TS, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		else
+			yzel333 = gl_RAY_A(par_n_TS, 4, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+		end if
+		
+		call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
+				gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+				gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+				Ak(1), Ak(2), Ak(3), &
+				gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+				gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+				gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
+				Ek(1), Ek(2), Ek(3))
+		
+		
+		if (k > 1) then
+			yzel2 = gl_RAY_A(par_n_TS, j, k - 1)
+		else
+			yzel2 = gl_RAY_A(par_n_TS, j, N3)
+		end if
+		!Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+		
+		if (k > 2) then
+			yzel33 = gl_RAY_A(par_n_TS, j, k - 2)
+		else if(k == 2) then
+			yzel33 = gl_RAY_A(par_n_TS, j, N3)
+		else
+			yzel33 = gl_RAY_A(par_n_TS, j, N3 - 1)
+		end if
+		
+		if (k > 3) then
+			yzel333 = gl_RAY_A(par_n_TS, j, k - 3)
+		else if(k == 3) then
+			yzel333 = gl_RAY_A(par_n_TS, j, N3)
+		else if(k == 2) then
+			yzel333 = gl_RAY_A(par_n_TS, j, N3 - 1)
+		else
+			yzel333 = gl_RAY_A(par_n_TS, j, N3 - 2)
+		end if
 		
 		if(k < N3) then
-			yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			yzel2 = gl_RAY_A(par_n_TS, j, k + 1)
 		else
-			yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			yzel2 = gl_RAY_A(par_n_TS, j, 1)
 		end if
+		!Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
 		
 		if(k < N3 - 1) then
-			yzel22 = gl_RAY_A(par_n_HP, j, k + 2)
+			yzel22 = gl_RAY_A(par_n_TS, j, k + 2)
 		else if(k == N3 - 1) then
-			yzel22 = gl_RAY_A(par_n_HP, j, 1)
+			yzel22 = gl_RAY_A(par_n_TS, j, 1)
 		else
-			yzel22 = gl_RAY_A(par_n_HP, j, 2)
+			yzel22 = gl_RAY_A(par_n_TS, j, 2)
 		end if
-	
+		
 		if(k < N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_HP, j, k + 2)
-		else if(k == N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_HP, j, 1)
-		else if(k == N3 - 1) then
-			yzel222 = gl_RAY_A(par_n_HP, j, 2)
-		else
-			yzel222 = gl_RAY_A(par_n_HP, j, 3)
-		end if
-	
-		if (k > 1) then
-			yzel3 = gl_RAY_A(par_n_HP, j, k - 1)
-		else
-			yzel3 = gl_RAY_A(par_n_HP, j, N3)
-		end if
-	
-		if (k > 2) then
-			yzel33 = gl_RAY_A(par_n_HP, j, k - 2)
-		else if(k == 2) then
-			yzel33 = gl_RAY_A(par_n_HP, j, N3)
-		else
-			yzel33 = gl_RAY_A(par_n_HP, j, N3 - 1)
-		end if
-	
-		if (k > 3) then
-			yzel333 = gl_RAY_A(par_n_HP, j, k - 3)
-		else if(k == 3) then
-			yzel333 = gl_RAY_A(par_n_HP, j, N3)
-		else if(k == 2) then
-			yzel333 = gl_RAY_A(par_n_HP, j, N3 - 1)
-		else
-			yzel333 = gl_RAY_A(par_n_HP, j, N3 - 2)
-		end if
-	
-		!call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
-		!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-		!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-		!	gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
-		!	Ck(1), Ck(2), Ck(3))
-	
-	call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-			Ak(1), Ak(2), Ak(3), &
-			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-			gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-			Ck(1), Ck(2), Ck(3))
-	
-		!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Ck(1), Ck(2), Ck(3))
-		!
-		!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Dk(1), Dk(2), Dk(3))
+				yzel222 = gl_RAY_A(par_n_TS, j, k + 2)
+			else if(k == N3 - 2) then
+				yzel222 = gl_RAY_A(par_n_TS, j, 1)
+			else if(k == N3 - 1) then
+				yzel222 = gl_RAY_A(par_n_TS, j, 2)
+			else
+				yzel222 = gl_RAY_A(par_n_TS, j, 3)
+			end if
 		
-		k1 = 0.3  !0.03
+		!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+		!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+		!		Ak(1), Ak(2), Ak(3), &
+		!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+		!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+		!		Ck(1), Ck(2), Ck(3))
 		
-		if(j < 8) k1 = 10.0  ! 3.0
+		call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
+				gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+				gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+				Ak(1), Ak(2), Ak(3), &
+				gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+				gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+				gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
+				Ck(1), Ck(2), Ck(3))
+				
+		!if (gl_Point_num(yzel) > 0) then
+		!	vel = gl_Point_num(yzel) * par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
+		!else
+		!	vel = par_nat_TS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time * ddt
+		!end if
+		
+		k1 = 50.0 !10
+		!if(j <= 5) k1 = 200.0   ! 0.03
 		
 		if (gl_Point_num(yzel) > 0) then
-			!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-			vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
+			vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
 		else
-			!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
-			vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
+			vel = k1 * par_nat_TS * 0.006 * (Ck/2.0 + Ek/2.0 - Ak)/Time * ddt   ! 0.003
 		end if
-	end if
 			
-	if(.True.) then ! Старая версия
-		yzel = gl_RAY_A(par_n_HP, j, k)
+		if(j >= N2 - 1) then
+			if (gl_Point_num(yzel) > 0) then
+				vel = k1 * par_nat_TS * 0.006 * ( (Ck + 6.0 * Ek)/7.0 - Ak) * gl_Point_num(yzel)/Time * ddt  ! 0.003
+			else
+				vel = k1 *  par_nat_TS * 0.006 * ( (Ck + 6.0 * Ek)/7.0 - Ak)/Time * ddt   ! 0.003
+			end if
+		end if
+		
+				
+		gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+		gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+		gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+		
+		
+		! Контакт !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		k1 = 1.0
+		if(.False.) then
+			yzel = gl_RAY_A(par_n_HP, j, k)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			
+			if (j < N2) then
+				yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+			else
+				yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			end if
+		
+			if (j < N2 - 1) then
+				yzel22 = gl_RAY_A(par_n_HP, j + 2, k)
+			else if (j == N2 - 1) then
+				yzel22 = gl_RAY_B(par_n_HP, 1, k)
+			else
+				yzel22 = gl_RAY_B(par_n_HP, 2, k)
+			end if
+		
+			if (j < N2 - 2) then
+				yzel222 = gl_RAY_A(par_n_HP, j + 3, k)
+			else if (j == N2 - 2) then
+				yzel222 = gl_RAY_B(par_n_HP, 1, k)
+			else if (j == N2 - 1) then
+				yzel222 = gl_RAY_B(par_n_HP, 2, k)
+			else
+				yzel222 = gl_RAY_B(par_n_HP, 3, k)
+			end if
+			
+			if (j > 1) then
+				yzel3 = gl_RAY_A(par_n_HP, j - 1, k)
+			else
+				yzel3 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			end if
+			
+			if (j > 2) then
+				yzel33 = gl_RAY_A(par_n_HP, j - 2, k)
+			else if(j == 2) then
+				yzel33 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			else
+				yzel33 = gl_RAY_A(par_n_HP, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			end if
+		
+			if (j > 3) then
+				yzel333 = gl_RAY_A(par_n_HP, j - 3, k)
+			else if(j == 3) then
+				yzel333 = gl_RAY_A(par_n_HP, 1, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			else if(j == 2) then
+				yzel333 = gl_RAY_A(par_n_HP, 2, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			else
+				yzel333 = gl_RAY_A(par_n_HP, 3, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			end if
+		
+			call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
+				gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+				gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+				Ak(1), Ak(2), Ak(3), &
+				gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+				gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+				gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
+				Ek(1), Ek(2), Ek(3))
+		
+		!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+		!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+		!		Ak(1), Ak(2), Ak(3), &
+		!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+		!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+		!		Ek(1), Ek(2), Ek(3))
+			
+			!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Ek(1), Ek(2), Ek(3))
+			!
+			!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Bk(1), Bk(2), Bk(3))
+			
+			if(k < N3) then
+				yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			end if
+			
+			if(k < N3 - 1) then
+				yzel22 = gl_RAY_A(par_n_HP, j, k + 2)
+			else if(k == N3 - 1) then
+				yzel22 = gl_RAY_A(par_n_HP, j, 1)
+			else
+				yzel22 = gl_RAY_A(par_n_HP, j, 2)
+			end if
+		
+			if(k < N3 - 2) then
+				yzel222 = gl_RAY_A(par_n_HP, j, k + 2)
+			else if(k == N3 - 2) then
+				yzel222 = gl_RAY_A(par_n_HP, j, 1)
+			else if(k == N3 - 1) then
+				yzel222 = gl_RAY_A(par_n_HP, j, 2)
+			else
+				yzel222 = gl_RAY_A(par_n_HP, j, 3)
+			end if
+		
+			if (k > 1) then
+				yzel3 = gl_RAY_A(par_n_HP, j, k - 1)
+			else
+				yzel3 = gl_RAY_A(par_n_HP, j, N3)
+			end if
+		
+			if (k > 2) then
+				yzel33 = gl_RAY_A(par_n_HP, j, k - 2)
+			else if(k == 2) then
+				yzel33 = gl_RAY_A(par_n_HP, j, N3)
+			else
+				yzel33 = gl_RAY_A(par_n_HP, j, N3 - 1)
+			end if
+		
+			if (k > 3) then
+				yzel333 = gl_RAY_A(par_n_HP, j, k - 3)
+			else if(k == 3) then
+				yzel333 = gl_RAY_A(par_n_HP, j, N3)
+			else if(k == 2) then
+				yzel333 = gl_RAY_A(par_n_HP, j, N3 - 1)
+			else
+				yzel333 = gl_RAY_A(par_n_HP, j, N3 - 2)
+			end if
+		
+			!call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
+			!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			!	gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
+			!	Ck(1), Ck(2), Ck(3))
+		
+		call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+				gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+				Ak(1), Ak(2), Ak(3), &
+				gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+				gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+				Ck(1), Ck(2), Ck(3))
+		
+			!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Ck(1), Ck(2), Ck(3))
+			!
+			!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Dk(1), Dk(2), Dk(3))
+			
+			k1 = 0.3  !0.03
+			
+			if(j < 8) k1 = 10.0  ! 3.0
+			
+			if (gl_Point_num(yzel) > 0) then
+				!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+				vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
+			else
+				!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
+				vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
+			end if
+		end if
+				
+		if(.True.) then ! Старая версия
+			yzel = gl_RAY_A(par_n_HP, j, k)
+			Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
+			r = norm2(Ak)
+				
+			if (j < N2) then
+				yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+			else
+				yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			end if
+			Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
+			r1 = norm2(Bk)
+				
+			if (k > 1) then
+				yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, N3)
+			end if
+				
+			Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
+			r2 = norm2(Ck)
+				
+			if (j > 1) then
+				yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			end if
+			Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
+			r3 = norm2(Dk)
+				
+			if(k < N3) then
+				yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			end if
+			Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
+			r4 = norm2(Ek)
+		
+			rr = (r1 + r2 + r3 + r4)/4.0
+			!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
+		
+			!dist = max(dist, 1.0_8)
+			
+			k1 = 0.03  ! 0.1
+			if(j <= 8) k1 = 0.06
+			!	k1 = 0.03  !0.001
+			
+			if (gl_Point_num(yzel) > 0) then
+				!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+			
+				!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
+			
+				vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
+				
+			else
+				!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
+			
+				!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
+			
+				vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.001
+				
+			end if
+		
+			
+		
+				
+			
+		
+			!if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
+			!	vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
+			!end if
+		end if
+				
+		gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+		gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+		gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+				
+				
+		! Внешняя ударная волна
+				
+		yzel = gl_RAY_A(par_n_BS, j, k)
 		Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-		r = norm2(Ak)
-			
+				
 		if (j < N2) then
-			yzel2 = gl_RAY_A(par_n_HP, j + 1, k)
+			yzel2 = gl_RAY_A(par_n_BS, j + 1, k)
 		else
-			yzel2 = gl_RAY_B(par_n_HP, 1, k)
+			return !yzel2 = yzel                                                    ! Вот тут есть неопределённость что делать с крайним узлом
 		end if
 		Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-		r1 = norm2(Bk)
-			
+				
 		if (k > 1) then
-			yzel2 = gl_RAY_A(par_n_HP, j, k - 1)
+			yzel2 = gl_RAY_A(par_n_BS, j, k - 1)
 		else
-			yzel2 = gl_RAY_A(par_n_HP, j, N3)
+			yzel2 = gl_RAY_A(par_n_BS, j, N3)
 		end if
-			
 		Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-		r2 = norm2(Ck)
-			
+				
 		if (j > 1) then
-			yzel2 = gl_RAY_A(par_n_HP, j - 1, k)
+			yzel2 = gl_RAY_A(par_n_BS, j - 1, k)
 		else
-			yzel2 = gl_RAY_A(par_n_HP, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
+			yzel2 = gl_RAY_A(par_n_BS, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
 		end if
 		Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
-		r3 = norm2(Dk)
-			
+				
 		if(k < N3) then
-			yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			yzel2 = gl_RAY_A(par_n_BS, j, k + 1)
 		else
-			yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			yzel2 = gl_RAY_A(par_n_BS, j, 1)
 		end if
 		Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-		r4 = norm2(Ek)
-	
-		rr = (r1 + r2 + r3 + r4)/4.0
-		!dist = sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 )
-	
-		!dist = max(dist, 1.0_8)
 		
-		k1 = 0.03  ! 0.1
-		if(j <= 8) k1 = 0.06
-		!	k1 = 0.03  !0.001
+		dist = (sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 ) + &
+					sqrt( (Ek(1) - Ak(1))**2 + (Ek(2) - Ak(2))**2 + (Ek(3) - Ak(3))**2 ))/2.0
 		
+		dist = max(dist, 1.0_8)
+				
 		if (gl_Point_num(yzel) > 0) then
-			!vel = gl_Point_num(yzel) * par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		
-			!vel = par_nat_HP * k1 * gl_Point_num(yzel) * ((Ak/r) * (rr - r)) * ddt  !0.035   0.0001
-		
-			vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-			
+			vel = gl_Point_num(yzel) * par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		else
-			!vel = par_nat_HP * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-		
-			!vel = par_nat_HP * k1 * ((Ak/r) * (rr - r)) * ddt
-		
-			vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.001
-			
+			vel = par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
 		end if
-	
-		
-	
-			
-		
-	
-		!if(j >= N2 - 8) then ! Натяжение на стыке А и Б лучей
-		!	vel = vel + par_nat_HP * 0.006 * (Bk/2.0 + Dk/2.0 - Ak)/Time
-		!end if
-	end if
-			
-	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-	gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
-			
-			
-	! Внешняя ударная волна
-			
-	yzel = gl_RAY_A(par_n_BS, j, k)
-	Ak(1) = gl_x2(yzel, now); Ak(2) = gl_y2(yzel, now); Ak(3) = gl_z2(yzel, now)
-			
-	if (j < N2) then
-		yzel2 = gl_RAY_A(par_n_BS, j + 1, k)
-	else
-		return !yzel2 = yzel                                                    ! Вот тут есть неопределённость что делать с крайним узлом
-	end if
-	Bk(1) = gl_x2(yzel2, now); Bk(2) = gl_y2(yzel2, now); Bk(3) = gl_z2(yzel2, now)
-			
-	if (k > 1) then
-		yzel2 = gl_RAY_A(par_n_BS, j, k - 1)
-	else
-		yzel2 = gl_RAY_A(par_n_BS, j, N3)
-	end if
-	Ck(1) = gl_x2(yzel2, now); Ck(2) = gl_y2(yzel2, now); Ck(3) = gl_z2(yzel2, now)
-			
-	if (j > 1) then
-		yzel2 = gl_RAY_A(par_n_BS, j - 1, k)
-	else
-		yzel2 = gl_RAY_A(par_n_BS, j, mod(k + ceiling(1.0 * N3/2) - 1, N3) + 1)
-	end if
-	Dk(1) = gl_x2(yzel2, now); Dk(2) = gl_y2(yzel2, now); Dk(3) = gl_z2(yzel2, now)
-			
-	if(k < N3) then
-		yzel2 = gl_RAY_A(par_n_BS, j, k + 1)
-	else
-		yzel2 = gl_RAY_A(par_n_BS, j, 1)
-	end if
-	Ek(1) = gl_x2(yzel2, now); Ek(2) = gl_y2(yzel2, now); Ek(3) = gl_z2(yzel2, now)
-	
-	dist = (sqrt( (Dk(1) - Ak(1))**2 + (Dk(2) - Ak(2))**2 + (Dk(3) - Ak(3))**2 ) + &
-				sqrt( (Ek(1) - Ak(1))**2 + (Ek(2) - Ak(2))**2 + (Ek(3) - Ak(3))**2 ))/2.0
-	
-	dist = max(dist, 1.0_8)
-			
-	if (gl_Point_num(yzel) > 0) then
-		vel = gl_Point_num(yzel) * par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-	else
-		vel = par_nat_BS * (Bk/8.0 + Ck/8.0 + Dk/8.0 + Ek/8.0 - Ak/2.0)/Time/dist * ddt
-	end if
-			
-			
-	gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
-	gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
-	gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
+				
+				
+		gl_Vx(yzel) = gl_Vx(yzel) + vel(1)
+		gl_Vy(yzel) = gl_Vy(yzel) + vel(2)
+		gl_Vz(yzel) = gl_Vz(yzel) + vel(3)
 	
 	end subroutine Cuda_Move_all_1
 	
@@ -519,9 +519,9 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	attributes(global) subroutine Cuda_Move_all_2(now)   ! Поверхностное натяжение на лучах B
@@ -4986,229 +4986,394 @@
 	
 	
 	attributes(global) subroutine CUF_MGD_grans_MK_inner()
-	! Подвижная сетка, МГД + мультифлюид
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
-		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
-		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
-		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
-		gl_all_Gran_inner => dev_gl_all_Gran_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center, &
-		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
-		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, &
-		gl_Cell_par2 => dev_gl_Cell_par2, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2
-	use GEO_PARAM
-	implicit none
-	
-	integer(4) :: gr  ! Глобальный номер текущей грани
-	
-    integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter, ss1, ss2
-    real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-    real(8) :: dist, dsl, dsc, dsp, distant(3), konvect_(3, 1)
-    real(8) :: POTOK(9), ttest(3)
-    real(8) :: POTOK_MF(5)
-    real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc, rad3, rad4, rad5
-	real(8) :: df1, df2, dff1, dff2, rast(3)
-    real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
-    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
-	real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
-	real(8) :: Matr(3, 3), Matr2(3, 3), vv(3), kord(3), the1, the2, the3, the4, the5
-	logical :: null_bn
-	
-	konvect_(3, 1) = 0.0
-	time = 100000.0
-	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	
-	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
-	if (iter > size(gl_all_Gran_inner)) return
-	
-	Matr(1,1) = -0.995868
-	Matr(1,2) = 0.0177307
-	Matr(1,3) = 0.0890681
-	Matr(2,1) = 0.0730412
-	Matr(2,2) = 0.739193
-	Matr(2,3) = 0.669521
-	Matr(3,1) = -0.0539675
-	Matr(3,2) = 0.67326
-	Matr(3,3) = -0.737434
-	
-	Matr2(1,1) = -0.995868
-	Matr2(1,2) = 0.0730412
-	Matr2(1,3) = -0.0539675
-	Matr2(2,1) = 0.0177307
-	Matr2(2,2) = 0.739193
-	Matr2(2,3) = 0.67326
-	Matr2(3,1) = 0.0890681
-	Matr2(3,2) = 0.669521
-	Matr2(3,3) = -0.737434
-	
-	gr = gl_all_Gran_inner(iter)
-        !if(gl_Gran_info(gr) == 0) CYCLE
-        POTOK = 0.0
-        s1 = gl_Gran_neighbour(1, gr)
-        s2 = gl_Gran_neighbour(2, gr)
-        qqq1 = gl_Cell_par(:, s1)
-		konvect_(1, 1) = gl_Cell_par2(1, s1)
+		! Подвижная сетка, МГД + мультифлюид
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+			gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+			gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+			gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, &
+			gl_all_Gran_inner => dev_gl_all_Gran_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center, &
+			gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
+			gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Gran_neighbour_TVD => dev_gl_Gran_neighbour_TVD, &
+			gl_Cell_par2 => dev_gl_Cell_par2, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2
+		use GEO_PARAM
+		implicit none
 		
-		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
-		dist = norm2(distant)
- 
-        !! Попробуем снести плотность пропорционально квадрату
-        !rad1 = norm2(gl_Cell_center(:, s1))
-        !rad2 = norm2(gl_Gran_center(:, gr))
-        !qqq1(1) = qqq1(1) * rad1**2 / rad2**2
-        !qqq1(9) = qqq1(9) * rad1**2 / rad2**2
-        !qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-        !! Скорости сносим в сферической С.К.
-        !call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
-        !    qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
-        !call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-        !    aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
- 
- 
-        qqq2 = gl_Cell_par(:, s2)
-		konvect_(2, 1) = gl_Cell_par2(1, s2)
+		integer(4) :: gr  ! Глобальный номер текущей грани
+		
+		integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, iter, ss1, ss2
+		real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
+		real(8) :: dist, dsl, dsc, dsp, distant(3), konvect_(3, 1)
+		real(8) :: POTOK(9), ttest(3)
+		real(8) :: POTOK_MF(5)
+		real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc, wc, rad3, rad4, rad5
+		real(8) :: df1, df2, dff1, dff2, rast(3)
+		real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+		real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+		real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
+		real(8) :: Matr(3, 3), Matr2(3, 3), vv(3), kord(3), the1, the2, the3, the4, the5
+		logical :: null_bn
+		
+		konvect_(3, 1) = 0.0
+		time = 100000.0
+		iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		
+		! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+		if (iter > size(gl_all_Gran_inner)) return
+		
+		Matr(1,1) = -0.995868
+		Matr(1,2) = 0.0177307
+		Matr(1,3) = 0.0890681
+		Matr(2,1) = 0.0730412
+		Matr(2,2) = 0.739193
+		Matr(2,3) = 0.669521
+		Matr(3,1) = -0.0539675
+		Matr(3,2) = 0.67326
+		Matr(3,3) = -0.737434
+		
+		Matr2(1,1) = -0.995868
+		Matr2(1,2) = 0.0730412
+		Matr2(1,3) = -0.0539675
+		Matr2(2,1) = 0.0177307
+		Matr2(2,2) = 0.739193
+		Matr2(2,3) = 0.67326
+		Matr2(3,1) = 0.0890681
+		Matr2(3,2) = 0.669521
+		Matr2(3,3) = -0.737434
+		
+		gr = gl_all_Gran_inner(iter)
+			!if(gl_Gran_info(gr) == 0) CYCLE
+			POTOK = 0.0
+			s1 = gl_Gran_neighbour(1, gr)
+			s2 = gl_Gran_neighbour(2, gr)
+			qqq1 = gl_Cell_par(:, s1)
+			konvect_(1, 1) = gl_Cell_par2(1, s1)
 			
-		distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
-		dist = min( dist, norm2(distant))
-  !
-  !      ! Попробуем снести плотность пропорционально квадрату
-  !      rad1 = norm2(gl_Cell_center(:, s2))
-  !      rad2 = norm2(gl_Gran_center(:, gr))
-  !      qqq2(1) = qqq2(1) * rad1**2 / rad2**2
-  !      qqq2(9) = qqq2(9) * rad1**2 / rad2**2
-  !      qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-  !      call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
-  !          qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
-  !      call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-  !          aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
-		
-		ss1 = gl_Gran_neighbour_TVD(1, gr)
-		ss2 = gl_Gran_neighbour_TVD(2, gr)
-		
-		if (gl_Cell_number(1, s2) == 1 .and. gl_Cell_number(1, s1) /= 1) write(*, *) "Error cuf_solvers uytuyruyt94847667"
-		
-		if (gl_Cell_number(1, s1) == 1 .and. gl_Cell_number(1, s2) /= 1) then
+			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+			dist = norm2(distant)
+	
+			!! Попробуем снести плотность пропорционально квадрату
+			!rad1 = norm2(gl_Cell_center(:, s1))
+			!rad2 = norm2(gl_Gran_center(:, gr))
+			!qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+			!qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+			!qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+			!! Скорости сносим в сферической С.К.
+			!call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+			!    qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+			!call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+			!    aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+	
+	
+			qqq2 = gl_Cell_par(:, s2)
+			konvect_(2, 1) = gl_Cell_par2(1, s2)
+				
+			distant = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+			dist = min( dist, norm2(distant))
+		!
+		!      ! Попробуем снести плотность пропорционально квадрату
+		!      rad1 = norm2(gl_Cell_center(:, s2))
+		!      rad2 = norm2(gl_Gran_center(:, gr))
+		!      qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+		!      qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+		!      qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+		!      call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+		!          qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+		!      call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+		!          aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
+			
+			ss1 = gl_Gran_neighbour_TVD(1, gr)
+			ss2 = gl_Gran_neighbour_TVD(2, gr)
+			
+			if (gl_Cell_number(1, s2) == 1 .and. gl_Cell_number(1, s1) /= 1) write(*, *) "Error cuf_solvers uytuyruyt94847667"
+			
+			if (gl_Cell_number(1, s1) == 1 .and. gl_Cell_number(1, s2) /= 1) then
 
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
-			df1 = norm2(rast)
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
-			df2 = norm2(rast)
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss2)
-			dff2 = norm2(rast)
-			
-			qqq22 = gl_Cell_par(:, ss2)
-			
-			
-			qqq22_2 = gl_Cell_par2(:, ss2)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+				df1 = norm2(rast)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+				df2 = norm2(rast)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss2)
+				dff2 = norm2(rast)
+				
+				qqq22 = gl_Cell_par(:, ss2)
 				
 				
-			rad1 = norm2(gl_Cell_center(:, s1))                              
-			rad2 = norm2(gl_Cell_center(:, s2))     
-			rad4 = norm2(gl_Cell_center(:, ss2))                              
-            rad5 = norm2(gl_Gran_center(:, gr))
+				qqq22_2 = gl_Cell_par2(:, ss2)
 					
-			qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1) * rad4**2, -df2, konvect_(2, 1) * rad2**2, df1, konvect_(1, 1) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
-				qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
 					
-			! Переводим скорости в сферическую с.к.
+				rad1 = norm2(gl_Cell_center(:, s1))                              
+				rad2 = norm2(gl_Cell_center(:, s2))     
+				rad4 = norm2(gl_Cell_center(:, ss2))                              
+				rad5 = norm2(gl_Gran_center(:, gr))
+						
+				qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1) * rad4**2, -df2, konvect_(2, 1) * rad2**2, df1, konvect_(1, 1) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
+					qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+						
+				! Переводим скорости в сферическую с.к.
+			
+						
+				call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+					qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+				qqq2(2) = aa
+				qqq2(3) = bb
+				qqq2(4) = cc
 		
+				call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
+					qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
+				qqq22(2) = aa
+				qqq22(3) = bb
+				qqq22(4) = cc
+				
+				vv = MATMUL(Matr2, qqq22(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
+				the4 = acos(kord(3)/rad4)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq22(6) = aa
+				qqq22(7) = bb
+				qqq22(8) = cc
+				
+				vv = MATMUL(Matr2, qqq2(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
+				the2 = acos(kord(3)/rad2)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq2(6) = aa
+				qqq2(7) = bb
+				qqq2(8) = cc
+				
+				vv = MATMUL(Matr2, qqq1(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
+				the1 = acos(kord(3)/rad1)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq1(6) = aa
+				qqq1(7) = bb
+				qqq1(8) = cc
+				
+				kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
+				the5 = acos(kord(3)/rad5)
+						
+				do i = 2, 4
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+						
+				do i = 6, 6
+					qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
+				end do
+				
+				do i = 7, 7
+					qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
+				end do
+				
+				do i = 8, 8
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+						
+				call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+					qqq2_TVD(2), qqq2_TVD(3), qqq2_TVD(4), aa, bb, cc)
+				qqq2_TVD(4) = aa
+				qqq2_TVD(2) = bb
+				qqq2_TVD(3) = cc
+				
+				
+				qqq1(6) = qqq1(6) * rad1**2 / rad5**2
+				qqq1(7) = qqq1(7) * rad1 / sin(the1) / rad5 * sin(the5)
+				call dekard_skorost(kord(3), kord(1), kord(2), &
+					qqq1(6), qqq1(7), qqq1(8), aa, bb, cc)
+				qqq1(8) = aa
+				qqq1(6) = bb
+				qqq1(7) = cc
+				qqq1(6:8) = MATMUL(Matr, qqq1(6:8))
+				
+				
+				call dekard_skorost(kord(3), kord(1), kord(2), &
+					qqq2_TVD(6), qqq2_TVD(7), qqq2_TVD(8), aa, bb, cc)
+				qqq2_TVD(8) = aa
+				qqq2_TVD(6) = bb
+				qqq2_TVD(7) = cc
+				qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
+				
+						
+				
+				qqq2 = qqq2_TVD
+				
+				konvect_(2, 1) = qqq2_TVD_2(1)
+				
+				rad2 = norm2(gl_Gran_center(:, gr))
+				qqq1(1) = qqq1(1) * rad1**2 / rad2**2
+				konvect_(1, 1) = konvect_(1, 1) * rad1**2 / rad2**2
+				qqq1(9) = qqq1(9) * rad1**2 / rad2**2
+				qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
+				! Скорости сносим в сферической С.К.
+				call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+					qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+				call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+					aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+			
+			else if (ss1 /= 0 .and. ss2 /= 0) then
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
+				df1 = norm2(rast)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
+				df2 = norm2(rast)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss1)
+				dff1 = norm2(rast)
+				rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss2)
+				dff2 = norm2(rast)
+				qqq11 = gl_Cell_par(:, ss1)
+				qqq22 = gl_Cell_par(:, ss2)
+				
+				qqq11_2 = gl_Cell_par2(:, ss1)
+				qqq22_2 = gl_Cell_par2(:, ss2)
 					
-			call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
-                qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
-			qqq2(2) = aa
-			qqq2(3) = bb
-			qqq2(4) = cc
-	
-			call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
-                qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
-			qqq22(2) = aa
-			qqq22(3) = bb
-			qqq22(4) = cc
-			
-			vv = MATMUL(Matr2, qqq22(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
-			the4 = acos(kord(3)/rad4)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq22(6) = aa
-			qqq22(7) = bb
-			qqq22(8) = cc
-			
-			vv = MATMUL(Matr2, qqq2(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
-			the2 = acos(kord(3)/rad2)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq2(6) = aa
-			qqq2(7) = bb
-			qqq2(8) = cc
-			
-			vv = MATMUL(Matr2, qqq1(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
-			the1 = acos(kord(3)/rad1)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq1(6) = aa
-			qqq1(7) = bb
-			qqq1(8) = cc
-			
-			kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
-			the5 = acos(kord(3)/rad5)
 					
-			do i = 2, 4
-				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-			end do
+				rad1 = norm2(gl_Cell_center(:, s1))                              
+				rad2 = norm2(gl_Cell_center(:, s2))                              
+				rad3 = norm2(gl_Cell_center(:, ss1))                              
+				rad4 = norm2(gl_Cell_center(:, ss2))                              
+				rad5 = norm2(gl_Gran_center(:, gr))
+						
+				qqq1_TVD(1) = linear(-dff1, qqq11(1) * rad3**2, -df1, qqq1(1) * rad1**2, df2, qqq2(1) * rad2**2, 0.0_8)/ rad5**2
+				qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1) * rad3**2, -df1, konvect_(1, 1) * rad1**2, df2, konvect_(2, 1) * rad2**2, 0.0_8)/ rad5**2
+				qqq1_TVD(9) = linear(-dff1, qqq11(9) * rad3**2, -df1, qqq1(9) * rad1**2, df2, qqq2(9) * rad2**2, 0.0_8)/ rad5**2
+				qqq1_TVD(5) = linear(-dff1, qqq11(5) * rad3**(2 * ggg), -df1, qqq1(5) * rad1**(2 * ggg), df2,&
+					qqq2(5) * rad2**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+						
+				qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1) * rad4**2, -df2, konvect_(2, 1) * rad2**2, df1, konvect_(1, 1) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
+				qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
+					qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
+						
+				! Переводим скорости в сферическую с.к.
+				call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
+					qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
+				qqq1(2) = aa
+				qqq1(3) = bb
+				qqq1(4) = cc
+				
+				vv = MATMUL(Matr2, qqq1(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
+				the1 = acos(kord(3)/rad1)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq1(6) = aa
+				qqq1(7) = bb
+				qqq1(8) = cc
+						
+				call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
+					qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
+				qqq2(2) = aa
+				qqq2(3) = bb
+				qqq2(4) = cc
+				
+				vv = MATMUL(Matr2, qqq2(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
+				the2 = acos(kord(3)/rad2)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq2(6) = aa
+				qqq2(7) = bb
+				qqq2(8) = cc
+						
+				call spherical_skorost(gl_Cell_center(3, ss1), gl_Cell_center(1, ss1), gl_Cell_center(2, ss1), &
+					qqq11(4), qqq11(2), qqq11(3), aa, bb, cc)
+				qqq11(2) = aa
+				qqq11(3) = bb
+				qqq11(4) = cc
+				
+				vv = MATMUL(Matr2, qqq11(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, ss1))
+				the3 = acos(kord(3)/rad3)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq11(6) = aa
+				qqq11(7) = bb
+				qqq11(8) = cc
+						
+				call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
+					qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
+				qqq22(2) = aa
+				qqq22(3) = bb
+				qqq22(4) = cc
+				
+				vv = MATMUL(Matr2, qqq22(6:8))
+				kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
+				the4 = acos(kord(3)/rad4)
+				call spherical_skorost(kord(3), kord(1), kord(2), &
+					vv(3), vv(1), vv(2), aa, bb, cc)
+				qqq22(6) = aa
+				qqq22(7) = bb
+				qqq22(8) = cc
+				
+				kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
+				the5 = acos(kord(3)/rad5)
+						
+				do i = 2, 4
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+						
+				do i = 6, 6
+					qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3**2, -df1, qqq1(i) * rad1**2, df2, qqq2(i) * rad2**2, 0.0_8)/rad5**2
+					qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
+				end do
+				
+				do i = 7, 7
+					qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3 / sin(the3), -df1, qqq1(i) * rad1 / sin(the1), df2, qqq2(i) * rad2 / sin(the2), 0.0_8)/rad5 * sin(the5)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
+				end do
+				
+				do i = 8, 8
+					qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
+					qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
+				end do
+						
+				call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+					qqq1_TVD(2), qqq1_TVD(3), qqq1_TVD(4), aa, bb, cc)
+				qqq1_TVD(4) = aa
+				qqq1_TVD(2) = bb
+				qqq1_TVD(3) = cc
+				call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
+					qqq2_TVD(2), qqq2_TVD(3), qqq2_TVD(4), aa, bb, cc)
+				qqq2_TVD(4) = aa
+				qqq2_TVD(2) = bb
+				qqq2_TVD(3) = cc
+				
+				
+				call dekard_skorost(kord(3), kord(1), kord(2), &
+					qqq1_TVD(6), qqq1_TVD(7), qqq1_TVD(8), aa, bb, cc)
+				qqq1_TVD(8) = aa
+				qqq1_TVD(6) = bb
+				qqq1_TVD(7) = cc
+				qqq1_TVD(6:8) = MATMUL(Matr, qqq1_TVD(6:8))
+				
+				call dekard_skorost(kord(3), kord(1), kord(2), &
+					qqq2_TVD(6), qqq2_TVD(7), qqq2_TVD(8), aa, bb, cc)
+				qqq2_TVD(8) = aa
+				qqq2_TVD(6) = bb
+				qqq2_TVD(7) = cc
+				qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
+						
+				
 					
-			do i = 6, 6
-				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
-			end do
-			
-			do i = 7, 7
-				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
-			end do
-			
-			do i = 8, 8
-				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-			end do
-					
-			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-                qqq2_TVD(2), qqq2_TVD(3), qqq2_TVD(4), aa, bb, cc)
-			qqq2_TVD(4) = aa
-			qqq2_TVD(2) = bb
-			qqq2_TVD(3) = cc
-			
-			
-			qqq1(6) = qqq1(6) * rad1**2 / rad5**2
-			qqq1(7) = qqq1(7) * rad1 / sin(the1) / rad5 * sin(the5)
-			call dekard_skorost(kord(3), kord(1), kord(2), &
-                qqq1(6), qqq1(7), qqq1(8), aa, bb, cc)
-			qqq1(8) = aa
-			qqq1(6) = bb
-			qqq1(7) = cc
-			qqq1(6:8) = MATMUL(Matr, qqq1(6:8))
-			
-			
-			call dekard_skorost(kord(3), kord(1), kord(2), &
-                qqq2_TVD(6), qqq2_TVD(7), qqq2_TVD(8), aa, bb, cc)
-			qqq2_TVD(8) = aa
-			qqq2_TVD(6) = bb
-			qqq2_TVD(7) = cc
-			qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
-			
-					
-			
-			qqq2 = qqq2_TVD
-			
-			konvect_(2, 1) = qqq2_TVD_2(1)
-			
+				qqq1 = qqq1_TVD
+				qqq2 = qqq2_TVD
+				
+				konvect_(1, 1) = qqq1_TVD_2(1)
+				konvect_(2, 1) = qqq2_TVD_2(1)
+			!end if
+		else
+			rad1 = norm2(gl_Cell_center(:, s1))
 			rad2 = norm2(gl_Gran_center(:, gr))
 			qqq1(1) = qqq1(1) * rad1**2 / rad2**2
 			konvect_(1, 1) = konvect_(1, 1) * rad1**2 / rad2**2
@@ -5219,244 +5384,78 @@
 				qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
 			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
 				aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
-		
-		else if (ss1 /= 0 .and. ss2 /= 0) then
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s1)
-			df1 = norm2(rast)
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, s2)
-			df2 = norm2(rast)
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss1)
-			dff1 = norm2(rast)
-			rast = gl_Gran_center(:, gr) - gl_Cell_center(:, ss2)
-			dff2 = norm2(rast)
-			qqq11 = gl_Cell_par(:, ss1)
-			qqq22 = gl_Cell_par(:, ss2)
 			
-			qqq11_2 = gl_Cell_par2(:, ss1)
-			qqq22_2 = gl_Cell_par2(:, ss2)
-				
-				
-			rad1 = norm2(gl_Cell_center(:, s1))                              
-			rad2 = norm2(gl_Cell_center(:, s2))                              
-			rad3 = norm2(gl_Cell_center(:, ss1))                              
-			rad4 = norm2(gl_Cell_center(:, ss2))                              
-            rad5 = norm2(gl_Gran_center(:, gr))
-					
-			qqq1_TVD(1) = linear(-dff1, qqq11(1) * rad3**2, -df1, qqq1(1) * rad1**2, df2, qqq2(1) * rad2**2, 0.0_8)/ rad5**2
-			qqq1_TVD_2(1) = linear(-dff1, qqq11_2(1) * rad3**2, -df1, konvect_(1, 1) * rad1**2, df2, konvect_(2, 1) * rad2**2, 0.0_8)/ rad5**2
-			qqq1_TVD(9) = linear(-dff1, qqq11(9) * rad3**2, -df1, qqq1(9) * rad1**2, df2, qqq2(9) * rad2**2, 0.0_8)/ rad5**2
-			qqq1_TVD(5) = linear(-dff1, qqq11(5) * rad3**(2 * ggg), -df1, qqq1(5) * rad1**(2 * ggg), df2,&
-				qqq2(5) * rad2**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
-					
-			qqq2_TVD(1) = linear(-dff2, qqq22(1) * rad4**2, -df2, qqq2(1) * rad2**2, df1, qqq1(1) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD_2(1) = linear(-dff2, qqq22_2(1) * rad4**2, -df2, konvect_(2, 1) * rad2**2, df1, konvect_(1, 1) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD(9) = linear(-dff2, qqq22(9) * rad4**2, -df2, qqq2(9) * rad2**2, df1, qqq1(9) * rad1**2, 0.0_8)/ rad5**2
-			qqq2_TVD(5) = linear(-dff2, qqq22(5) * rad4**(2 * ggg), -df2, qqq2(5) * rad2**(2 * ggg), df1,&
-				qqq1(5) * rad1**(2 * ggg), 0.0_8)/ rad5**(2 * ggg)
-					
-			! Переводим скорости в сферическую с.к.
-			call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
-                qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
-			qqq1(2) = aa
-			qqq1(3) = bb
-			qqq1(4) = cc
-			
-			vv = MATMUL(Matr2, qqq1(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, s1))
-			the1 = acos(kord(3)/rad1)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq1(6) = aa
-			qqq1(7) = bb
-			qqq1(8) = cc
-					
+			rad1 = norm2(gl_Cell_center(:, s2))
+			qqq2(1) = qqq2(1) * rad1**2 / rad2**2
+			konvect_(2, 1) = konvect_(2, 1) * rad1**2 / rad2**2
+			qqq2(9) = qqq2(9) * rad1**2 / rad2**2
+			qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
 			call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
-                qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
-			qqq2(2) = aa
-			qqq2(3) = bb
-			qqq2(4) = cc
-			
-			vv = MATMUL(Matr2, qqq2(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, s2))
-			the2 = acos(kord(3)/rad2)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq2(6) = aa
-			qqq2(7) = bb
-			qqq2(8) = cc
-					
-			call spherical_skorost(gl_Cell_center(3, ss1), gl_Cell_center(1, ss1), gl_Cell_center(2, ss1), &
-                qqq11(4), qqq11(2), qqq11(3), aa, bb, cc)
-			qqq11(2) = aa
-			qqq11(3) = bb
-			qqq11(4) = cc
-			
-			vv = MATMUL(Matr2, qqq11(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss1))
-			the3 = acos(kord(3)/rad3)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq11(6) = aa
-			qqq11(7) = bb
-			qqq11(8) = cc
-					
-			call spherical_skorost(gl_Cell_center(3, ss2), gl_Cell_center(1, ss2), gl_Cell_center(2, ss2), &
-                qqq22(4), qqq22(2), qqq22(3), aa, bb, cc)
-			qqq22(2) = aa
-			qqq22(3) = bb
-			qqq22(4) = cc
-			
-			vv = MATMUL(Matr2, qqq22(6:8))
-			kord = MATMUL(Matr2, gl_Cell_center(1:3, ss2))
-			the4 = acos(kord(3)/rad4)
-			call spherical_skorost(kord(3), kord(1), kord(2), &
-                vv(3), vv(1), vv(2), aa, bb, cc)
-			qqq22(6) = aa
-			qqq22(7) = bb
-			qqq22(8) = cc
-			
-			kord = MATMUL(Matr2, gl_Gran_center(1:3, gr))
-			the5 = acos(kord(3)/rad5)
-					
-			do i = 2, 4
-				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
-				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-			end do
-					
-			do i = 6, 6
-				qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3**2, -df1, qqq1(i) * rad1**2, df2, qqq2(i) * rad2**2, 0.0_8)/rad5**2
-				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4**2, -df2, qqq2(i) * rad2**2, df1, qqq1(i) * rad1**2, 0.0_8)/rad5**2
-			end do
-			
-			do i = 7, 7
-				qqq1_TVD(i) = linear(-dff1, qqq11(i) * rad3 / sin(the3), -df1, qqq1(i) * rad1 / sin(the1), df2, qqq2(i) * rad2 / sin(the2), 0.0_8)/rad5 * sin(the5)
-				qqq2_TVD(i) = linear(-dff2, qqq22(i) * rad4 / sin(the4), -df2, qqq2(i) * rad2 / sin(the2), df1, qqq1(i) * rad1 / sin(the1), 0.0_8)/rad5 * sin(the5)
-			end do
-			
-			do i = 8, 8
-				qqq1_TVD(i) = linear(-dff1, qqq11(i), -df1, qqq1(i), df2, qqq2(i), 0.0_8)
-				qqq2_TVD(i) = linear(-dff2, qqq22(i), -df2, qqq2(i), df1, qqq1(i), 0.0_8)
-			end do
-					
+				qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
 			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-                qqq1_TVD(2), qqq1_TVD(3), qqq1_TVD(4), aa, bb, cc)
-			qqq1_TVD(4) = aa
-			qqq1_TVD(2) = bb
-			qqq1_TVD(3) = cc
-			call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-                qqq2_TVD(2), qqq2_TVD(3), qqq2_TVD(4), aa, bb, cc)
-			qqq2_TVD(4) = aa
-			qqq2_TVD(2) = bb
-			qqq2_TVD(3) = cc
-			
-			
-			call dekard_skorost(kord(3), kord(1), kord(2), &
-                qqq1_TVD(6), qqq1_TVD(7), qqq1_TVD(8), aa, bb, cc)
-			qqq1_TVD(8) = aa
-			qqq1_TVD(6) = bb
-			qqq1_TVD(7) = cc
-			qqq1_TVD(6:8) = MATMUL(Matr, qqq1_TVD(6:8))
-			
-			call dekard_skorost(kord(3), kord(1), kord(2), &
-                qqq2_TVD(6), qqq2_TVD(7), qqq2_TVD(8), aa, bb, cc)
-			qqq2_TVD(8) = aa
-			qqq2_TVD(6) = bb
-			qqq2_TVD(7) = cc
-			qqq2_TVD(6:8) = MATMUL(Matr, qqq2_TVD(6:8))
-					
-			
-				
-			qqq1 = qqq1_TVD
-			qqq2 = qqq2_TVD
-			
-			konvect_(1, 1) = qqq1_TVD_2(1)
-			konvect_(2, 1) = qqq2_TVD_2(1)
-		!end if
-	else
-		rad1 = norm2(gl_Cell_center(:, s1))
-        rad2 = norm2(gl_Gran_center(:, gr))
-        qqq1(1) = qqq1(1) * rad1**2 / rad2**2
-        konvect_(1, 1) = konvect_(1, 1) * rad1**2 / rad2**2
-        qqq1(9) = qqq1(9) * rad1**2 / rad2**2
-        qqq1(5) = qqq1(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-        ! Скорости сносим в сферической С.К.
-        call spherical_skorost(gl_Cell_center(3, s1), gl_Cell_center(1, s1), gl_Cell_center(2, s1), &
-            qqq1(4), qqq1(2), qqq1(3), aa, bb, cc)
-        call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-            aa, bb, cc, qqq1(4), qqq1(2), qqq1(3))
+				aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
+		end if
+	
+	
+	
+	
+			call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
+				0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .False., konvect_ = konvect_)
+			time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+			gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
+			gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square(gr)
+			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
+	
+	
 		
-		rad1 = norm2(gl_Cell_center(:, s2))
-        qqq2(1) = qqq2(1) * rad1**2 / rad2**2
-        konvect_(2, 1) = konvect_(2, 1) * rad1**2 / rad2**2
-        qqq2(9) = qqq2(9) * rad1**2 / rad2**2
-        qqq2(5) = qqq2(5) * rad1**(2 * ggg) / rad2**(2 * ggg)
-        call spherical_skorost(gl_Cell_center(3, s2), gl_Cell_center(1, s2), gl_Cell_center(2, s2), &
-            qqq2(4), qqq2(2), qqq2(3), aa, bb, cc)
-        call dekard_skorost(gl_Gran_center(3, gr), gl_Gran_center(1, gr), gl_Gran_center(2, gr), &
-            aa, bb, cc, qqq2(4), qqq2(2), qqq2(3))
-	end if
- 
- 
- 
- 
-        call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
-            0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .False., konvect_ = konvect_)
-        time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
-        gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
-		gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square(gr)
-		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
- 
- 
-	
-	! ----------------------------------------------------------- копируем до этого момента ----------------------
-	
-	if (dev_time_step_inner > time) then 
-		time =  atomicmin(dev_time_step_inner, time)   ! Атомарная операция взятия минимального значения
-	end if
+		! ----------------------------------------------------------- копируем до этого момента ----------------------
+		
+		if (dev_time_step_inner > time) then 
+			time =  atomicmin(dev_time_step_inner, time)   ! Атомарная операция взятия минимального значения
+		end if
 	
 	
 	end subroutine  CUF_MGD_grans_MK_inner
 	
-	
 	attributes(global) subroutine CUF_MGD_cells_MK_inner()
-	! Подвижная сетка, МГД + мультифлюид
-	use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
-		gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
-		gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
-		gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
-		gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
-		gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
-		par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
-		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
-		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
-		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
-		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
-		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Cell_par_MK => dev_gl_Cell_par_MK, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2, &
-		gl_Cell_par2 => dev_gl_Cell_par2
-	use GEO_PARAM
-	implicit none
-	
-	integer(4) :: gr
-	
-    integer(4) :: st, s1, s2, i, j, k, zone, iter
-    real(8) :: qqq(9), qqq2  ! Переменные в ячейке
-    real(8) :: fluid1(5, 4), MK_kk(5)
-    real(8) :: dist, dsl, dsc, dsp
-    real(8) :: POTOK(9), ttest(3), POTOK2
-    real(8) :: POTOK_MF(5)
-    real(8) :: Volume, TT, U8, rad1, rad2, aa, bb, Volume2, sks
-    real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
-    real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
-	logical :: l_1
-	
-	iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
-	
-	if (iter > size(gl_all_Cell_inner)) return
-	
-	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
-	
-	gr = gl_all_Cell_inner(iter)
+		! Подвижная сетка, МГД + мультифлюид
+		use MY_CUDA, gl_TS => dev_gl_TS, gl_Gran_neighbour => dev_gl_Gran_neighbour, gl_Gran_normal2 => dev_gl_Gran_normal2, &
+			gl_Cell_par => dev_gl_Cell_par, gl_all_Gran => dev_gl_all_Gran, gl_Point_num => dev_gl_Point_num, gl_x2 => dev_gl_x2, &
+			gl_y2 => dev_gl_y2, gl_z2 => dev_gl_z2, gl_Gran_center2 => dev_gl_Gran_center2, gl_Vx => dev_gl_Vx, &
+			gl_Vy => dev_gl_Vy, gl_Vz => dev_gl_Vz, gl_Contact => dev_gl_Contact, gl_BS => dev_gl_BS, &
+			gl_RAY_A => dev_gl_RAY_A, gl_RAY_B => dev_gl_RAY_B, gl_RAY_C => dev_gl_RAY_C, gl_RAY_O => dev_gl_RAY_O, &
+			gl_RAY_K => dev_gl_RAY_K, gl_RAY_D => dev_gl_RAY_D, gl_RAY_E => dev_gl_RAY_E, norm2 => dev_norm2, par_n_TS => dev_par_n_TS, &
+			par_n_HP => dev_par_n_HP, par_n_BS => dev_par_n_BS, par_n_END => dev_par_n_END, gl_Gran_square2 => dev_gl_Gran_square2, &
+			gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
+			gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
+			gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
+			Calc_sourse_MF => dev_Calc_sourse_MF, gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
+			gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
+			gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Cell_par_MK => dev_gl_Cell_par_MK, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2, &
+			gl_Cell_par2 => dev_gl_Cell_par2
+		use GEO_PARAM
+		implicit none
+		
+		integer(4) :: gr
+		
+		integer(4) :: st, s1, s2, i, j, k, zone, iter
+		real(8) :: qqq(9), qqq2  ! Переменные в ячейке
+		real(8) :: fluid1(5, 4), MK_kk(5)
+		real(8) :: dist, dsl, dsc, dsp
+		real(8) :: POTOK(9), ttest(3), POTOK2
+		real(8) :: POTOK_MF(5)
+		real(8) :: Volume, TT, U8, rad1, rad2, aa, bb, Volume2, sks
+		real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+		real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
+		logical :: l_1
+		
+		iter = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
+		
+		if (iter > size(gl_all_Cell_inner)) return
+		
+		! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
+		
+		gr = gl_all_Cell_inner(iter)
             !if(gl_Cell_info(gr) == 2) CYCLE
             l_1 = .TRUE.
             if ((gl_Cell_type(gr) == "A" .or. gl_Cell_type(gr) == "B").and.(gl_Cell_number(1, gr) <= 2) ) l_1 = .FALSE. ! 2   ! Не считаем в первых двух ячейках
