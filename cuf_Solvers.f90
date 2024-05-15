@@ -375,10 +375,10 @@
 			
 			if (gl_Point_num(yzel) > 0) then
 				!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.00006
-				vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
+				vel = k1 * par_nat_HP * 0.003 * (Ck/2.0 + Ek/2.0 - Ak) * gl_Point_num(yzel)/Time  ! 0.003
 			else
 				!vel = k1 * par_nat_HP * 0.03 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time   !  0.003
-				vel = k1 * par_nat_HP * 0.03 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
+				vel = k1 * par_nat_HP * 0.003 * (Ck/2.0 + Ek/2.0 - Ak)/Time   ! 0.001     0.00006
 			end if
 		end if
 				
@@ -425,7 +425,7 @@
 		
 			!dist = max(dist, 1.0_8)
 			
-			k1 = 0.03  ! 0.1
+			k1 = 0.001  ! 0.1
 			if(j <= 8) k1 = 0.06
 			!	k1 = 0.03  !0.001
 			
@@ -981,9 +981,9 @@
 				!dist = max(dist, 1.0_8)
 				
 				if(j < 9) then
-					kkk = 0.5
+					kkk = 0.05
 				else
-					kkk = 0.2 !0.5
+					kkk = 0.02 !0.5
 				end if
 				
 				!kkk = 1.0

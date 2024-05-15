@@ -1729,7 +1729,7 @@
         
         tt = ((the + par_pi_8/2.0)/(par_pi_8/18.0) - FLOOR((the + par_pi_8/2.0)/(par_pi_8/18.0)))
         ijk = INT( (the + par_pi_8/2.0)/(par_pi_8/18.0) )
-        ro = (par_density_in(ijk + 1) * (1.0 - tt) + tt * par_density_in(ijk + 2))/ 0.04
+        ro = (par_density_in(ijk + 1) * (1.0 - tt) + tt * par_density_in(ijk + 2))/ par_n_p_inf
         
         !print*, the + par_pi_8/2.0, (the + par_pi_8/2.0)/(par_pi_8/18.0), tt, INT( (the + par_pi_8/2.0)/(par_pi_8/18.0) )
         
@@ -1738,7 +1738,7 @@
         
         !c = DBLE(c) * par_chi/DBLE(r)
         
-        c = DBLE(c) * (par_velocity_in(ijk + 1) * (1.0 - tt) + tt * par_velocity_in(ijk + 2))/DBLE(r) * 0.0963179
+        c = DBLE(c) * (par_velocity_in(ijk + 1) * (1.0 - tt) + tt * par_velocity_in(ijk + 2))/DBLE(r) / par_V_character
         P_E = par_p_0 ! (ro * norm2(c)**2) / (ggg * par_Mach_0**2)
         
         ! Задаём плазму  (ro, u, v, w, p, bx, by, bz, Q)
@@ -8109,26 +8109,28 @@
 	end subroutine Get_MK_to_MHD
     
 	subroutine PRINT_ALL()
+
+        print*, "= PRINT_ALL()"
         ! Печатает текущую сетку (разные файлы)
-        !print*, "C1"
+        print*, "C1"
         call Print_par_2D()
-        !print*, "C1"
+        print*, "C1"
         call Print_surface_2D()
-        !print*, "C2"
+        print*, "C2"
         call Print_Setka_2D()
-        !print*, "C1"
+        print*, "C1"
         call Print_Setka_y_2D()
-        !print*, "C1"
+        print*, "C1"
         call Print_TS_3D()
-        !print*, "C3"
+        print*, "C3"
         call Print_Contact_3D()
-        !print*, "C1"
+        print*, "C1"
         call Print_surface_y_2D()
-        !print*, "C1"
+        print*, "C1"
         call Print_par_y_2D()
-        !print*, "C4"
+        print*, "C4"
         call Print_par_1D()
-        !print*, "C1"
+        print*, "C1"
         
         ! Body of PRINT_ALL
 	
@@ -8440,7 +8442,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 543 ! 536 !? 534 Номер файла основной сетки   533 - до PUI
         !? 535 - до того, как поменять определение давления в PUI
 
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
@@ -8659,10 +8661,12 @@
 			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
 		else if(step == 1) then ! CUDA MHD ----------------------------------------------------------------------------
 			! ЗАГРУЗКА СЕТКИ
-			print*, "Download"
+			print*, "-----   Download"
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
-			
-			print*, "Download int"
+
+			call Initial_conditions()  ! Задаём граничные условия на внутренней сфере
+
+			print*, "-----   Download int"
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
 			!call Int2_Save_interpol_for_all_MK(name2)
 			!call Int2_Dell_interpolate()
@@ -8703,7 +8707,7 @@
 			! return
 			
 		    !@cuf call CUDA_info()
-			print*, "Start"
+			print*, "------------------------------ START ----------------------------"
 			!@cuf call CUDA_START_MGD_move_MK() ! РАСЧЁТЫ
 			!!call Start_MGD_move_MK()
 			
@@ -8725,18 +8729,18 @@
 			call Save_setka_bin(name + 1) !  + 1
 			print*, "Save 2"
 			!
-			call Int2_Dell_interpolate()
-			print*, "Save 3"
-			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
-			print*, "Save 4"
-	        call Int2_Initial()			     ! Создание сетки интерполяции
-			print*, "Save 5"
-			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
-			print*, "Save 6"
-			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
-			print*, "Save 7"
-			!! Сохранение сетки для общего пользования
-		    call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
+			! call Int2_Dell_interpolate()
+			! print*, "Save 3"
+			! call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			! print*, "Save 4"
+	        ! call Int2_Initial()			     ! Создание сетки интерполяции
+			! print*, "Save 5"
+			! call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			! print*, "Save 6"
+			! call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
+			! print*, "Save 7"
+			! !! Сохранение сетки для общего пользования
+		    ! call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
 			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------

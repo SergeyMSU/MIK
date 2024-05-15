@@ -30,7 +30,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.3 * lock_move * 0.3 * 0.01_8 ! 0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 0.8 * 0.1 * lock_move! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = 0.3 * 0.3 * lock_move! 0.1  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
@@ -41,21 +41,23 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_a_2 = 0.130738_8        ! Параметр в сечении перезарядки
     real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_Kn = 35.9842!  49.9018   !0.4326569808         ! в перезарядке
-    real(8), parameter :: par_nu_ph = 9.46772!  12.2125 
-    real(8), parameter :: par_E_ph = 0.0557124!  0.10878
+    real(8), parameter :: par_Kn = 44.4572!  49.9018   !0.4326569808         ! в перезарядке
+    real(8), parameter :: par_nu_ph = 8.68506!  12.2125 
+    real(8), parameter :: par_E_ph = 0.0631407!  0.10878
+    real(8), parameter :: par_n_p_inf = 0.06_8 !
+    real(8), parameter :: par_V_character = 11.1246_8 ! Характерная скорость в км/с
 	
     
     real(8), parameter :: par_chi_real = 38.8686! 41.6479_8! 1.0_8      ! С каким хи считаем реально
     real(8), parameter :: par_chi = 38.8686! 41.6479_8      ! С каким хи надо было бы считать
-    real(8), parameter :: par_Velosity_inf = -2.28322_8
-	real(8), parameter :: par_Mach_alf = 14.9521! 12.8816_8
+    real(8), parameter :: par_Velosity_inf = -2.37311_8
+	real(8), parameter :: par_Mach_alf = 12.8816_8! 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
 	real(8), parameter :: par_p_0 = 4624.57_8 ! 4790.19! 4624.57_8
 	real(8), parameter :: par_B_inf = 7.80959_8 !13.9666_8
 	real(8), parameter :: par_alphaB_inf = 0.6981!  1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
-	real(8), parameter :: par_1ae = 0.237197! 0.197035_8
+	real(8), parameter :: par_1ae = 0.258573! 0.197035_8
 	
 	! Параметры для Монте-Карло
 	integer(4), parameter :: par_n_potok = 32! 32  ! Число потоков (у каждого потока свой стек)
