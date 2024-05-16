@@ -572,9 +572,10 @@ module Surface_setting
 				kk13 = (par_kk13 - 0.4) * dabs(xx - x)/dabs(xx - x2)  +  (1.0) * dabs(x - x2)/dabs(xx - x2)
 				
 				
-				!y = gl_y(gl_RAY_B(par_n_HP - 1, j, k))
-    !            z = gl_z(gl_RAY_B(par_n_HP - 1, j, k))
-    !            rd = (y**2 + z**2)**(0.5)
+				y = gl_y(gl_RAY_B(par_n_HP - 1, j, k))
+                z = gl_z(gl_RAY_B(par_n_HP - 1, j, k))
+                rd = (y**2 + z**2)**(0.5)
+				
 				!rr = rr + (rr - rd)
                 
                 ! BS     Нужно взять положение BS из её положения на крайнем луче A
@@ -607,7 +608,7 @@ module Surface_setting
     !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 				!end if
 				
-				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr)
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd))
                 
                 gl_x(yzel) = x
                 gl_y(yzel) = r * cos(phi)

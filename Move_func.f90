@@ -789,11 +789,13 @@
 			!if (i <= 11) then
 				!r = rr + dk13 * (i - 1)
 			!else if (i <= par_n_BS - par_n_HP + 1) then
-			if (i <= par_n_BS - par_n_HP + 1) then
+			if (i == 2) then
+				r = rr + dr
+			else if (i <= par_n_BS - par_n_HP + 1) then
 				!rrr = rr + dk13 * (10)
 				!r1 = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
 				!r = rrr + (R_BS - rrr) * (DBLE(i - 11)/(par_n_BS - par_n_HP - 10))**r1
-				r = rr + (R_BS - rr) * (DBLE(i)/(par_n_BS - par_n_HP + 1))**1.6
+				r = rr + dr +  (R_BS - rr - dr) * (DBLE(i - 2)/(par_n_BS - par_n_HP - 1))**1.5
 			else
 				r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 			end if
