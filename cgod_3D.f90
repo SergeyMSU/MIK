@@ -13,62 +13,70 @@ subroutine cgod3d(KOBL,i,j,k,kdir,idgod, &
                                  al,be,ge,el, &
                                  w,qqq1,qqq2, &
                                  dsl,dsp,dsc,ythll,ga, &
-                                 qqq)
+                                 qqq, kontact_)
 !     include  'cyl.fl'
       implicit real*8 (a-h,o-z)
 
       dimension qqq(8),qqq1(8),qqq2(8)
+      LOGICAL, intent(in), OPTIONAL :: kontact_
+      LOGICAL :: kontact
 
       data x0,x1,x2,x3,x4,x5,x6,x7,x8,x9/0.,1.,2.,3.,4.,5.,6.,7.,8.,9./
 
+      if(.not. present(kontact_)) then
+            kontact = .False. 
+      else 
+            kontact = kontact_ 
+	end if
+
       x10=10.d0
 
-        idgod=0
-        kvak=0
-!       if(kdir.eq.1) krsp=irsp
-!       if(kdir.eq.2) krsp=jrsp
+      idgod=0
+      kvak=0
+      !       if(kdir.eq.1) krsp=irsp
+      !       if(kdir.eq.2) krsp=jrsp
 
-        eps=x10**(-x10)
-!       eps=x10**(-20)
-       eps8=x10**(-8)
-         g1=ga-1.d0
-         g2=ga+1.d0
-        gg1=ga-1.d0 !g1
-        gga=ga
-        gg2=ga+1.d0 !g2
+      eps=x10**(-x10)
+      !       eps=x10**(-20)
+      eps8=x10**(-8)
+      g1=ga-1.d0
+      g2=ga+1.d0
+      gg1=ga-1.d0 !g1
+      gga=ga
+      gg2=ga+1.d0 !g2
 
-                  el2 = dsqrt(al**2+be**2)
-                  el3 = dsqrt(al**2+ge**2)
-                  if(el2.ne.x0)then
-                  al2 = -be/el2
-                  be2 =  al/el2
-                  ge2 =  x0
-                  al3 = -be2*ge
-                  be3 =  al2*ge
-                  ge3 =  el2
-                  elseif(el3.ne.x0)then
-                  al2 = -ge/el3
-                  be2 =  x0
-                  ge2 =  al/el3
-                  al3 = -ge2*be
-                  be3 =  el3
-                  ge3 =  al2*be
-                  else
-                  if(mode.gt.0)print*,'cgod: el,el2,el3:',el,el2,el3
-                  stop
-                  endif
+      el2 = dsqrt(al**2+be**2)
+      el3 = dsqrt(al**2+ge**2)
+      if(el2.ne.x0)then
+      al2 = -be/el2
+      be2 =  al/el2
+      ge2 =  x0
+      al3 = -be2*ge
+      be3 =  al2*ge
+      ge3 =  el2
+      elseif(el3.ne.x0)then
+      al2 = -ge/el3
+      be2 =  x0
+      ge2 =  al/el3
+      al3 = -ge2*be
+      be3 =  el3
+      ge3 =  al2*be
+      else
+      if(mode.gt.0)print*,'cgod: el,el2,el3:',el,el2,el3
+      stop
+      endif
 
-                 enI  = al * qqq1(2) + be * qqq1(3) + ge * qqq1(4)
-                 teI2 = al2* qqq1(2) + be2* qqq1(3) + ge2* qqq1(4)
-                 teI3 = al3* qqq1(2) + be3* qqq1(3) + ge3* qqq1(4)
-                 enII = al * qqq2(2) + be * qqq2(3) + ge * qqq2(4)
-                 teII2= al2* qqq2(2) + be2* qqq2(3) + ge2* qqq2(4)
-                 teII3= al3* qqq2(2) + be3* qqq2(3) + ge3* qqq2(4)
+      enI  = al * qqq1(2) + be * qqq1(3) + ge * qqq1(4)
+      teI2 = al2* qqq1(2) + be2* qqq1(3) + ge2* qqq1(4)
+      teI3 = al3* qqq1(2) + be3* qqq1(3) + ge3* qqq1(4)
+      enII = al * qqq2(2) + be * qqq2(3) + ge * qqq2(4)
+      teII2= al2* qqq2(2) + be2* qqq2(3) + ge2* qqq2(4)
+      teII3= al3* qqq2(2) + be3* qqq2(3) + ge3* qqq2(4)
 
-                 pI   = qqq1(5)
-                 pII  = qqq2(5)
-                 rI   = qqq1(1)
-                 rII  = qqq2(1)
+      pI   = qqq1(5)
+      pII  = qqq2(5)
+      rI   = qqq1(1)
+      rII  = qqq2(1)
 
 
 
@@ -397,17 +405,28 @@ subroutine cgod3d(KOBL,i,j,k,kdir,idgod, &
           endif
         endif
 
-                       eo = p / g1 + .5 * r *(uo**2+vo**2+wo**2)
-                       en=al*uo+be*vo+ge*wo
+                  eo = p / g1 + .5 * r *(uo**2+vo**2+wo**2)
+                  en=al*uo+be*vo+ge*wo
 
-                       qqq(1)=ythll*el*(r*(en-w))
-                       qqq(2)=ythll*el*(r*(en-w)*uo+al*p)
-                       qqq(3)=ythll*el*(r*(en-w)*vo+be*p)
-                       qqq(4)=ythll*el*(r*(en-w)*wo+ge*p)
-                       qqq(5)=ythll*el*(  (en-w)*eo+en*p)
-                       qqq(6)=x0
-                       qqq(7)=x0
-                       qqq(8)=x0
+                  if(kontact == .False.) then
+                        qqq(1)=ythll*el*(r*(en-w))
+                        qqq(2)=ythll*el*(r*(en-w)*uo+al*p)
+                        qqq(3)=ythll*el*(r*(en-w)*vo+be*p)
+                        qqq(4)=ythll*el*(r*(en-w)*wo+ge*p)
+                        qqq(5)=ythll*el*(  (en-w)*eo+en*p)
+                        qqq(6)=x0
+                        qqq(7)=x0
+                        qqq(8)=x0
+                  else
+                        qqq(1)= 0.0
+                        qqq(2)= ythll*el*(al*p)
+                        qqq(3)= ythll*el*(be*p)
+                        qqq(4)= ythll*el*(ge*p)
+                        qqq(5)= ythll*el*(en*p)
+                        qqq(6)=x0
+                        qqq(7)=x0
+                        qqq(8)=x0
+                  end if
 
 
          return

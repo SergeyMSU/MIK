@@ -1727,6 +1727,10 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 				y = gl_y2(gl_RAY_B(par_n_HP, j, k), now2)
 				z = gl_z2(gl_RAY_B(par_n_HP, j, k), now2)
 				rr = (y**2 + z**2)**(0.5)
+
+				y = gl_y2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+				z = gl_z2(gl_RAY_B(par_n_HP - 1, j, k), now2)
+				rd = (y**2 + z**2)**(0.5)
 				
 				xx = gl_x2(gl_RAY_B(par_n_HP, size(gl_RAY_B(1, :, 1)), k), now2)
 				x2 = gl_x2(gl_RAY_B(par_n_HP, 1, k), now2)
@@ -1754,7 +1758,7 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 	!                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 	!            end if
 				
-				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr)
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd))
 				
 				gl_x2(yzel, now2) = x
 				gl_y2(yzel, now2) = r * cos(phi)
@@ -4514,83 +4518,84 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 		qqq1(6:8) = qqq1(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8)) * gl_Gran_normal2(:, gr, now)
 		qqq2(6:8) = qqq2(6:8) - DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq2(6:8)) * gl_Gran_normal2(:, gr, now)
 	end if
-			! Нужно вычислить скорость движения грани
-			wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
-			
-			
-			metod = 0!gl_Gran_scheme(gr)
-			
-			
-			!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
-			
-			!metod = 0
-			
-			!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !2
-			if(gl_Gran_type(gr) == 2) metod = 3 !2
-			
-			if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 3
-			
-			!if(gl_Gran_center2(1, gr, now) <= 25.0 .and. gl_Gran_center2(1, gr, now) >= 18.0) then
-			!	metod = 0
-			!end if
+
+	! Нужно вычислить скорость движения грани
+	wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 	
+	
+	metod = 0!gl_Gran_scheme(gr)
+	
+	
+	!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
+	
+	!metod = 0
+	
+	!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 2 !2
+	if(gl_Gran_type(gr) == 2) metod = 3 !2
+	
+	if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 3
+	
+	!if(gl_Gran_center2(1, gr, now) <= 25.0 .and. gl_Gran_center2(1, gr, now) >= 18.0) then
+	!	metod = 0
+	!end if
+
+	
+	if(gl_Gran_type(gr) == 1) metod = 3
+	
+	if(gl_Gran_type(gr) == 1) then
+		!n_disc = 2 !2
+		ydar = .True.
+		!wc = 0.0  ! было закоменченно
+	end if
+	
+	!.and. gl_Gran_center2(1, gr, now) >= -50.0
+	if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
+		
+		POTOK = 0.0
+		konvect_(3, 1) = 0.0
+		
+		if (.True.) then
+			qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+			qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
 			
-			if(gl_Gran_type(gr) == 1) metod = 3
+			!qqq1(2:4) = 0.0
+			!qqq2(2:4) = 0.0
 			
-			if(gl_Gran_type(gr) == 1) then
-				!n_disc = 2 !2
-				ydar = .True.
-				!wc = 0.0  ! было закоменченно
-			end if
-			
-			!.and. gl_Gran_center2(1, gr, now) >= -50.0
-			if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
-				
-				POTOK = 0.0
-				konvect_(3, 1) = 0.0
-				
-				if (.True.) then
-					qqq1(5) = qqq1(5) + (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
-					qqq2(5) = qqq2(5) + (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
-					
-					!qqq1(2:4) = 0.0
-					!qqq2(2:4) = 0.0
-					
-					call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
-											gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
-											wc, qqq1(1:8), qqq2(1:8), &
-											dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
-											POTOK)
-					POTOK(6:8) = 0.0
-					if (idgod == 2) then ! Если не удалось посчитать Годуновым
-						write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
-						qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
-						qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
-						call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-							wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_)
-					else
-						! Нужно правильно посчитать конвективный снос
-						if(dsc >= wc) then
-							konvect_(3, 1) = konvect_(1, 1) * POTOK(1) / qqq1(1)
-						else
-							konvect_(3, 1) = konvect_(2, 1) * POTOK(1) / qqq2(1)
-						end if
-					end if
-				end if
-			else
+			call cgod3d(KOBL, 0, 0, 0, kdir, idgod, &
+									gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
+									wc, qqq1(1:8), qqq2(1:8), &
+									dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
+									POTOK, kontact_ = .True.)
+			POTOK(6:8) = 0.0
+			if (idgod == 2) then ! Если не удалось посчитать Годуновым
+				write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
+				qqq1(5) = qqq1(5) - (norm2(qqq1(6:8))**2)/(8.0 * par_pi_8)
+				qqq2(5) = qqq2(5) - (norm2(qqq2(6:8))**2)/(8.0 * par_pi_8)
 				call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
-				wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_, n_disc = n_disc, ydar_ = ydar)
+					wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_)
+			else
+				! Нужно правильно посчитать конвективный снос
+				if(dsc >= wc) then
+					konvect_(3, 1) = konvect_(1, 1) * POTOK(1) / qqq1(1)
+				else
+					konvect_(3, 1) = konvect_(2, 1) * POTOK(1) / qqq2(1)
+				end if
 			end if
-			
+		end if
+	else
+		call chlld_Q(metod, gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), &
+		wc, qqq1, qqq2, dsl, dsp, dsc, POTOK, null_bn, p_correct_ = .False., konvect_ = konvect_, n_disc = n_disc, ydar_ = ydar)
+	end if
 	
+
+
+	time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
+	gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
+	gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 	
-			time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
-			gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
-			gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
-			
-			gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
-			!if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
-			if (gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
+	gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal2(:, gr, now), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square2(gr, now)
+	!if (gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
+	if (gl_Gran_type(gr) == 1) gl_Gran_POTOK(10, gr) = 0.0
 	
 	
 	! ----------------------------------------------------------- копируем до этого момента ----------------------

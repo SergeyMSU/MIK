@@ -741,89 +741,89 @@
 		!@cuf attributes(host, device) & 
 		real(8) pure function Setka_A(i, R_TS, R_HP, R_BS, the, dk13, par_R0, par_R_inner, par_n_IB, par_kk1, par_kk12, &
 			par_n_TS, par_n_HP, par_n_BS, par_kk14, par_R_END, par_kk2, par_n_END)
-		! Variables
-		implicit none
-		real(8), intent(in) :: R_TS, R_HP, R_BS, dk13, the, par_kk1, par_kk12, par_R0, par_R_inner, par_kk14, par_R_END, par_kk2
-		integer, intent(in) :: i, par_n_IB, par_n_TS, par_n_HP, par_n_BS, par_n_END
-		real(8) :: r, rr, rrr
+			! Variables
+			implicit none
+			real(8), intent(in) :: R_TS, R_HP, R_BS, dk13, the, par_kk1, par_kk12, par_R0, par_R_inner, par_kk14, par_R_END, par_kk2
+			integer, intent(in) :: i, par_n_IB, par_n_TS, par_n_HP, par_n_BS, par_n_END
+			real(8) :: r, rr, rrr
+			
+			if (i <= par_n_IB) then  ! NEW
+					if(i == 2) then
+						r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
+						!if(r < 0.0) then
+						!	print*, "Error iouihjgfdcydygy  ", r
+						!	STOP
+						!end if
+					else
+						r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
+					end if
+			else if (i <= par_n_TS) then  
+				r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
+			else if (i <= par_n_HP) then  
+				r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
+			!else if (i <= par_n_HP + 10) then 
+			!	r = R_HP + (i - par_n_HP) * dk13
+			else if (i <= par_n_BS) then 
+				!rr = R_HP + dk13 * 10
+				!rrr = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
+				!r = rr + (R_BS - rr) * (DBLE(i - par_n_HP - 10)/(par_n_BS - par_n_HP - 10))**rrr
+				r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**1.6
+			else
+				r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
+			end if
+			
+			Setka_A = r
+			return
 		
-		if (i <= par_n_IB) then  ! NEW
-				if(i == 2) then
-					r =  par_R0 - (par_R_inner - par_R0) * (DBLE(3 - 2)/(par_n_IB - 2))**par_kk1
-					!if(r < 0.0) then
-					!	print*, "Error iouihjgfdcydygy  ", r
-					!	STOP
-					!end if
-				else
-					r =  par_R0 + (par_R_inner - par_R0) * (DBLE(i - 2)/(par_n_IB - 2))**par_kk1
-				end if
-		else if (i <= par_n_TS) then  
-			r =  par_R_inner + (R_TS - par_R_inner) * sgushenie_3( (DBLE(i - par_n_IB)/(par_n_TS - par_n_IB)) , par_kk12)
-		else if (i <= par_n_HP) then  
-			r = R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(i - par_n_TS)/(par_n_HP - par_n_TS), par_kk14)
-		!else if (i <= par_n_HP + 10) then 
-		!	r = R_HP + (i - par_n_HP) * dk13
-		else if (i <= par_n_BS) then 
-			!rr = R_HP + dk13 * 10
-			!rrr = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
-			!r = rr + (R_BS - rr) * (DBLE(i - par_n_HP - 10)/(par_n_BS - par_n_HP - 10))**rrr
-			r = R_HP + (R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**1.6
-		else
-			r = R_BS + (par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**(par_kk2 * (0.55 + 0.45 * cos(the)) )
-		end if
-		
-		Setka_A = r
-		return
-		
-			end function Setka_A
+		end function Setka_A
 			
 			
 			!@cuf attributes(host, device) & 
-		real(8) pure function Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr)
-		! Variables
-		implicit none
-		real(8), intent(in) :: R_BS, dk13, par_kk2, par_R_END, rr
-		integer, intent(in) :: i, par_n_HP, par_n_BS, N1
-		real(8) :: r, rrr, r1
-		
-		!if (i <= 11) then
-			!r = rr + dk13 * (i - 1)
-		!else if (i <= par_n_BS - par_n_HP + 1) then
-		if (i <= par_n_BS - par_n_HP + 1) then
-			!rrr = rr + dk13 * (10)
-			!r1 = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
-			!r = rrr + (R_BS - rrr) * (DBLE(i - 11)/(par_n_BS - par_n_HP - 10))**r1
-			r = rr + (R_BS - rr) * (DBLE(i)/(par_n_BS - par_n_HP + 1))**1.6
-		else
-			r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-		end if
-		
-		Setka_C = r
-		return
+		real(8) pure function Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dr)
+			! Variables
+			implicit none
+			real(8), intent(in) :: R_BS, dk13, par_kk2, par_R_END, rr, dr
+			integer, intent(in) :: i, par_n_HP, par_n_BS, N1
+			real(8) :: r, rrr, r1
+			
+			!if (i <= 11) then
+				!r = rr + dk13 * (i - 1)
+			!else if (i <= par_n_BS - par_n_HP + 1) then
+			if (i <= par_n_BS - par_n_HP + 1) then
+				!rrr = rr + dk13 * (10)
+				!r1 = log((1.5 * dk13)/(R_BS - rr))/log(DBLE(1.0)/(par_n_BS - par_n_HP - 10))
+				!r = rrr + (R_BS - rrr) * (DBLE(i - 11)/(par_n_BS - par_n_HP - 10))**r1
+				r = rr + (R_BS - rr) * (DBLE(i)/(par_n_BS - par_n_HP + 1))**1.6
+			else
+				r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+			end if
+			
+			Setka_C = r
+			return
 		
 		end function Setka_C
 		
 		!@cuf attributes(host, device) & 
 		real(8) pure function Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1)
-		! Variables
-		implicit none
-		real(8), intent(in) :: R_BS, dk13, par_kk2, par_R_END, r1, R_HP
-		integer, intent(in) :: i, par_n_HP, par_n_BS, N1
-		real(8) :: r, rr
-		
-		!if (i <= 10) then
-		!    r = R_HP + (i - 1) * dk13 * (R_BS - R_HP)
-		!else if (i <= par_n_BS - par_n_HP + 1) then
-		if (i <= par_n_BS - par_n_HP + 1) then
-			!rr = R_HP + 9 * dk13 * (R_BS - R_HP)
-			!r = rr + (R_BS - rr) * (DBLE(i - 10)/(par_n_BS - par_n_HP - 9))**r1
-			r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**1.6
-		else
-			r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
-		end if
-		
-		Setka_O = r
-		return
+			! Variables
+			implicit none
+			real(8), intent(in) :: R_BS, dk13, par_kk2, par_R_END, r1, R_HP
+			integer, intent(in) :: i, par_n_HP, par_n_BS, N1
+			real(8) :: r, rr
+			
+			!if (i <= 10) then
+			!    r = R_HP + (i - 1) * dk13 * (R_BS - R_HP)
+			!else if (i <= par_n_BS - par_n_HP + 1) then
+			if (i <= par_n_BS - par_n_HP + 1) then
+				!rr = R_HP + 9 * dk13 * (R_BS - R_HP)
+				!r = rr + (R_BS - rr) * (DBLE(i - 10)/(par_n_BS - par_n_HP - 9))**r1
+				r = R_HP + (R_BS - R_HP) * (DBLE(i - 1)/(par_n_BS - par_n_HP))**1.6
+			else
+				r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
+			end if
+			
+			Setka_O = r
+			return
 		
 		end function Setka_O
 	
