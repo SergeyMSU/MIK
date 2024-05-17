@@ -1644,30 +1644,30 @@
         
         integer(4), intent(in) :: ncell
         real(8) :: r, tt
-        real(8) :: ro, P_E, the, BE, BR, V1, V2, V3
+        real(8) :: ro, P_E, the, BPHI, BR, V1, V2, V3
         real(8) :: c(3), Matr(3, 3), Matr2(3, 3), cc(3), vv(3)
         integer :: ijk
 
         
-        Matr(1,1) = -0.995868
-        Matr(1,2) = 0.0177307
-        Matr(1,3) = 0.0890681
-        Matr(2,1) = 0.0730412
-        Matr(2,2) = 0.739193
-        Matr(2,3) = 0.669521
-        Matr(3,1) = -0.0539675
-        Matr(3,2) = 0.67326
-        Matr(3,3) = -0.737434
+        Matr(1,1) = -0.9958639688067077
+        Matr(1,2) = 0.01776569097515556
+        Matr(1,3) = 0.08910295088675518
+        Matr(2,1) = 0.07561695085992419
+        Matr(2,2) = 0.7057402284561812
+        Matr(2,3) = 0.7044237408557894
+        Matr(3,1) = -0.05036896241933166
+        Matr(3,2) = 0.7082479157489926
+        Matr(3,3) = -0.7041646522383864
         
-        Matr2(1,1) = -0.995868
-        Matr2(1,2) = 0.0730412
-        Matr2(1,3) = -0.0539675
-        Matr2(2,1) = 0.0177307
-        Matr2(2,2) = 0.739193
-        Matr2(2,3) = 0.67326
-        Matr2(3,1) = 0.0890681
-        Matr2(3,2) = 0.669521
-        Matr2(3,3) = -0.737434
+        Matr2(1,1) = -0.9958639688067080
+        Matr2(1,2) = 0.0756169508599243
+        Matr2(1,3) = -0.0503689624193315
+        Matr2(2,1) = 0.0177656909751554
+        Matr2(2,2) = 0.7057402284561816
+        Matr2(2,3) = 0.7082479157489927
+        Matr2(3,1) = 0.0891029508867553
+        Matr2(3,2) = 0.7044237408557898
+        Matr2(3,3) = -0.7041646522383865
         
         !   Matr(1,1) = -0.9958639688067080
         !   Matr(1,2) = 0.0177656909751554
@@ -1707,13 +1707,16 @@
         !print*, cc
         !Pause
         
-        BE = sqrt(cpi4 * par_kk)/(par_Mach_alf * r)
-        BR = -par_kk * sqrt(cpi4)/(par_Mach_alf * r * r) * par_k_Br
+        !! НАДО ТУТ ПЕРЕДЕЛЫВАТЬ ОПРЕДЕЛЕНИЕ МАГНИТНОГО ПОЛЯ
+        ! BE = sqrt(cpi4 * par_kk)/(par_Mach_alf * r)
+
+        BR = -par_B_0 * (par_R0/r)**2
+        BPHI = -BR * sin(the) * (r/par_R0)
         
         
         !print*, "Be = ", BE, sin(the), the
         
-        call dekard_skorost(cc(3), cc(1), cc(2), BR, BE * sin(the), 0.0_8, V3, V1, V2)
+        call dekard_skorost(cc(3), cc(1), cc(2), BR, BPHI, 0.0_8, V3, V1, V2)
         
         
         vv(1) = V1
@@ -1748,10 +1751,10 @@
         
         ! Если включаем гелий
         if(par_helium) then	
-            gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * 0.14056   ! He++
+            gl_Cell_par2(1, ncell) = gl_Cell_par(1, ncell) * par_mHe_0   ! He++
             
-            gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * 1.14056
-            gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * 1.14056
+            gl_Cell_par(1, ncell) = gl_Cell_par(1, ncell) * (1.0_8 + par_mHe_0)
+            gl_Cell_par(9, ncell) = gl_Cell_par(9, ncell) * (1.0_8 + par_mHe_0)
             !gl_Cell_par(5, ncell) = gl_Cell_par(5, ncell) * 1.0525
         end if
                 
@@ -8442,7 +8445,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 546 ! 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 547 ! 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         !? 535 - до того, как поменять определение давления в PUI
 
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224

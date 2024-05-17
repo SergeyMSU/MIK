@@ -15,7 +15,6 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_R_character = 35.6505         ! Характерный размер в задаче (расстояние до TS на начальном этапе построения сетки)
     real(8), parameter :: par_koeff_HP = 1.3            ! На сколько умножить характерный размер для получения HP
     real(8), parameter :: par_koeff_BS = 2.0            ! На сколько умножить характерный размер для получения BS
-    real(8), parameter :: par_R0 = 0.197035         ! Характерный размер 1 а.е. (внутренней сферы) Там находится вторая точка на лучах от цетра (первая находится в нуле)
     ! параметр нужен для геометрической точности сетки eps = par_R_character/10000
     real(8) :: par_R_END = 300.0         !  
     real(8) :: par_R_LEFT = -240.0 ! -390.0         !  Левая граница
@@ -24,38 +23,47 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	real(8), parameter :: par_sqrtpi = sqrt(par_pi_8)
     real(8), parameter :: cpi4 = 12.56637061435917295384_8
     real(8), parameter :: ggg = (5.0/3.0)
-    real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
 	real(8) :: par_R_inner = 9.0! 5.0_8     ! До какого расстояния внутренняя сфера
 	
 	
-	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
+	real(8), parameter :: lock_move = 0.1_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.3 * lock_move * 0.3 * 0.01_8 ! 0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
 	real(8), parameter :: par_nat_HP = 0.1 * 0.3 * lock_move! 0.3  0.8                 ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
-    real(8), parameter :: koef2 = 0.1 * lock_move ! 1.0  0.5  0.01
+    real(8), parameter :: koef2 = 0.1 * lock_move ! 0.1    1.0  0.5  0.01
     real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
 	
     
-    real(8), parameter :: par_a_2 = 0.130738_8        ! Параметр в сечении перезарядки
-    real(8), parameter :: par_n_p_LISM = 3.5_8         ! в перезарядке
+    
+    real(8), parameter :: par_n_p_LISM = 3.0_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_Kn = 44.4572!  49.9018   !0.4326569808         ! в перезарядке
     real(8), parameter :: par_nu_ph = 8.68506!  12.2125 
     real(8), parameter :: par_E_ph = 0.0631407!  0.10878
-    real(8), parameter :: par_n_p_inf = 0.06_8 !
-    real(8), parameter :: par_V_character = 11.1246_8 ! Характерная скорость в км/с
-	
     
-    real(8), parameter :: par_chi_real = 38.8686! 41.6479_8! 1.0_8      ! С каким хи считаем реально
-    real(8), parameter :: par_chi = 38.8686! 41.6479_8      ! С каким хи надо было бы считать
-    real(8), parameter :: par_Velosity_inf = -2.37311_8
+	
+
+    real(8), parameter :: par_n_p_inf = 0.06_8 !
+    real(8), parameter :: par_V_character = 10.3804_8! 11.1246_8 ! Характерная скорость в км/с
+    real(8), parameter :: par_chi_real = 41.2317! 38.8686       ! С каким хи считаем реально
+    real(8), parameter :: par_chi = 41.2317            ! Число Хи
+    real(8), parameter :: par_Kn = 53.1133! 44.4572!  49.9018   !0.4326569808         ! Число Кнудсена
+    real(8), parameter :: par_Velosity_inf = -2.54327_8
+    real(8), parameter :: par_a_2 = 0.11857!  0.130738_8        ! Параметр в сечении перезарядки
+    real(8), parameter :: par_alphaB_inf = 0.698132!  1.04719755_8   ! 60 градусов
+    real(8), parameter :: par_B_inf = 8.91006_8! 7.80959_8 !13.9666_8
+    real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
+    real(8), parameter :: par_B_0 = 114.037_8! Безразмерное магнитное поле на 1 АЕ
+    real(8), parameter :: par_R0 = 0.233017       ! Характерный размер 1 а.е. (внутренней сферы) Там находится вторая точка на лучах от цетра (первая находится в нуле)
+    ! Нужен, например, для магнитного поля
+    real(8), parameter :: par_mHe_0 = 0.14_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
+    real(8), parameter :: par_p_0 = 3118.94_8!  4624.57_8 ! 4790.19! 4624.57_8  ! Давление на 1 а.е.
+    real(8), parameter :: par_mHe_inf = 0.6_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
+    real(8), parameter :: par_mpHe_inf = 1.15_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
+    
 	real(8), parameter :: par_Mach_alf = 12.8816_8! 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
-	real(8), parameter :: par_p_0 = 4624.57_8 ! 4790.19! 4624.57_8
-	real(8), parameter :: par_B_inf = 7.80959_8 !13.9666_8
-	real(8), parameter :: par_alphaB_inf = 0.6981!  1.04719755_8   ! 60 градусов
 	real(8), parameter :: par_k_Br = 0.00197035_8
 	real(8), parameter :: par_1ae = 0.258573! 0.197035_8
 	

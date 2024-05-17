@@ -4198,11 +4198,11 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 			qqq2 = (/1.0_8, par_Velosity_inf, 0.0_8, 0.0_8, 1.0_8, -par_B_inf * cos(par_alphaB_inf), -par_B_inf * sin(par_alphaB_inf), 0.0_8, 100.0_8/)
 		
 			if(par_helium) then	
-				konvect_(2, 1) = qqq2(1) * 0.3
+				konvect_(2, 1) = qqq2(1) * par_mHe_inf
 
-				qqq2(1) = qqq2(1) * 1.3
-				qqq2(9) = qqq2(9) * 1.3
-				qqq2(5) = qqq2(5) * 1.075
+				qqq2(1) = qqq2(1) * (1.0 + par_mHe_inf)
+				qqq2(9) = qqq2(9) * (1.0 + par_mHe_inf)
+				qqq2(5) = qqq2(5) * par_mpHe_inf
 			end if
 		
 		else if(s2 == -3) then
@@ -4547,9 +4547,11 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 		ydar = .True.
 		!wc = 0.0  ! было закоменченно
 	end if
+
+	metod = 0 !! ----
 	
 	!.and. gl_Gran_center2(1, gr, now) >= -50.0
-	if (gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
+	if (.False.) then !(gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
 		
 		POTOK = 0.0
 		konvect_(3, 1) = 0.0
@@ -4565,7 +4567,8 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 									gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
 									wc, qqq1(1:8), qqq2(1:8), &
 									dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
-									POTOK, kontact_ = .True.)
+									POTOK, kontact_ = .False.)
+			! kontact_ = .True.
 			POTOK(6:8) = 0.0
 			if (idgod == 2) then ! Если не удалось посчитать Годуновым
 				write(*, *) "Ne ydalos godunov 098767890987678923874224243234"
