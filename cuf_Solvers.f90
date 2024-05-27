@@ -266,83 +266,83 @@ attributes(global) subroutine Cuda_Move_all_1(now)  ! Поверхностное натяжение на
 			gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
 			Ek(1), Ek(2), Ek(3))
 	
-	!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-	!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-	!		Ak(1), Ak(2), Ak(3), &
-	!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-	!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-	!		Ek(1), Ek(2), Ek(3))
+		!call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+		!		gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+		!		Ak(1), Ak(2), Ak(3), &
+		!		gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+		!		gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+		!		Ek(1), Ek(2), Ek(3))
+			
+			!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Ek(1), Ek(2), Ek(3))
+			!
+			!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	Bk(1), Bk(2), Bk(3))
+			
+			if(k < N3) then
+				yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
+			else
+				yzel2 = gl_RAY_A(par_n_HP, j, 1)
+			end if
+			
+			if(k < N3 - 1) then
+				yzel22 = gl_RAY_A(par_n_HP, j, k + 2)
+			else if(k == N3 - 1) then
+				yzel22 = gl_RAY_A(par_n_HP, j, 1)
+			else
+				yzel22 = gl_RAY_A(par_n_HP, j, 2)
+			end if
 		
-		!call Smooth_kvadr(gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Ek(1), Ek(2), Ek(3))
-		!
-		!call Smooth_kvadr(gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	Bk(1), Bk(2), Bk(3))
+			if(k < N3 - 2) then
+				yzel222 = gl_RAY_A(par_n_HP, j, k + 2)
+			else if(k == N3 - 2) then
+				yzel222 = gl_RAY_A(par_n_HP, j, 1)
+			else if(k == N3 - 1) then
+				yzel222 = gl_RAY_A(par_n_HP, j, 2)
+			else
+				yzel222 = gl_RAY_A(par_n_HP, j, 3)
+			end if
 		
-		if(k < N3) then
-			yzel2 = gl_RAY_A(par_n_HP, j, k + 1)
-		else
-			yzel2 = gl_RAY_A(par_n_HP, j, 1)
-		end if
+			if (k > 1) then
+				yzel3 = gl_RAY_A(par_n_HP, j, k - 1)
+			else
+				yzel3 = gl_RAY_A(par_n_HP, j, N3)
+			end if
 		
-		if(k < N3 - 1) then
-			yzel22 = gl_RAY_A(par_n_HP, j, k + 2)
-		else if(k == N3 - 1) then
-			yzel22 = gl_RAY_A(par_n_HP, j, 1)
-		else
-			yzel22 = gl_RAY_A(par_n_HP, j, 2)
-		end if
-	
-		if(k < N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_HP, j, k + 2)
-		else if(k == N3 - 2) then
-			yzel222 = gl_RAY_A(par_n_HP, j, 1)
-		else if(k == N3 - 1) then
-			yzel222 = gl_RAY_A(par_n_HP, j, 2)
-		else
-			yzel222 = gl_RAY_A(par_n_HP, j, 3)
-		end if
-	
-		if (k > 1) then
-			yzel3 = gl_RAY_A(par_n_HP, j, k - 1)
-		else
-			yzel3 = gl_RAY_A(par_n_HP, j, N3)
-		end if
-	
-		if (k > 2) then
-			yzel33 = gl_RAY_A(par_n_HP, j, k - 2)
-		else if(k == 2) then
-			yzel33 = gl_RAY_A(par_n_HP, j, N3)
-		else
-			yzel33 = gl_RAY_A(par_n_HP, j, N3 - 1)
-		end if
-	
-		if (k > 3) then
-			yzel333 = gl_RAY_A(par_n_HP, j, k - 3)
-		else if(k == 3) then
-			yzel333 = gl_RAY_A(par_n_HP, j, N3)
-		else if(k == 2) then
-			yzel333 = gl_RAY_A(par_n_HP, j, N3 - 1)
-		else
-			yzel333 = gl_RAY_A(par_n_HP, j, N3 - 2)
-		end if
-	
-		!call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
-		!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
-		!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
-		!	Ak(1), Ak(2), Ak(3), &
-		!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
-		!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
-		!	gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
-		!	Ck(1), Ck(2), Ck(3))
-	
-	call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			if (k > 2) then
+				yzel33 = gl_RAY_A(par_n_HP, j, k - 2)
+			else if(k == 2) then
+				yzel33 = gl_RAY_A(par_n_HP, j, N3)
+			else
+				yzel33 = gl_RAY_A(par_n_HP, j, N3 - 1)
+			end if
+		
+			if (k > 3) then
+				yzel333 = gl_RAY_A(par_n_HP, j, k - 3)
+			else if(k == 3) then
+				yzel333 = gl_RAY_A(par_n_HP, j, N3)
+			else if(k == 2) then
+				yzel333 = gl_RAY_A(par_n_HP, j, N3 - 1)
+			else
+				yzel333 = gl_RAY_A(par_n_HP, j, N3 - 2)
+			end if
+		
+			!call Smooth_kvadr4(gl_x2(yzel333, now), gl_y2(yzel333, now), gl_z2(yzel333, now), &
+			!	gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
+			!	gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
+			!	Ak(1), Ak(2), Ak(3), &
+			!	gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
+			!	gl_x2(yzel22, now), gl_y2(yzel22, now), gl_z2(yzel22, now), &
+			!	gl_x2(yzel222, now), gl_y2(yzel222, now), gl_z2(yzel222, now), &
+			!	Ck(1), Ck(2), Ck(3))
+		
+		call Smooth_kvadr3(gl_x2(yzel33, now), gl_y2(yzel33, now), gl_z2(yzel33, now), &
 			gl_x2(yzel3, now), gl_y2(yzel3, now), gl_z2(yzel3, now), &
 			Ak(1), Ak(2), Ak(3), &
 			gl_x2(yzel2, now), gl_y2(yzel2, now), gl_z2(yzel2, now), &
@@ -418,7 +418,7 @@ attributes(global) subroutine Cuda_Move_all_1(now)  ! Поверхностное натяжение на
 		!dist = max(dist, 1.0_8)
 		
 		k1 = 0.001  ! 0.1
-		if(j <= 8) k1 = 0.06
+		if(j <= 8) k1 = 0.01   !0.01   0.06
 		!	k1 = 0.03  !0.001
 		
 		if (gl_Point_num(yzel) > 0) then
@@ -1214,6 +1214,7 @@ attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение н
 	if(k > 6 .and. kk < 19) kk = 1.5  !  3.0
 	
 	if(k > 31 .and. kk < 44) kk = 1.5 !
+	!kk = kk * 2.0
 			
 	! Контакт
 	yzel = gl_RAY_O(1, j, k)
@@ -1281,7 +1282,7 @@ attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение н
 		!vel = par_nat_HP * 0.0001 * ((Ak/r) * (rr - r)) * ddt
 		!vel(1) = 0.0
 		
-		vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00003 0.0012
+		vel = kk * par_nat_HP * 0.00002 * (Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak)/Time  !0.00002 0.0012
 	end if
 	
 	!Ak = Bk/4.0 + Ck/4.0 + Dk/4.0 + Ek/4.0 - Ak
@@ -4523,8 +4524,8 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 	
 	
-	metod = 0!gl_Gran_scheme(gr)
-	
+	metod = 0 !(gr)  !! 0   1
+	metod = gl_Gran_scheme(gr)
 	
 	!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
 	
@@ -4534,6 +4535,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	if(gl_Gran_type(gr) == 2) metod = 3 !2
 	
 	if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 3
+	if(gl_zone_Cell(s1) == 4 .and. gl_zone_Cell(s1) == 4) metod = 1
 	
 	!if(gl_Gran_center2(1, gr, now) <= 25.0 .and. gl_Gran_center2(1, gr, now) >= 18.0) then
 	!	metod = 0
@@ -4541,6 +4543,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 
 	
 	if(gl_Gran_type(gr) == 1) metod = 3
+	if(gl_Gran_type(gr) == 3) metod = 1
 	
 	if(gl_Gran_type(gr) == 1) then
 		!n_disc = 2 !2
@@ -4548,10 +4551,10 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 		!wc = 0.0  ! было закоменченно
 	end if
 
-	metod = 0 !! ----
+	!metod = 0 !! ----
 	
 	!.and. gl_Gran_center2(1, gr, now) >= -50.0
-	if (.False.) then !(gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
+	if (.True. .and. gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
 		
 		POTOK = 0.0
 		konvect_(3, 1) = 0.0
@@ -4567,7 +4570,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 									gl_Gran_normal2(1, gr, now), gl_Gran_normal2(2, gr, now), gl_Gran_normal2(3, gr, now), 1.0_8, &
 									wc, qqq1(1:8), qqq2(1:8), &
 									dsl, dsp, dsc, 1.0_8, 1.66666666666666_8, &
-									POTOK, kontact_ = .False.)
+									POTOK, kontact_ = .True.)
 			! kontact_ = .True.
 			POTOK(6:8) = 0.0
 			if (idgod == 2) then ! Если не удалось посчитать Годуновым
@@ -4592,7 +4595,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	
 
 
-	time = min(time, 0.9 * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
+	time = min(time, par_kurant * dist/(max(dabs(dsl), dabs(dsp))+ dabs(wc)) )   ! REDUCTION
 	gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square2(gr, now)
 	gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square2(gr, now)
 	
@@ -4693,7 +4696,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
 					!end if
 					
-					if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
+					if(gl_Gran_type(j) == 1) then ! Особые потоки для TS
 						sks = sks + DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
 							* gl_Gran_square2(j, now)
 					end if
@@ -4714,7 +4717,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 					!		* gl_Gran_normal2(:, j, now) * gl_Gran_square2(j, now)
 					!end if
 					
-					if(gl_Gran_type(j) == 1) then ! Особые потоки для контакта
+					if(gl_Gran_type(j) == 1) then ! Особые потоки для TS
 						sks = sks - DOT_PRODUCT(qqq(6:8), gl_Gran_normal2(:, j, now))&
 							* gl_Gran_square2(j, now)
 					end if
@@ -4731,9 +4734,9 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 
 
 			! Определяем зону в которой находимся
-			if(qqq(9)/qqq(1) < 50.0) then
-				if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
-				!if(gl_zone_Cell(gr) == 1) then
+			if(gl_zone_Cell(gr) <= 2) then! (qqq(9)/qqq(1) < 50.0) then
+				!if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.3) then
+				if(gl_zone_Cell(gr) == 1) then
 					zone = 1
 				else
 					zone = 2
@@ -4746,15 +4749,17 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 				end if
 			end if
 	
-			if(qqq(9)/qqq(1) < 50.0) then!(zone == 1 .or. zone == 2) then ! Перенормировка
+			if(zone <= 2) then ! (qqq(9)/qqq(1) < 50.0) then! Перенормировка
 				qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
 				qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+				qqq2 = qqq2 / (par_chi/par_chi_real)**2
+				qqq(9) = qqq(9) / (par_chi/par_chi_real)**2
 			end if
 	
 			! He
 			qqq(1) = qqq(1) - qqq2
 			
-			if(qqq(9)/qqq(1) < 50.0) then!(zone == 1 .or. zone == 2) then
+			if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then
 				qqq(5) = qqq(5) / (8.0 * qqq(1) + 3.0 * qqq2) * 8.0 * qqq(1)
 			else
 				qqq(5) = qqq(5) / (4.0 * qqq(1) + qqq2) * 4.0 * qqq(1)
@@ -4762,7 +4767,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 			
 			call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
 			
-			if(qqq(9)/qqq(1) < 50.0) then!(zone == 1 .or. zone == 2) then
+			if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then!
 				qqq(5) = qqq(5) * (8.0 * qqq(1) + 3.0 * qqq2) / (8.0 * qqq(1))
 			else
 				qqq(5) = qqq(5) * (4.0 * qqq(1) + qqq2) / (4.0 * qqq(1))
@@ -4770,9 +4775,11 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 	
 			qqq(1) = qqq(1) + qqq2
 			
-			if(qqq(9)/qqq(1) < 50.0) then!(zone == 1 .or. zone == 2) then ! Перенормировка обратно
+			if(zone == 1 .or. zone == 2) then !(qqq(9)/qqq(1) < 50.0) then! Перенормировка обратно
 				qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
 				qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+				qqq2 = qqq2 * (par_chi/par_chi_real)**2
+				qqq(9) = qqq(9) * (par_chi/par_chi_real)**2
 				SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
 			end if
 		
@@ -4784,9 +4791,9 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 	
 
 			if (l_1 == .TRUE.) then
-				ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2 + time * MK_kk(1)
+				ro3 = qqq(1)* Volume / Volume2 - time * POTOK(1) / Volume2 + time * (MK_kk(1)* (par_chi/par_chi_real))
 				gl_Cell_par2(1, gr) = qqq2 * Volume / Volume2 - time * POTOK2 / Volume2
-				Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2 + (qqq(9)/qqq(1)) *  time * MK_kk(1)
+				Q3 = qqq(9)* Volume / Volume2 - time * POTOK(9) / Volume2 + (qqq(9)/qqq(1)) *  time * (MK_kk(1)* (par_chi/par_chi_real))
 				if (ro3 <= 0.0_8) then
 					write(*, *) "Ro < 0  3688"
 					write(*, *) " ---  ", ro3, qqq(1), gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)! , MK_kk(1), &
@@ -4800,7 +4807,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 				if(gl_Cell_par2(1, gr) <= 0.0) then
 					gl_Cell_par2(1, gr) = 0.000001
 					!write(*, *) "gl_Cell_par2(1, gr) < 0  789uhgtyefef"
-	!               write(*, *) gl_Cell_par2(1, gr), qqq2, POTOK2, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
+					!write(*, *) gl_Cell_par2(1, gr), qqq2, POTOK2, gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)
 					!stop
 				end if
 				
@@ -4875,25 +4882,25 @@ attributes(global) subroutine CUF_MGD_grans_MK_inner()
 	! ----------------------------------------------------------- можно просто скопировать код из хоста ----------------------
 	if (iter > size(gl_all_Gran_inner)) return
 	
-	Matr(1,1) = -0.995868
-	Matr(1,2) = 0.0177307
-	Matr(1,3) = 0.0890681
-	Matr(2,1) = 0.0730412
-	Matr(2,2) = 0.739193
-	Matr(2,3) = 0.669521
-	Matr(3,1) = -0.0539675
-	Matr(3,2) = 0.67326
-	Matr(3,3) = -0.737434
+	Matr(1,1) = -0.9958639688067077
+	Matr(1,2) = 0.01776569097515556
+	Matr(1,3) = 0.08910295088675518
+	Matr(2,1) = 0.07561695085992419
+	Matr(2,2) = 0.7057402284561812
+	Matr(2,3) = 0.7044237408557894
+	Matr(3,1) = -0.05036896241933166
+	Matr(3,2) = 0.7082479157489926
+	Matr(3,3) = -0.7041646522383864
 	
-	Matr2(1,1) = -0.995868
-	Matr2(1,2) = 0.0730412
-	Matr2(1,3) = -0.0539675
-	Matr2(2,1) = 0.0177307
-	Matr2(2,2) = 0.739193
-	Matr2(2,3) = 0.67326
-	Matr2(3,1) = 0.0890681
-	Matr2(3,2) = 0.669521
-	Matr2(3,3) = -0.737434
+	Matr2(1,1) = -0.9958639688067080
+	Matr2(1,2) = 0.0756169508599243
+	Matr2(1,3) = -0.0503689624193315
+	Matr2(2,1) = 0.0177656909751554
+	Matr2(2,2) = 0.7057402284561816
+	Matr2(2,3) = 0.7082479157489927
+	Matr2(3,1) = 0.0891029508867553
+	Matr2(3,2) = 0.7044237408557898
+	Matr2(3,3) = -0.7041646522383865
 	
 	gr = gl_all_Gran_inner(iter)
 		!if(gl_Gran_info(gr) == 0) CYCLE
@@ -5250,7 +5257,7 @@ attributes(global) subroutine CUF_MGD_grans_MK_inner()
 
 		call chlld_Q(3, gl_Gran_normal(1, gr), gl_Gran_normal(2, gr), gl_Gran_normal(3, gr), &
 			0.0_8, qqq1, qqq2, dsl, dsp, dsc, POTOK, p_correct_ = .False., konvect_ = konvect_)
-		time = min(time, 0.99 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
+		time = min(time, 0.9 * dist/max(dabs(dsl), dabs(dsp)) )   ! REDUCTION
 		gl_Gran_POTOK(1:9, gr) = POTOK * gl_Gran_square(gr)
 		gl_Gran_POTOK2(1, gr) = konvect_(3, 1) * gl_Gran_square(gr)
 		gl_Gran_POTOK(10, gr) = 0.5 * DOT_PRODUCT(gl_Gran_normal(:, gr), qqq1(6:8) + qqq2(6:8)) * gl_Gran_square(gr)
@@ -5341,6 +5348,8 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 
 		qqq(2:4) = qqq(2:4) * (par_chi/par_chi_real)
 		qqq(1) = qqq(1) / (par_chi/par_chi_real)**2
+		qqq2 = qqq2 / (par_chi/par_chi_real)**2
+		qqq(9) = qqq(9) / (par_chi/par_chi_real)**2
 		
 		! He
 		qqq(1) = qqq(1) - qqq2
@@ -5354,12 +5363,14 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 		
 		qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
 		qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
+		qqq2 = qqq2 * (par_chi/par_chi_real)**2
+		qqq(9) = qqq(9) * (par_chi/par_chi_real)**2
 		SOURSE(5, 1) = SOURSE(5, 1)/ (par_chi/par_chi_real)
 
 		if (l_1 == .TRUE.) then
-			ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume + dev_time_step_inner * MK_kk(1)
+			ro3 = qqq(1) - dev_time_step_inner * POTOK(1) / Volume + dev_time_step_inner * (MK_kk(1)* (par_chi/par_chi_real))
 			gl_Cell_par2(1, gr) = qqq2 - dev_time_step_inner * POTOK2 / Volume
-			Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume + (qqq(9)/qqq(1)) *  dev_time_step_inner * MK_kk(1)
+			Q3 = qqq(9) - dev_time_step_inner * POTOK(9) / Volume + (qqq(9)/qqq(1)) *  dev_time_step_inner * (MK_kk(1)* (par_chi/par_chi_real))
 			if (ro3 <= 0.0_8) then
 				write(*, *) "Ro < 0  3242341234 "
 				stop

@@ -13,7 +13,7 @@ module Monte_Karlo
 	
 	integer(4), parameter :: par_stek = 1000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
-	logical, parameter :: MK_Mu_stat = .False.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
+	logical, parameter :: MK_Mu_stat = .True.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
 	logical, parameter :: MK_photoionization = .True.    ! Нужна ли фотоионизация
 	
 	real(8), parameter :: MK_Mu_mult = 100.0_8  ! На что домножаем веса для избежания потери точности
@@ -79,8 +79,10 @@ module Monte_Karlo
 		call M_K_init()   ! Инициализируем веса и т.д.
 
 		!! PUI
-		pui_Sm = 0.0   ! Нужно обнулить массивы, в которые будем накапливать всё.
-		pui_Sp = 0.0
+		if(par_PUI == .True.) then
+			pui_Sm = 0.0   ! Нужно обнулить массивы, в которые будем накапливать всё.
+			pui_Sp = 0.0
+		end if
 		
 		! call PUI_f_Set()
 		! call PUI_f_Set2()
@@ -120,7 +122,7 @@ module Monte_Karlo
 		end if
 		
 		!call Get_sensor(mpi_rank) ! Считали датчики случайных чисел
-		call Get_sensor_sdvig(192)
+		call Get_sensor_sdvig(1)
 		
 		!$omp parallel
 		
@@ -182,8 +184,11 @@ module Monte_Karlo
 					end if
 				end do
 
-				!call M_K_Fly(potok)
-				call M_K_Fly_PUI(potok)    !! PUI
+				if(par_PUI == .False.) then
+					call M_K_Fly(potok)
+				else
+					call M_K_Fly_PUI(potok)    !! PUI
+				end if
 				
 			end do
 			
@@ -225,8 +230,11 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				!call M_K_Fly(potok)
-				call M_K_Fly_PUI(potok)    !! PUI
+				if(par_PUI == .False.) then
+					call M_K_Fly(potok)
+				else
+					call M_K_Fly_PUI(potok)    !! PUI
+				end if
 
 			end do
 			
@@ -256,8 +264,11 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				!call M_K_Fly(potok)
-				call M_K_Fly_PUI(potok)    !! PUI
+				if(par_PUI == .False.) then
+					call M_K_Fly(potok)
+				else
+					call M_K_Fly_PUI(potok)    !! PUI
+				end if
 			end do
 			
 			! Запускаем частицы четвёрного типа (вылет спереди с части плоскости)
@@ -286,8 +297,11 @@ module Monte_Karlo
 				M_K_particle_2(3, stek(potok), potok) = to_i  ! Зона назначения
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
-				!call M_K_Fly(potok)
-				call M_K_Fly_PUI(potok)    !! PUI
+				if(par_PUI == .False.) then
+					call M_K_Fly(potok)
+				else
+					call M_K_Fly_PUI(potok)    !! PUI
+				end if
 			end do
 		end do
 		!$omp end do
@@ -302,12 +316,15 @@ module Monte_Karlo
 		
 		no = MK_Mu_mult * MK_N * par_n_claster
 		M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
-		pui_Sm(:, :) = sqv * pui_Sm(:, :) / no
-		do i = 1, pui_nW
-			pui_w1 = (i - 1) * pui_wR/pui_nW 
-			pui_w2 = i * pui_wR/pui_nW 
-			pui_Sp(i, :) = sqv * pui_Sp(i, :) / (no * 4.0 * par_pi_8 * (1.0/3.0) * (pui_w2**3 - pui_w1**3))
-		end do
+		
+		if(par_PUI == .True.) then
+			pui_Sm(:, :) = sqv * pui_Sm(:, :) / no
+			do i = 1, pui_nW
+				pui_w1 = (i - 1) * pui_wR/pui_nW 
+				pui_w2 = i * pui_wR/pui_nW 
+				pui_Sp(i, :) = sqv * pui_Sp(i, :) / (no * 4.0 * par_pi_8 * (1.0/3.0) * (pui_w2**3 - pui_w1**3))
+			end do
+		end if
 		
 		do i = 2, par_n_potok
 			M_K_Moment(:, :, :, 1) = M_K_Moment(:, :, :, 1) + M_K_Moment(:, :, :, i)
@@ -370,10 +387,12 @@ module Monte_Karlo
 			
 			M_K_Moment(:, :, i, 1) = sqv * M_K_Moment(:, :, i, 1) / no
 			
-			j = pui_num_tetr(i)
-			if(j > 0) then
-				pui_Sm(:, j) = pui_Sm(:, j) / no
-				pui_Sp(:, j) = pui_Sp(:, j) / no
+			if(par_PUI == .True.) then
+				j = pui_num_tetr(i)
+				if(j > 0) then
+					pui_Sm(:, j) = pui_Sm(:, j) / no
+					pui_Sp(:, j) = pui_Sp(:, j) / no
+				end if
 			end if
 			
 			if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
@@ -774,7 +793,7 @@ module Monte_Karlo
 					end select
 					
 					call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
-						particle(3) + time * ddt * particle(6), cell, PAR)
+						particle(3) + time * ddt * particle(6), cell, PAR = PAR)
 				
 					cp = sqrt(PAR(5)/PAR(1))
 					vx = PAR(2)
@@ -935,7 +954,7 @@ module Monte_Karlo
 					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 				
 				! Добавляем для расчёта PUI
-				if(area2 <= 2) then
+				if(area2 <= 2 .and. par_PUI == .True.) then
 					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
@@ -1089,6 +1108,7 @@ module Monte_Karlo
 	
 		step = 0
 		
+		
 		do while (stek(n_potok) >= 1)
 			
 			step = step + 1
@@ -1134,6 +1154,7 @@ module Monte_Karlo
 				kappa_pui = 0.0
 				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
 				pui_less = 1.0
+				MAS_PUI = 0.0
 
 				do ijk = 1, 3  ! Разбиение траектории на 3 части для более точной перезарядки
 					pui_less = 1.0
@@ -1170,7 +1191,7 @@ module Monte_Karlo
 
 
 						! p = PAR(5) - MAS_PUI(2) * MAS_PUI(1)
-						if(p < 0.0) p = 4286.72/((r/par_1ae)**(2.0 * ggg))
+						if(p < 0.0) p = par_p_0/((r/par_1ae)**(2.0 * ggg))
 						! ro_pui = MAS_PUI(1)
 						! ro = PAR(1) - ro_pui
 						if(ro < 0.000001) then
@@ -1212,7 +1233,7 @@ module Monte_Karlo
 						print*, n_pui(f_pui_num2(34788))
 						print*, "___"
 						print*, n_pui(f_pui_num2(104366))
-						pause "ERROR ro MK 157 6787yutr4dfghhghjuhj0089"
+						pause "ERROR ro MK 157 dvrbtrbrv34bt5vestves"
 					end if
 				
 					! Найдём время до перезарядки и веса частиц  ****************************************************************************************
@@ -1229,7 +1250,7 @@ module Monte_Karlo
 						nu_ex = (ro * MK_int_1(u, cp)) / par_Kn        ! Пробуем вычислять интеграллы численно
 					end if
 
-					if(area2 <= 2) kappa_pui = kappa_pui + pui_less * PUI_get_nu_integr(f_pui_num2(cell2), u)/ par_Kn * time/3.0  
+					if(area2 <= 2 .and. par_PUI == .True.) kappa_pui = kappa_pui + pui_less * PUI_get_nu_integr(f_pui_num2(cell2), u)/ par_Kn * time/3.0  
 			
 					kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
 				end do
@@ -1357,7 +1378,7 @@ module Monte_Karlo
 
 				! Добавим интегралы по перезарядке на пикапах !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			
-				if(area2 <= 2) then
+				if(area2 <= 2 .and. par_PUI == .True.) then
 					if(f_pui_num2(cell2) < 1) then
 						print*, "(__________________________)"
 						print*, cell2
@@ -1388,7 +1409,7 @@ module Monte_Karlo
 					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 				
 				! Добавляем для расчёта PUI
-				if(area2 <= 2) then
+				if(area2 <= 2 .and. par_PUI == .True.) then
 					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
@@ -1409,7 +1430,7 @@ module Monte_Karlo
 					II = MK_geo_zones(r, 1.2_8) - 1
 				end if
 
-				if(area2 <= 2) then  !! Нужно перезаряжать с пикапами
+				if(area2 <= 2 .and. par_PUI == .True.) then  !! Нужно перезаряжать с пикапами
 					call MK_pui_charge_exchange_velocity(n_potok, vx, vy, vz, particle(4), particle(5), particle(6), f_pui_num2(cell2), k1, k2, k3)
 					! Функция возвращает сразу декартовые компоненты новой скорости
 					V = (/ k1, k2, k3 /)

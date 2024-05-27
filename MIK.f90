@@ -6458,6 +6458,60 @@
         close(1)
 	
 	end subroutine Print_Contact_3D
+
+    subroutine Print_BS_3D()
+        use GEO_PARAM
+        use STORAGE
+        implicit none
+        integer(4) :: N1, N2, N3, j, k, cel, gr, kk
+        real(8) :: c(3)
+        
+        N3 = size(gl_Cell_A(1, 1, :))
+        N2 = size(gl_Cell_A(1, :, 1))
+        N1 = size(gl_Cell_A(:, 1, 1))
+        
+        
+        open(1, file = 'Print_BS_3D.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Vn_1'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1), ", E =  ", N3 * (N2 - 1), ", F=FEPOINT, ET=quadrilateral "
+        
+        
+        do k = 1, N3
+            do j = 1, N2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_A(par_n_BS - 1, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+                write(1,*) c(1), c(2), c(3), 1.0_8
+                
+                cel = gl_Cell_A(par_n_BS - 1, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+                write(1,*) c(1), c(2), c(3), 1.0_8
+                
+                cel = gl_Cell_A(par_n_BS - 1, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+                write(1,*) c(1), c(2), c(3), 1.0_8
+                
+                cel = gl_Cell_A(par_n_BS - 1, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+                write(1,*) c(1), c(2), c(3), 1.0_8
+                
+            end do	
+        end do
+        
+        
+        do k = 1, N3 * (N2 - 1)
+            write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+        end do
+        
+        
+        close(1)
+	
+	end subroutine Print_BS_3D
 	
 	subroutine Print_TS_3D()
         use GEO_PARAM
@@ -8127,6 +8181,7 @@
         call Print_TS_3D()
         print*, "C3"
         call Print_Contact_3D()
+        call Print_BS_3D()
         print*, "C1"
         call Print_surface_y_2D()
         print*, "C1"
@@ -8445,7 +8500,8 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 547 ! 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 562 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+        ! 551 - до изменения chi
         !? 535 - до того, как поменять определение давления в PUI
 
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
@@ -8463,7 +8519,7 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 19 !? 9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 22 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1  !? 3 Номер алгоритма
 
@@ -8697,8 +8753,10 @@
 			! Перенормируем параметры плазмы в гелиосфере
 			do i = 1, size(gl_Cell_par(1, :))
 				if(gl_zone_Cell(i) <= 2) then
-					!gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) / (par_chi/par_chi_real)
-				    !gl_Cell_par(1, i) = gl_Cell_par(1, i) * (par_chi/par_chi_real)**2
+					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) / (par_chi/par_chi_real)
+				    gl_Cell_par(1, i) = gl_Cell_par(1, i) * (par_chi/par_chi_real)**2
+				    gl_Cell_par2(1, i) = gl_Cell_par2(1, i) * (par_chi/par_chi_real)**2
+				    gl_Cell_par(9, i) = gl_Cell_par(9, i) * (par_chi/par_chi_real)**2
 				end if
 			end do
 			
@@ -8717,8 +8775,10 @@
 			! Перенормируем параметры плазмы обратно
 			do i = 1, size(gl_Cell_par(1, :))
 				if(gl_zone_Cell(i) <= 2) then
-					!gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) * (par_chi/par_chi_real)
-				    !gl_Cell_par(1, i) = gl_Cell_par(1, i) / (par_chi/par_chi_real)**2
+					gl_Cell_par(2:4, i) = gl_Cell_par(2:4, i) * (par_chi/par_chi_real)
+				    gl_Cell_par(1, i) = gl_Cell_par(1, i) / (par_chi/par_chi_real)**2
+				    gl_Cell_par2(1, i) = gl_Cell_par2(1, i) / (par_chi/par_chi_real)**2
+				    gl_Cell_par(9, i) = gl_Cell_par(9, i) / (par_chi/par_chi_real)**2
 				end if
 			end do
 			
@@ -8750,14 +8810,17 @@
 			! РАБОТА С МОНТЕ-КАРЛО
             ! Создаём все необходимые файлы из файла основной сетки
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+            print*, "** A **"
 			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
 	        call Int2_Initial()			     ! Создание сетки интерполяции
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции
+            print*, "** B **"
 			call Int2_Dell_interpolate()
 			call Dell_STORAGE()
 			
+            print*, "** Create Mesh **"
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
 			par_l_phi = 40
@@ -8773,15 +8836,17 @@
             par_n_IA =  12! 12                   ! Количество точек, которые входят во внутреннюю область
 	        par_n_IB =  14! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			
+            print*, "** C **"
 			call Set_STORAGE()                 ! Выделяем память под все массивы программы
+            print*, "** D **"
             call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
-    
+            print*, "** F **"
             call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
             call calc_all_Gran()               ! Программа расчёта объёмов ячеек, площадей и нормалей граней (обязательна здесь)
             call Find_inner()                  ! Находит ячейки внутри небольшой сферы, в которых счёт будет происходить отдельно (обязательно после 
                                                ! предыдущей функции)
             call Geometry_check()              ! Проверка геометрии сетки, чтобы не было ошибок в построении
-			
+			print*, "** G **"
 			! Считываем файл поверхностей разрыва и двигаем сетку
 			
 			call Surf_Read_setka_bin(name)
@@ -8805,6 +8870,10 @@
 			
 			do i = 1, 35
 	        	call Surf_Set_surf(0.003_8)
+			end do
+
+            do i = 1, 10
+	        	call Surf_Set_surf(0.0001_8)
 			end do
 			
             call Find_Surface()                ! Ищем поверхности, которые будем выделять (вручную)
@@ -8843,15 +8912,17 @@
             call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 
             !! PUI 
-            call PUI_Set()                !! PUI
-            call PUI_f_Set()              !! PUI
-            call PUI_f_Set2()             !! PUI
-            call PUI_Read_bin(name2)
-            call PUI_Read_f_bin(name2)
-            call PUI_Culc_h0()            !! PUI
-            call PUI_F_integr_Set()       !! PUI
-            call PUI_Read_for_MK_bin(name2)   !! PUI
-            call Print_par_1D_PUI()
+            if(par_PUI) then
+                call PUI_Set()                !! PUI
+                call PUI_f_Set()              !! PUI
+                call PUI_f_Set2()             !! PUI
+                call PUI_Read_bin(name2)
+                call PUI_Read_f_bin(name2)
+                call PUI_Culc_h0()            !! PUI
+                call PUI_F_integr_Set()       !! PUI
+                call PUI_Read_for_MK_bin(name2)   !! PUI
+                call Print_par_1D_PUI()
+            end if
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
@@ -8873,8 +8944,10 @@
 			call Int2_Save_interpol_for_all_MK(name2 + 1)
 			call Int_2_Print_par_2D_set()	
             ! call PUI_Save_bin(name2 + 1)
-            call PUI_calc_Sm()
-	        call PUI_Save_bin(name2 + 1)
+            if(par_PUI) then
+                call PUI_calc_Sm()
+                call PUI_Save_bin(name2 + 1)
+            end if
 			! call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
 			! call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)

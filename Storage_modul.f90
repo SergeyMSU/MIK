@@ -8,7 +8,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	logical, parameter :: par_TVD = .True.				! Делаем ли ТВД
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
 	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
-	logical, parameter :: par_PUI = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
+	logical, parameter :: par_PUI = .False.          ! Включаем ли PUI
 	
 	real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
@@ -26,10 +26,13 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	real(8) :: par_R_inner = 9.0! 5.0_8     ! До какого расстояния внутренняя сфера
 	
 	
-	real(8), parameter :: lock_move = 0.1_8 !1.0_8 
-	real(8), parameter :: par_nat_TS = 0.3 * lock_move * 0.3 * 0.01_8 ! 0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 0.1 * 0.3 * lock_move! 0.3  0.8                 ! Коэффициент натяжения контакта  0.0001
-	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8                ! Коэффициент натяжения внешней ударной волны 0.0002
+	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
+	real(8), parameter :: par_nat_TS = 0.05 * lock_move * 0.3 * 0.01_8 ! 0.3 *  0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
+	real(8), parameter :: par_nat_HP = 1.4 * 0.3 * lock_move! 0.7 *                  ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_BS = lock_move * 0.0004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
+
+
+	real(8), parameter :: par_kurant = 0.5_8                ! КУРАНТ
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
     real(8), parameter :: koef2 = 0.1 * lock_move ! 0.1    1.0  0.5  0.01
@@ -46,7 +49,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 
     real(8), parameter :: par_n_p_inf = 0.06_8 !
     real(8), parameter :: par_V_character = 10.3804_8! 11.1246_8 ! Характерная скорость в км/с
-    real(8), parameter :: par_chi_real = 41.2317! 38.8686       ! С каким хи считаем реально
+    real(8), parameter :: par_chi_real = 8.0! 38.8686       ! С каким хи считаем реально
     real(8), parameter :: par_chi = 41.2317            ! Число Хи
     real(8), parameter :: par_Kn = 53.1133! 44.4572!  49.9018   !0.4326569808         ! Число Кнудсена
     real(8), parameter :: par_Velosity_inf = -2.54327_8
@@ -82,7 +85,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 3 * 18!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 6 * 18!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -318,16 +321,16 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         allocate(gl_RAY_K(par_n_TS, par_m_K, par_l_phi))
         allocate(gl_RAY_D(par_m_O + 1, par_m_K + 1, par_l_phi))
         allocate(gl_RAY_E(par_n_HP - par_n_TS + 1, par_m_O, par_l_phi))
-        
+        print*, "-A-"
         allocate(gl_Cell_A(par_n_END - 1, par_m_A + par_m_BC - 1, par_l_phi))
         allocate(gl_Cell_B( (par_n_TS - 1) + par_m_O, par_m_K, par_l_phi) )
         allocate(gl_Cell_C( par_n_END - par_n_TS, par_m_O, par_l_phi ))
         
-        
+        print*, "-B-"
         allocate(gl_all_Cell(8, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         allocate(gl_Cell_neighbour(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         allocate(gl_Cell_gran(6, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-        
+        print*, "-C-"
         allocate(gl_Cell_Volume(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate(gl_Cell_dist(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate( gl_Cell_center(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
@@ -335,19 +338,20 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         allocate(gl_Cell_type(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate(gl_Cell_number(3, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate(gl_zone_Cell(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-        
+        print*, "-D-"
         allocate( gl_Cell_par(9, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         
         if(par_helium) allocate( gl_Cell_par2(1, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
-        if(par_helium) allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        ! if(par_helium) 
+        allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         
         allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
-        
+        print*, "-E-"
         ! Посчитаем число узлов в сетке
         par_n_points = par_n_END * par_l_phi * (par_m_A + par_m_BC) + par_m_K * (par_n_TS + par_m_O) * par_l_phi + par_l_phi * (par_n_END - par_n_TS + 1) * par_m_O - &
                 (par_m_A + par_m_BC + par_m_K - 1) * par_l_phi - par_n_END * (par_l_phi - 1) - (par_n_TS + par_m_O - 1) * (par_l_phi - 1)  ! Всего точек в сетке
-        
+        print*, "-F-"
         allocate(gl_x(par_n_points))
         allocate(gl_y(par_n_points))
         allocate(gl_z(par_n_points))
@@ -363,7 +367,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         n1 = (n1 + n2) * par_l_phi
         
         if (par_developer_info)print*, "1 sloy CELL ", n2 , " == ", size(gl_Cell_A(:,:,1)) + size(gl_Cell_B(:,:,1)) + size(gl_Cell_C(:,:,1))
-        
+        print*, "-H-"
         allocate(gl_all_Gran(4, n1))
         allocate(gl_Gran_neighbour(2, n1))
         allocate(gl_Gran_neighbour_TVD(2, n1))
@@ -376,11 +380,11 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         allocate(gl_Gran_POTOK2(size(gl_Cell_par2(:, 1)), n1))
         allocate(gl_Gran_POTOK_MF(5, 4, n1))
         allocate(gl_Gran_center(3, n1))
-        
+        print*, "-I-"
         allocate(gl_Contact( (par_m_O + par_m_A + par_m_BC -1) * par_l_phi ))   ! Выделяем память под контакт
         allocate(gl_TS( (par_m_A + par_m_BC + par_m_K -1) * par_l_phi ))   ! Выделяем память под TS
         allocate(gl_BS( (par_m_A - 1) * par_l_phi ))   ! Выделяем память под BS
-        
+        print*, "-J-"
         if (par_developer_info) print*, "Set_STORAGE: Ray A contains points: ", size(gl_RAY_A(:,1,1))
         if (par_developer_info) print*, "Set_STORAGE: Ray B contains points: ", size(gl_RAY_B(:,1,1))
         if (par_developer_info) print*, "Set_STORAGE: Ray C contains points: ", size(gl_RAY_C(:,1,1))
@@ -443,8 +447,8 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         
         gl_Contact = 0
         
-        gl_Gran_normal = 0.0;
-        gl_Gran_square = 0.0;
+        gl_Gran_normal = 0.0
+        gl_Gran_square = 0.0
         
         if (par_developer_info) print *, "END Set_STORAGE"
     
@@ -479,6 +483,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     
     deallocate(gl_Cell_par)
 	if(par_helium) deallocate(gl_Cell_par2)
+	deallocate(gl_Cell_par_div)
     deallocate(gl_Cell_par_MF)
 	deallocate(gl_Cell_par_MK)
     

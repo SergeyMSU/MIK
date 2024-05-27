@@ -984,7 +984,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 23000 * 2 * 6 * 6! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	all_step = 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1037,11 +1037,11 @@ module MY_CUDA
 	call Cuda_Calc_move_HP<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
 	
+	!! Было закоменченно
+	Num = size(gl_BS)
+	call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
+	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
-	!Num = size(gl_BS)
-	!call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
-	!ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
-	!
 	
 	
 	! Делаем три цикла поверхностного натяжения (по разным лучам, как на хосте) -------------------------------------------------------------------------

@@ -2430,6 +2430,7 @@
     logical :: exists
 	integer(4) :: n1, n2, n3
     
+	print*, "Start Int2_Read_bin"
     write(unit=name,fmt='(i5.5)') num
     
     inquire(file="int2_save_" // name // ".bin", exist=exists)
@@ -2716,7 +2717,7 @@
 	real(8), dimension(4, 4) :: Minv
 	real(8), dimension(1, 4) :: vec
 	real(8), intent(out), optional :: MAS_PUI(2)   ! Массив параметров пикапов
-	real(8), intent(out), optional :: rho_He   ! Массив параметров пикапов
+	real(8), intent(out), optional :: rho_He   
 	integer :: i, yzel, yzel2
 	
 	Minv = int2_all_tetraendron_matrix(:, :, num)
@@ -2729,7 +2730,7 @@
 	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
 		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
 	
-	if(present(MAS_PUI)) then
+	if(present(MAS_PUI) .and. par_PUI == .True.) then
 		MAS_PUI = 0.0	
 		do i = 1, 4
 			yzel = int2_all_tetraendron_point(i, num)
@@ -3145,6 +3146,8 @@
 	integer(4) :: N1, N2, N3, i, num
 	real(8) :: r(3), PAR(9), n_HE
 	
+	print*, "Start Int2_Re_interpol()"
+
 	if( size(gl_Cell_par(:, 1)) /= size(int2_Cell_par(:, 1)) .or. size(gl_Cell_par(:, 1)) /= 9) then
 		print*, "Error ishflspeurbvmdr  ", size(gl_Cell_par(:, 1)), size(int2_Cell_par(:, 1))
 		STOP
@@ -3567,6 +3570,8 @@
 	USE GEO_PARAM
 	implicit none
 	integer :: n
+
+	print*, "Start Int2_Set_Interpolate()"
 	! Выделения памяти и начальная инициализация
 	allocate(int2_Point_A( size(gl_Cell_A(:, 1, 1)) + 5 + 1, size(gl_Cell_A(1, :, 1)) + 1, size(gl_Cell_A(1, 1, :)) ))
 	allocate(int2_Point_B( size(gl_Cell_B(:, 1, 1)) + 3 + 1, size(gl_Cell_B(1, :, 1)) + 1, size(gl_Cell_B(1, 1, :)) ))
@@ -3633,6 +3638,7 @@
 	
 	subroutine Int2_Dell_interpolate()
 	! Удаляет все массивы интерполяции
+	print*, "Start Int2_Dell_interpolate()"
 	deallocate(int2_Point_A)
 	deallocate(int2_Point_B)
 	deallocate(int2_Point_C)
@@ -3655,6 +3661,8 @@
 	deallocate(int2_Cell_par_2)
 	deallocate(int2_Moment)
 	deallocate(int2_Moment_k)
+
+	if(allocated(int2_Cell_par_div)) deallocate(int2_Cell_par_div)
 	
 	! Body of Int2_Dell_interpolate
 	

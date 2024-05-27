@@ -954,7 +954,10 @@
 			end do
 		end do
 		
+		gl_Gran_scheme = 0
+
 		! —читаем HLLD везде кроме 2 области
+		
 		do k = 1, size(gl_Gran_scheme(:))
 			
 			if(gl_Gran_neighbour(1, k) > 0 .and. gl_Gran_neighbour(2, k) > 0) then
@@ -964,22 +967,22 @@
 				end if
 			
 				if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 4 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 4) then
-					gl_Gran_scheme(k) = 3!3
+					gl_Gran_scheme(k) = 1!3
 				end if
 			
 				if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 3 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 3) then
-					gl_Gran_scheme(k) = 3!3
+					gl_Gran_scheme(k) = 0!3
 				end if
 				!
 				if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 2 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 2) then
-					gl_Gran_scheme(k) = 3!3
+					gl_Gran_scheme(k) = 0!3
 				end if
 			end if
 			
 			
-			if(gl_Gran_center(1, k) < -40) then
-				gl_Gran_scheme(k) = 3
-			end if
+			! if(gl_Gran_center(1, k) < -40) then
+			! 	gl_Gran_scheme(k) = 3
+			! end if
 			
 		end do
 		
@@ -987,6 +990,7 @@
 		! HP
 		node = 1
 
+		
 		do k = 1, size( gl_Cell_A(par_n_HP - 1, 1, :) )
 			do j = 1, size( gl_Cell_A(par_n_HP - 1, :, 1) )
 				gl_Contact(node) = gl_Cell_gran(1, gl_Cell_A(par_n_HP - 1, j, k))
@@ -994,49 +998,55 @@
 				node = node + 1
 				
 				! ¬водим лакса поперЄк разрыва 
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 1, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) ) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 1, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 1, j, k))) = 0!1
-				!
-				!
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) ) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 2, j, k))) = 0!1
-				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 3, j, k))) = 1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) ) = 1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 3, j, k))) = 1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 3, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 1, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 1, j, k)) ) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(2, gl_Cell_A(par_n_HP - 1, j, k))) = 1!1
 				
 				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k))) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP, j, k))) = 0!1
-				!
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 1, j, k))) = 0!1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 2, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 2, j, k)) ) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 2, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 2, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(2, gl_Cell_A(par_n_HP - 2, j, k))) = 1!1
 				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 2, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k))) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 2, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 2, j, k))) = 0!1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP - 3, j, k))) = 1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP - 3, j, k)) ) = 1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP - 3, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP - 3, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(2, gl_Cell_A(par_n_HP - 3, j, k))) = 1
+				
+				
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP, j, k))) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_A(par_n_HP, j, k))) = 1!1
+				
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 1, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 1, j, k))) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_A(par_n_HP + 1, j, k))) = 1!1
+				
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(par_n_HP + 2, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(par_n_HP + 2, j, k))) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(par_n_HP + 2, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(par_n_HP + 2, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_A(par_n_HP + 2, j, k))) = 1!1
 				
 			end do
 		end do
@@ -1049,37 +1059,41 @@
 				node = node + 1
 				
 				! ¬водим лакса поперЄк разрыва 
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) ) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 0!1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS, j, k)) ) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS, j, k))) = 1!1
 				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
-				!if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) ) = 1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+				! if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k)) ) = 1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS - 1, j, k))) = 1
 				
 				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 0!1
-				!if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 0!1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 0!1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 0!1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1!1
+				! if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1!1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1!1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))) = 1!1
 				
-				!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
-				!if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k)) /= 0) then
-				!    gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
-				!end if
-				!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
-				!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+				! if(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k)) /= 0) then
+				! gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+				! end if
+				! gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
+				! gl_Gran_scheme(gl_Cell_gran(1, gl_Cell_C(par_n_HP - par_n_TS + 2, j, k))) = 1
 			end do
 		end do
-
+		
 		node = 1
 		! TS
 		do k = 1, size( gl_Cell_A(par_n_TS - 1, 1, :) )
@@ -1167,6 +1181,7 @@
 		do k = 1, size( gl_Cell_A(par_n_BS - 1, 1, :) )
 			do j = 1, num
 				gl_BS(node) = gl_Cell_gran(1, gl_Cell_A(par_n_BS - 1, j, k))
+				gl_Gran_type(gl_BS(node)) = 3
 				node = node + 1
 			end do
 		end do
@@ -1176,23 +1191,23 @@
 		if (par_developer_info) print *, "Find_Surface: BS", node - 1, size(gl_BS)
 		
 		! ¬водим Ћакса на оси симметрии
-		if(.True.) then
+		if(.False.) then
 			do k = 1, size( gl_Cell_A(1, 1, :) )
 				do j = par_n_HP + 10, size( gl_Cell_A(:, 1, 1) )
 					!¬водим лакса поперЄк
-					!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 1, k))) = 0!1
-					!if(gl_Cell_gran(4, gl_Cell_A(j, 1, k)) /= 0) then
-					!	gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 1, k))) = 0!1
-					!end if
-					!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 1, k))) = 0!1
-					!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 1, k))) = 0!1
+					gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 1, k))) = 1!1
+					if(gl_Cell_gran(4, gl_Cell_A(j, 1, k)) /= 0) then
+						gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 1, k))) = 1!1
+					end if
+					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 1, k))) = 1!1
+					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 1, k))) = 1!1
 				
-					!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 2, k))) = 0!1
-					!if(gl_Cell_gran(4, gl_Cell_A(j, 2, k)) /= 0) then
-					!	gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 2, k))) = 0!1
-					!end if
-					!gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 2, k))) = 0!1
-					!gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 2, k))) = 0!1
+					gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_A(j, 2, k))) = 1!1
+					if(gl_Cell_gran(4, gl_Cell_A(j, 2, k)) /= 0) then
+						gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_A(j, 2, k))) = 1!1
+					end if
+					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_A(j, 2, k))) = 1!1
+					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_A(j, 2, k))) = 1!1
 				
 				end do
 			end do
@@ -1200,19 +1215,19 @@
 			do k = 1, size( gl_Cell_B(1, 1, :) )
 				do j = 1, par_n_TS + 1 !size( gl_Cell_B(:, 1, 1) )
 					! ¬водим лакса поперЄк
-					!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 0!1
-					!if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
-					!	gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 1, k))) = 0!1
-					!end if
-					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 1, k))) = 0!1
-					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 1, k))) = 0!1
+					gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 1, k))) = 1!1
+					if (gl_Cell_gran(4, gl_Cell_B(j, 1, k)) /= 0) then
+						gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 1, k))) = 1!1
+					end if
+					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 1, k))) = 1!1
+					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 1, k))) = 1!1
 				!
-					!gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 2, k))) = 0!1
-					!if (gl_Cell_gran(4, gl_Cell_B(j, 2, k)) /= 0) then
-					!	gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 2, k))) = 0!1
-					!end if
-					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 2, k))) = 0!1
-					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 2, k))) = 0!1
+					gl_Gran_scheme(gl_Cell_gran(3, gl_Cell_B(j, 2, k))) = 1!1
+					if (gl_Cell_gran(4, gl_Cell_B(j, 2, k)) /= 0) then
+						gl_Gran_scheme(gl_Cell_gran(4, gl_Cell_B(j, 2, k))) = 1!1
+					end if
+					gl_Gran_scheme(gl_Cell_gran(5, gl_Cell_B(j, 2, k))) = 1!1
+					gl_Gran_scheme(gl_Cell_gran(6, gl_Cell_B(j, 2, k))) = 1!1
 				
 				end do
 			end do
