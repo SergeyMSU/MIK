@@ -777,7 +777,6 @@
 		
 		end function Setka_A
 			
-			
 			!@cuf attributes(host, device) & 
 		real(8) pure function Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dr)
 			! Variables
