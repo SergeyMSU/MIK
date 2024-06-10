@@ -1583,7 +1583,7 @@ module Monte_Karlo
 	
 	subroutine M_K_Set()
 	
-		integer(4) :: i, j, n, k
+		integer(4) :: i, j, n, k, sort
 		real(8) :: Yr
 		logical :: exists
 		
@@ -1642,15 +1642,18 @@ module Monte_Karlo
 		end if
 		open(2, file = "MK_Mu_statistic.txt", status = 'old')
 		
-		do k = 1, par_n_sort
+		do k = 1, 4 !!par_n_sort
 			do j = 1, par_m_zone + 1
 				do i = 1, par_n_zone + 1
-					read(2, *) n, n, n, MK_Mu(i, j, k)
+					read(2, *) n, n, sort, MK_Mu(i, j, k)
 				end do
 			end do
 		end do
 		
 		close(2)
+
+		MK_Mu(:, :, 5) = MK_Mu(:, :, 1) !!
+		MK_Mu(:, :, 6) = MK_Mu(:, :, 2) !!
 		
 		
 		MK_Mu(:, :, 2) = MK_Mu(:, :, 2) * 0.2

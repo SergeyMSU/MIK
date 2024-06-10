@@ -8,7 +8,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	logical, parameter :: par_TVD = .True.				! Делаем ли ТВД
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
 	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
-	logical, parameter :: par_PUI = .False.          ! Включаем ли PUI
+	logical, parameter :: par_PUI = .True.          ! Включаем ли PUI
 	
 	real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
@@ -85,7 +85,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 1 * 3 * 21!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 2!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -283,8 +283,8 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     ! Всё определение и заполнение массивов делается в модуле PUI, здесь они лежат
     ! только для того, чтобы их можно было использовать в других модулях
 
-    integer :: pui_nW = 40      ! 50
-	real(8) :: pui_wR = 100.0    ! 150.0
+    integer :: pui_nW = 100      ! 50
+	real(8) :: pui_wR = 200.0    ! 150.0
     real(8), allocatable :: f_pui(:, :)           ! (pui_nW, :)
 	integer, allocatable :: f_pui_num(:)           ! По номеру в массиве пуи, определяем номер узла в интерполяционной сетке
 	integer, allocatable :: f_pui_num2(:)		   ! По номеру узла в интерполяционной сетке, определяем номер в массиве PUI

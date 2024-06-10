@@ -8503,7 +8503,7 @@
         
 		name = 587 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
-        ! 574 до изменения сеченя на стебегенса
+        ! 574 до изменения сечения на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
 
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
@@ -8521,9 +8521,9 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 24 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 26 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1  !? 3 Номер алгоритма
+		step = 2  !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8951,9 +8951,7 @@
                 call PUI_calc_Sm()
                 call PUI_Save_bin(name2 + 1)
             end if
-			! call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
+			
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -8966,19 +8964,19 @@
 			call PUI_f_Set2()
 			call PUI_Read_bin(name2)
             
-            open(11, file = "pui_num_tetr.bin", FORM = 'BINARY')
-            write(11) size(pui_num_tetr)
-            write(11) pui_num_tetr
-            close(11)
+            ! open(11, file = "pui_num_tetr.bin", FORM = 'BINARY')
+            ! write(11) size(pui_num_tetr)
+            ! write(11) pui_num_tetr
+            ! close(11)
 
-            return
+            !return
 			! call PUI_Read_bin(9)
 
 			! call PUI_calc_Sm()
             ! call PUI_Save_bin(name2 + 1)
 
 			call Culc_f_pui()
-            call Cut_f_pui()
+            !call Cut_f_pui()
             call PUI_Save_f_bin(name2)
             ! call PUI_Read_f_bin(name2 + 1)
 
@@ -8991,20 +8989,16 @@
             ! call PUI_Read_for_MK_bin(name2 + 1)
             
             
-			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(3, 15.1_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(4, 15.2_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(5, 15.3_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
+			call PUI_print(1, 13.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(2, 20.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(3, 17.0_8, 10.00001_8, 0.00001_8)
+			call PUI_print(4, 5.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(5, 1.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(6, 10.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(7, 0.0_8, 10.00001_8, 0.00001_8)
+			call PUI_print(8, -17.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(9, -50.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(10, -40.0_8, 30.00001_8, 0.00001_8)
             
             ! call Int_2_Print_par_1D()
             call Print_par_1D_PUI()
