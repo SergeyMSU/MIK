@@ -678,7 +678,7 @@ module Monte_Karlo
 		par_n_moment = 19
 		betta = 2.0 * par_pi_8/(par_l_phi - 2)
 		par_Rleft = par_R_LEFT + 0.0001
-		par_Rup = 298.0! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
+		par_Rup = par_R_END - 2.0_8! par_R_END * sqrt( 1.0 - 0.5 * sin(betta)**2 / (1.0 + cos(betta)) ) - 0.0001  !  Верхняя стенка
 		print*, "par_Rup = ", par_Rup
 		
 		Y = dabs(par_Velosity_inf)
@@ -849,8 +849,10 @@ module Monte_Karlo
 				
 				
 				if(mu2 < 0.0) then
-					print*, mu2, mu, mu_ex, kappa
-					STOP "Eror oiuyyuiojhu987uio9i"
+					print*, mu2, mu, mu_ex, kappa, kappa_all
+					print*, particle(7)
+					print*, "p = ", particle 
+					STOP "Eror oiuyyuiojhu987uio9i1313143"
 				end if
 				
 
@@ -992,6 +994,13 @@ module Monte_Karlo
 					
 					mu3 = mu_ex * mu_(i)
 					call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
+
+					if(mu3 < 0.0) then
+						print*, "ERROR 209iur92yr8y8p2"
+						print*, mu_ex
+						print*, i, "  =  ", mu_
+						STOP
+					end if
 					
 					if(bb2 == .False.) CYCLE  ! Не запускаем эту частицу, она вырубается
 					

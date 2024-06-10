@@ -6115,7 +6115,7 @@
 
         integer :: N1, N2, kk, k, i, j, N
 
-
+        print*, "Print_Setka_2D()"
         N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
             size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(:, 1, 1)) + &
             size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
@@ -6639,7 +6639,7 @@
         N = size(gl_RAY_A(1, :, kk)) + size(gl_RAY_B(1, :, kk)) + size(gl_RAY_K(1, :, kk))
         M = size(gl_RAY_A(1, :, kk)) + size(gl_RAY_C(1, :, kk)) + size(gl_RAY_O(1, :, kk))
         L = M
-
+        print*, "Print_surface_2D()"
         open(1, file = 'print_surface_2D.txt')
         write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y'  ZONE T= 'HP', N= ", 2 * N + 2 * M + 2 * L, ", E =  ", 2 * (N - 1) + 2 * (M - 1) + &
             + 2 * (L - 1), ", F=FEPOINT, ET=LINESEG "
@@ -6928,7 +6928,8 @@
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
         real(8) :: Dr, DI1, DI2, DI3
         
-        Dr = 1.0/par_R0
+        print*, "Print_par_1D()"
+        Dr = 1.0! 1.0/par_R0
         DI1 = 0.0264
         DI2 = 0.007622
         DI3 = 0.00292921
@@ -7297,7 +7298,7 @@
         integer :: N1, N2, kk, k, i, j, N, m
         real(8) :: c(3), Mach
 
-
+        print*, "Print_par_2D()"
         N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
             size(gl_Cell_B(1, :, 1)) * size(gl_Cell_B(:, 1, 1)) + &
             size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
@@ -8106,7 +8107,7 @@
             
 
             if(num < 1) then
-                print*, "mini-problem with interpolation", x, y, z
+                !print*, "mini-problem with interpolation", x, y, z
                 num = 3
                 call Int2_Get_tetraedron_inner(x, y, z, num)
                 if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
@@ -8143,7 +8144,7 @@
             gl_Cell_par_MK(6:10, 1, i) = gl_Cell_par_MK(6:10, 1, i) + PAR_k(:) * dd
             
             if(num < 1) then
-                print*, "mini-problem with interpolation", x, y, z
+                !print*, "mini-problem with interpolation", x, y, z
                 num = 3
                 call Int2_Get_tetraedron_inner(x, y, z, num)
                 if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
@@ -8350,7 +8351,7 @@
         !    call Start_GD_3(1)
         !    call Start_GD_3_inner(1)
         !    if(mod(i, 10000) == 0) then
-        !       call Save_setka_bin(14)
+            !   call Save_setka_bin(14)
         !       call Print_surface_2D()
         !       call Print_Setka_2D()
         !       call Print_par_2D()
@@ -8500,8 +8501,9 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 565 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 587 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
+        ! 574 до изменения сеченя на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
 
         ! 334! 307  ! С 237 надо перестроить сетку ! Имя основной сетки  начало с 224
@@ -8519,7 +8521,7 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 22 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 24 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
 		!name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1  !? 3 Номер алгоритма
 
@@ -8588,7 +8590,7 @@
             par_n_TS =  33! 57! 52! 26                    ! Количество точек до TS (TS включается)
             par_n_HP =  63! 87! 82! 40                 ! Количество точек HP (HP включается)  всё от 0 считается
             par_n_BS =  103! 89! 127! 152! 60! 5                 ! Количество точек BS (BS включается)
-            par_n_END = 115! 98! 142! 167! 72! 6                ! Количество точек до конца сетки (конец включается)
+            par_n_END = 121! 98! 142! 167! 72! 6                ! Количество точек до конца сетки (конец включается)
             par_n_IA =  20! 34! 12                   ! Количество точек, которые входят во внутреннюю область
 	        par_n_IB =  22! 36! 14                   ! Количество точек, которые входят во внутреннюю область (с зазором)
 			par_kk1 = 2.0_8
@@ -8597,6 +8599,7 @@
 			!par_kk13 = 1.7_8
 			par_kk2 = 1.83_8
 			par_al1 = 1.0_8
+            par_R_END = 550.0
 			
 			call Set_STORAGE()                 ! Выделяем память под все массивы программы
             call Build_Mesh_start()            ! Запускаем начальное построение сетки (все ячейки связываются, но поверхности не выделены)
@@ -8615,8 +8618,8 @@
 			call Surf_Read_setka_bin(name)
 			
 	        print*, "Nachinaem dvizhenie setki"
-	        do i = 1, 170
-	        	call Surf_Set_surf(10.0_8)
+	        do i = 1, 270
+	        	call Surf_Set_surf(1.0_8)
 	        end do
 	        
 	        do i = 1, 55
@@ -8803,7 +8806,7 @@
 			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
-		    call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
+		    !! call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
 			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------

@@ -984,7 +984,8 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 23000 * 2 * 6! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	all_step = 60000 * 10! * 6 * 9! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	!! Сейчас сколько тысяч, столько и минут
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
 		if (mod(step, 250) == 0) then
@@ -1280,6 +1281,7 @@ module MY_CUDA
 		print*, "par_kk13 = ", par_kk13
 		call Send_data_to_Host_move(now2)
 		call Send_data_to_Host()
+		print*, "PRINT"
 		call Print_surface_2D()
 		call Print_Setka_2D()
 		call Print_par_2D()

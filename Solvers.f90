@@ -1203,7 +1203,7 @@
 
             dsl=SL
             dsc=SM
-            dsp= dmax1( (vR(1)+ 1.35 * cR),(vL(1)+ 1.35 * cL) )! SR
+            dsp= SR! dmax1( (vR(1)+ 1.35 * cR),(vL(1)+ 1.35 * cL) )! SR
 
 !            if(id_bn.eq.-1)then
 !c                   dsc=(vR(1)+vL(1))/2.d0

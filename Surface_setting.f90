@@ -371,8 +371,9 @@ module Surface_setting
 	real(8), intent(in) :: dr  ! Шаг движения
 	real(8) :: R_TS, proect, vel(3), R_HP, R_BS, KORD(3), dist, ddt, ER(3)
     integer :: yzel, N1, N2, N3, i, j, k, yzel2, ij
-    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13, kk14, kk15, dk13
+    real(8) :: the, phi, r, x, y, z, rr, xx, x2, y2, z2, rrr, r1, r2, r3, r4, rd, kk13, kk14, kk15, dk13, ddr, rr0, dddr
     real(8) :: yy1, yy2, yy3
+    real(8) :: y3, z3
 	
 	! Body of Set_surf
 	
@@ -555,6 +556,10 @@ module Surface_setting
 
     ! Цикл движения точек на лучах C  ************************************************************
     do k = 1, N3
+		yzel = gl_RAY_A(par_n_HP, size(gl_RAY_A(1, :, 1)), k)
+		ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
+		rr0 = norm2(ER)  ! Новое расстояние до BS
+
         do j = 1, N2
             
             ! Вычисляем координаты текущего луча в пространстве
@@ -582,6 +587,11 @@ module Surface_setting
                 yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 				ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
                 R_BS = norm2(ER)  ! Новое расстояние до BS
+
+
+				yzel = gl_RAY_A(par_n_BS - 1, size(gl_RAY_A(1, :, 1)), k)
+				ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
+                ddr = R_BS - norm2(ER)  ! Новое расстояние до BS
 				
             
             do i = 1, N1
@@ -608,7 +618,7 @@ module Surface_setting
     !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 				!end if
 				
-				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd))
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd), ddr, rr0)
                 
                 gl_x(yzel) = x
                 gl_y(yzel) = r * cos(phi)
@@ -641,6 +651,10 @@ module Surface_setting
 		
 		dk13 = 2.0 * (yy2 - yy1)/(yy3 - yy1)
 		r1 = log(dk13)/log(1.0/(par_n_BS - par_n_HP - 9))
+
+		yzel = gl_RAY_A(par_n_HP, size(gl_RAY_A(1, :, 1)), k)
+		ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
+		rr0 = norm2(ER)  ! Новое расстояние до BS
 		
         do j = 1, N2
             
@@ -653,6 +667,8 @@ module Surface_setting
 			else
 				R_HP = R_HP + dr
 			end if
+
+			
 			
 			
 			
@@ -669,8 +685,17 @@ module Surface_setting
             yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 			KORD(1) = 0.0_8; KORD(2) = gl_y(yzel); KORD(3) = gl_z(yzel)
             R_BS = norm2(KORD)  ! Новое расстояние до BS
+
+			yzel = gl_RAY_A(par_n_BS - 1, size(gl_RAY_A(1, :, 1)), k)
+			ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
+			ddr = R_BS - norm2(ER)  ! Новое расстояние до BS
+
 			
-			
+			yzel = gl_RAY_E(size(gl_RAY_E(:, 1, 1)) - 1, j, k)
+			ER(1) = 0.0_8; ER(2) = gl_y(yzel); ER(3) = gl_z(yzel)
+			dddr = max(min(dabs(R_HP - norm2(ER)), 10.0_8), 0.01_8)  ! Новое расстояние до BS
+			!dddr = 1.0
+
 			
             do i = 1, N1
                 yzel = gl_RAY_O(i, j, k)
@@ -684,7 +709,7 @@ module Surface_setting
     !                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
     !            end if
 				
-				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1)
+				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, ddr = ddr, rr0 = rr0, dddr = dddr)
 
                 gl_x(yzel) = x
                 gl_y(yzel) = r * cos(phi)
@@ -768,6 +793,15 @@ module Surface_setting
 	
 	
     do k = 1, N3
+
+		y2 = gl_y(gl_RAY_O(1, size(gl_RAY_O(1, :, 1)), k))
+		z2 = gl_z(gl_RAY_O(1, size(gl_RAY_O(1, :, 1)), k))
+
+		y3 = gl_y(gl_RAY_C(1, 1, k))
+		z3 = gl_z(gl_RAY_C(1, 1, k))
+
+		r1 = sqrt(y3**2 + z3**2)/sqrt(y2**2 + z2**2)
+
         do j = 1, N2
             
             ! Вычисляем координаты текущего луча в пространстве
@@ -784,12 +818,11 @@ module Surface_setting
                     y = gl_y(gl_RAY_B(par_n_TS, par_m_BC, k))
                     z = gl_z(gl_RAY_B(par_n_TS, par_m_BC, k))
 				end if
-				
-				
-				r = sqrt(y**2 + z**2)
-				
+
 				
             do i = 1, N1
+
+				r = (i - N1)/(1.0 - N1) * sqrt(y**2 + z**2) + (i - 1.0)/(N1 - 1.0) * sqrt(y**2 + z**2)/r1
 
                 if (i == 1) CYCLE
 

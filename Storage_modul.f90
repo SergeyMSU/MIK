@@ -16,7 +16,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_koeff_HP = 1.3            ! На сколько умножить характерный размер для получения HP
     real(8), parameter :: par_koeff_BS = 2.0            ! На сколько умножить характерный размер для получения BS
     ! параметр нужен для геометрической точности сетки eps = par_R_character/10000
-    real(8) :: par_R_END = 300.0         !  
+    real(8) :: par_R_END = 350.0!  300.0         !  
     real(8) :: par_R_LEFT = -240.0 ! -390.0         !  Левая граница
     real(8), parameter :: par_pi_8 = acos(-1.0_8)         
     real(8), parameter :: par_pi_4 = acos(-1.0_4)      
@@ -28,8 +28,8 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.05 * lock_move * 0.3 * 0.01_8 ! 0.3 *  0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 1.4 * 0.3 * lock_move! 0.7 *                  ! Коэффициент натяжения контакта  0.0001
-	real(8), parameter :: par_nat_BS = lock_move * 0.0004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
+	real(8), parameter :: par_nat_HP = 1.0 * 0.3 * lock_move! 1.4 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
 
 
 	real(8), parameter :: par_kurant = 0.5_8                ! КУРАНТ
@@ -42,8 +42,6 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     
     real(8), parameter :: par_n_p_LISM = 3.0_8         ! в перезарядке
     real(8), parameter :: par_n_H_LISM_ = 1.0_8
-    real(8), parameter :: par_nu_ph = 8.68506!  12.2125 
-    real(8), parameter :: par_E_ph = 0.0631407!  0.10878
     
 	
 
@@ -51,9 +49,9 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_V_character = 10.3804_8! 11.1246_8 ! Характерная скорость в км/с
     real(8), parameter :: par_chi_real = 8.0! 38.8686       ! С каким хи считаем реально
     real(8), parameter :: par_chi = 41.2317            ! Число Хи
-    real(8), parameter :: par_Kn = 53.1133! 44.4572!  49.9018   !0.4326569808         ! Число Кнудсена
+    real(8), parameter :: par_Kn = 39.3412! 53.1133! 44.4572!  49.9018   !0.4326569808         ! Число Кнудсена
     real(8), parameter :: par_Velosity_inf = -2.54327_8
-    real(8), parameter :: par_a_2 = 0.11857!  0.130738_8        ! Параметр в сечении перезарядки
+    real(8), parameter :: par_a_2 = 0.102046! 0.11857!  0.130738_8        ! Параметр в сечении перезарядки
     real(8), parameter :: par_alphaB_inf = 0.698132!  1.04719755_8   ! 60 градусов
     real(8), parameter :: par_B_inf = 8.91006_8! 7.80959_8 !13.9666_8
     real(8), parameter :: par_kk = 10000.0                ! Масштаб характерного размера регулируется
@@ -64,6 +62,8 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_p_0 = 3118.94_8!  4624.57_8 ! 4790.19! 4624.57_8  ! Давление на 1 а.е.
     real(8), parameter :: par_mHe_inf = 0.6_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
     real(8), parameter :: par_mpHe_inf = 1.15_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
+    real(8), parameter :: par_nu_ph = 10.3286!  12.2125 
+    real(8), parameter :: par_E_ph = 0.07252!  0.10878
     
 	real(8), parameter :: par_Mach_alf = 12.8816_8! 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
@@ -79,13 +79,13 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
 	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
 	integer(4) :: par_n_moment = 19 !9  !  Сколько различных моментов считаем (длинна массива)
-	real(8), parameter :: par_Rmax = 220.0  !  Радиус сферы, с которой запускаем частицы
+	real(8), parameter :: par_Rmax = 300.0! 220.0  !  Радиус сферы, с которой запускаем частицы
 	real(8) :: par_Rleft! = par_R_LEFT + 0.0001 !-400.0 + 0.01  !  Задняя стенка
 	real(8) :: par_Rup! = par_R_END - 0.001  !  Верхняя стенка
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 6 * 18!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 1 * 3 * 21!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)

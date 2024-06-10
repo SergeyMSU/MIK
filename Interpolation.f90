@@ -1935,6 +1935,7 @@
 	if (int2_all_tetraendron(1, num) == 0) then
 		
 		print*, "Takogo tetraedra net! ERROR  86tryjbyui98765rtyujhvdrtyu8765erthgg"
+		print*, x, y, z, num
 		return
 	end if
 	
@@ -2116,7 +2117,7 @@
 	call Int2_Get_tetraedron(x, y, z, num)
 	
 	if(num == 0) then
-		print*, "Net tetr"
+		!print*, "Net tetr"
 		return
 	end if
 	
@@ -2655,7 +2656,7 @@
 	call Int2_Get_tetraedron(x, y, z, num)
 	
 	if(num < 1) then
-		print*, "Net tetr"
+		!print*, "Net tetr"
 		num = 0
 		return
 	end if

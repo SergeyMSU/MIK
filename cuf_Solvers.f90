@@ -1209,12 +1209,13 @@ attributes(global) subroutine Cuda_Move_all_4(now)   ! Поверхностное натяжение н
 	
 	ddt = Time/0.000127
 	
-	kk = 0.5  ! 1.0
+	kk = 2.5  ! 0.5
 	
-	if(k > 6 .and. kk < 19) kk = 1.5  !  3.0
-	
-	if(k > 31 .and. kk < 44) kk = 1.5 !
-	!kk = kk * 2.0
+	if(k > 37 .and. kk < 53) kk = 5.0  !  1.5
+	!if(k > 31 .and. kk < 44) kk = 1.5 !  1.5
+
+
+	!kk = kk * 3.5                                 !! Добавил
 			
 	! Контакт
 	yzel = gl_RAY_O(1, j, k)
@@ -1700,7 +1701,7 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 	real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS, dk13
 	integer:: i, j, k
-	real(8), device :: the, phi, r,  x, y, z, rr, rd, kk13, xx, x2
+	real(8), device :: the, phi, r,  x, y, z, rr, rd, kk13, xx, x2, ddr, rr0
 	integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1723,6 +1724,10 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 	! Вычисляем координаты текущего луча в пространстве
 				phi = 2.0_8 * par_pi_8 * angle_cilindr((k - 1.0_8)/(N3), dev_par_al1)  !(k - 1) * 2.0_8 * par_pi_8/(N3)
 				
+				yzel = gl_RAY_A(par_n_HP, size(gl_RAY_A(1, :, 1)), k)
+				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+				rr0 = norm2(ER)  ! Новое расстояние до BS
+
 				! Вычисляем координаты точки на луче
 				x = gl_x2(gl_RAY_B(par_n_HP, j, k), now2)
 				y = gl_y2(gl_RAY_B(par_n_HP, j, k), now2)
@@ -1742,6 +1747,10 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 				yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
 				R_BS = norm2(ER)  ! Новое расстояние до BS
+
+				yzel = gl_RAY_A(par_n_BS - 1, size(gl_RAY_A(1, :, 1)), k)
+				ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+                ddr = R_BS - norm2(ER)  ! Новое расстояние до BS
 				
 				dk13 = sqrt((gl_x2(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k), now2) - gl_x2(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k), now2))**2 + &
 					(gl_y2(gl_RAY_B(size(gl_RAY_B(:,1,1)), j, k), now2) - gl_y2(gl_RAY_B(size(gl_RAY_B(:,1,1)) - 1, j, k), now2))**2 + &
@@ -1759,7 +1768,7 @@ attributes(global) subroutine Cuda_Move_all_C(now)
 	!                r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 	!            end if
 				
-				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd))
+				r = Setka_C(i, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, rr, dabs(rr - rd), ddr, rr0)
 				
 				gl_x2(yzel, now2) = x
 				gl_y2(yzel, now2) = r * cos(phi)
@@ -1791,7 +1800,7 @@ attributes(global) subroutine Cuda_Move_all_O(now)
 	real(8), device :: vel(3), ER(3), KORD(3), ER2(3)
 	real(8) :: R_TS, proect, R_HP, R_BS, r1, dk13
 	integer:: i, j, k, ij
-	real(8), device :: the, phi, r, x, xx, yy1, yy2, yy3
+	real(8), device :: the, phi, r, x, xx, yy1, yy2, yy3, ddr, rr0, dddr
 	integer :: now2             ! Эти параметры мы сейчас меняем на основе now
 	
 	integer(4):: N1, N2, N3
@@ -1860,6 +1869,18 @@ attributes(global) subroutine Cuda_Move_all_O(now)
 			yzel = gl_RAY_A(par_n_BS, size(gl_RAY_A(1, :, 1)), k)
 			KORD(1) = 0.0_8; KORD(2) = gl_y2(yzel, now2); KORD(3) = gl_z2(yzel, now2)
 			R_BS = norm2(KORD)  ! Новое расстояние до BS
+
+			yzel = gl_RAY_A(par_n_BS - 1, size(gl_RAY_A(1, :, 1)), k)
+			ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+			ddr = R_BS - norm2(ER)  ! Новое расстояние до BS
+
+			yzel = gl_RAY_E(size(gl_RAY_E(:, 1, 1)) - 1, j, k)
+			ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+			dddr = max(min(dabs(R_HP - norm2(ER)), 10.0_8), 0.01_8)  ! Новое расстояние до BS
+
+			yzel = gl_RAY_A(par_n_HP, size(gl_RAY_A(1, :, 1)), k)
+			ER(1) = 0.0_8; ER(2) = gl_y2(yzel, now2); ER(3) = gl_z2(yzel, now2)
+			rr0 = norm2(ER)  ! Новое расстояние до BS
 			
 			if (R_BS < R_HP + 10.0) then
 				R_BS = R_HP + 10.0
@@ -1874,7 +1895,7 @@ attributes(global) subroutine Cuda_Move_all_O(now)
 				!    r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 				!end if
 				
-				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1)
+				r = Setka_O(i, r1, R_HP, R_BS, dk13, par_n_HP, par_n_BS, par_kk2, par_R_END, N1, ddr = ddr, rr0 = rr0, dddr = dddr)
 
 
 				gl_x2(yzel, now2) = x
@@ -3066,7 +3087,7 @@ attributes(global) subroutine Cuda_Calc_move_BS(now)
 	
 	if (i > Num) return
 	
-	metod = 2
+	metod = 3
 	www = 0.0
 	
 	
@@ -4543,7 +4564,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 
 	
 	if(gl_Gran_type(gr) == 1) metod = 3
-	if(gl_Gran_type(gr) == 3) metod = 1
+	if(gl_Gran_type(gr) == 3) metod = 3
 	
 	if(gl_Gran_type(gr) == 1) then
 		!n_disc = 2 !2
