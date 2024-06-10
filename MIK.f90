@@ -8803,10 +8803,10 @@
 			print*, "Save 5"
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			print*, "Save 6"
-			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
+			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
-		    !! call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
+		    !! call Int2_Save_interpol_for_all_MHD(name) !  + 1
 			!
 		
 		else if(step == 2) then  !----------------------------------------------------------------------------------------
