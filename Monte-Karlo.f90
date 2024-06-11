@@ -41,7 +41,6 @@ module Monte_Karlo
 	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы (4, par_stek, число потоков)
 	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
 	logical(4), allocatable :: M_K_particle_3(:, :, :, :)  ! Частицы (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
-	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
 	
 	integer(4), allocatable :: sensor(:, :, :)  !(3, 2, : par_n_potok число потоков)  ! датчики случайных чисел 
 	! Каждому потоку по два датчика
@@ -500,7 +499,7 @@ module Monte_Karlo
 	end subroutine M_K_start
 	
 	subroutine M_K_sum()
-	
+		! Сбор источником из разных файлов
 		USE OMP_LIB
 		!$MPI include 'mpif.h'
 		! Variables
@@ -1095,6 +1094,7 @@ module Monte_Karlo
 		integer(4) :: cell2 ! Номер ячейки-основной, в которой находится частица
 		integer(4) :: next ! Номер ячейки, в которую попадёт частица в следующий раз
 		integer(4) :: area2  ! Зона, в которой сейчас находится ячейка
+		integer(4) :: new_sort  ! атом какого сорта родился
 		integer(4) :: II  ! На сколько атомов расщепляется атом при перезарядке
 		integer(4) :: to_i, to_j, from_i, from_j
 		logical :: bb, bb2
@@ -1447,6 +1447,9 @@ module Monte_Karlo
 					mu3 = mu_ex_pui
 					call MK_ruletka(n_potok, to_i, to_j, from_i, from_j, area2, r, r_peregel, mu3, bb2)
 
+					if(area2 == 1) new_sort = 5
+					if(area2 == 2) new_sort = 6
+
 					if(bb2 /= .False.) then  ! Если не надо вырубать атом
 						! Запишем новую частицу в стек
 						stek(n_potok) = stek(n_potok) + 1
@@ -1455,10 +1458,10 @@ module Monte_Karlo
 						M_K_particle(7, stek(n_potok), n_potok) = mu3
 						M_K_particle(8, stek(n_potok), n_potok) = r_peregel
 
-						M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, area2, to_i, to_j /)
+						M_K_particle_2(:,stek(n_potok), n_potok) = (/ cell, new_sort, to_i, to_j /)
 						
-						if(MK_Mu_stat == .True.) then
-							if(particle_2(2) == area2) then
+						if(MK_Mu_stat == .True.) then  !!!  ??????????????????????????????????????? !! !
+							if(particle_2(2) == new_sort) then
 								M_K_particle_3(:, :, stek(n_potok), n_potok) = particle_3
 							else 
 								M_K_particle_3(:, :, stek(n_potok), n_potok) = .False.
@@ -1583,7 +1586,7 @@ module Monte_Karlo
 	
 	subroutine M_K_Set()
 	
-		integer(4) :: i, j, n, k, sort
+		integer(4) :: i, j, n, k, sort, m_zone, n_zone
 		real(8) :: Yr
 		logical :: exists
 		
@@ -1635,25 +1638,64 @@ module Monte_Karlo
 			end do
 		end do
 		
-		inquire(file="MK_Mu_statistic.txt", exist=exists)
-		if (exists == .False.) then
-			pause "net faila!!!  cvbdfgertmkopl"
-			STOP "net faila!!!"
-		end if
-		open(2, file = "MK_Mu_statistic.txt", status = 'old')
-		
-		do k = 1, 4 !!par_n_sort
-			do j = 1, par_m_zone + 1
-				do i = 1, par_n_zone + 1
-					read(2, *) n, n, sort, MK_Mu(i, j, k)
+
+		if(.False.) then !! Старый файл с весами
+			inquire(file="MK_Mu_statistic.txt", exist=exists)
+			if (exists == .False.) then
+				pause "net faila!!!  cvbdfgertmkopl"
+				STOP "net faila!!!"
+			end if
+			open(2, file = "MK_Mu_statistic.txt", status = 'old')
+			
+			do k = 1, 4 !!par_n_sort
+				do j = 1, par_m_zone + 1
+					do i = 1, par_n_zone + 1
+						read(2, *) n, n, sort, MK_Mu(i, j, k)
+					end do
 				end do
 			end do
-		end do
-		
-		close(2)
+			
+			close(2)
 
-		MK_Mu(:, :, 5) = MK_Mu(:, :, 1) !!
-		MK_Mu(:, :, 6) = MK_Mu(:, :, 2) !!
+			if(par_n_sort == 6) then
+				MK_Mu(:, :, 5) = MK_Mu(:, :, 1) !!
+				MK_Mu(:, :, 6) = MK_Mu(:, :, 2) !!
+			end if
+		else
+			inquire(file="MK_Mu_statistic2.txt", exist=exists)
+			if (exists == .False.) then
+				pause "net faila!!!  WCFEWCR2C24R2R235tgwgv3rw3vr4qc2- c"
+				STOP "net faila!!!"
+			end if
+			open(2, file = "MK_Mu_statistic2.txt", status = 'old')
+			
+			read(2, *) n_zone, m_zone, sort
+
+			do k = 1, sort
+				do j = 1, m_zone! par_m_zone + 1
+					do i = 1, n_zone!par_n_zone + 1
+						read(2, *) n, n, n, MK_Mu(i, j, k)
+					end do
+				end do
+			end do
+			
+			close(2)
+
+			if(par_n_sort /= sort) then
+				print*, "ERROR iji9j9uhcw8ogbor3u4buyv4cwl"
+				STOP
+			end if
+
+			if(par_m_zone + 1 /= m_zone) then
+				print*, "ERROR berebt5verby"
+				STOP
+			end if
+
+			if(par_n_zone + 1 /= n_zone) then
+				print*, "ERROR er5buim8ominubyvtc4t5yb6nui6"
+				STOP
+			end if
+		end if
 		
 		
 		MK_Mu(:, :, 2) = MK_Mu(:, :, 2) * 0.2

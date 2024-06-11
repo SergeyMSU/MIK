@@ -77,7 +77,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	! такое число итераций
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
-	integer(4), parameter :: par_n_sort = 4  !  Количество сортов атомов
+	integer(4), parameter :: par_n_sort = 6  !  Количество сортов атомов
 	integer(4) :: par_n_moment = 19 !9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 300.0! 220.0  !  Радиус сферы, с которой запускаем частицы
 	real(8) :: par_Rleft! = par_R_LEFT + 0.0001 !-400.0 + 0.01  !  Задняя стенка
@@ -85,7 +85,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 2!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 2 * 9!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)

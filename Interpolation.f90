@@ -27,6 +27,8 @@
 	real(8), allocatable :: int2_Cell_par_div(:)           ! div V
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)                        INFO
 	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
+	!(rho, u, v, w, T, Iu, Iv, Iw, IT, Huu, Huv, Huw, Hvv, Hvw, Hww, Huuu, Hvvv, Hwww,  In)
+	!(1  , 2, 3, 4, 5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15,   16,   17,   18,  19)
 	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, : число точек)
 	! Для массы это просто значение, для остальных это коэффициент отношения
 	
@@ -2557,23 +2559,24 @@
 	! Посчитаем коэффициенты отношения источников мультифлюида к Монте-Карло
 	! Также меняет температуру атомов на давление
 	integer(4) :: i, j
-	real(8) :: sourse(5,5), ss
+	real(8) :: sourse(5,par_n_sort + 1), ss
 	
 	! Делаем из температуры давление
 	do i = 1, size(int2_Moment(1, 1, :))
-		int2_Moment(5, 1:4, i) = 0.5 * int2_Moment(5, 1:4, i) * int2_Moment(1, 1:4, i)
+		!int2_Moment(5, 1:4, i) = 0.5 * int2_Moment(5, 1:4, i) * int2_Moment(1, 1:4, i)
+		int2_Moment(5, :, i) = 0.5 * int2_Moment(5, :, i) * int2_Moment(1, :, i)
 	end do
 	
 	! Бежим по точкам
 	do i = 1, size(int2_Moment(1, 1, :))
-		call Calc_sourse_MF(int2_Cell_par(:, i), int2_Moment(1:5, 1:4, i), sourse, 1)
+		call Calc_sourse_MF(int2_Cell_par(:, i), int2_Moment(1:5, :, i), sourse, 1)
 		
 		!! Считаем коэффициенты (для трёх импульсов и энергии)
 		do j = 2, 5
 			if( dabs(sourse(j, 1)) > 0.00001) then
 				ss = sum(int2_Moment(4 + j, :, i))
 				int2_Moment_k(j, i) = ss/sourse(j, 1)
-				if(int2_Moment_k(j, i) < 0.3 .or. int2_Moment_k(j, i) > 3.0) int2_Moment_k(j, i) = 1.0
+				if(int2_Moment_k(j, i) < 0.1 .or. int2_Moment_k(j, i) > 5.0) int2_Moment_k(j, i) = 1.0
 			end if
 		end do
 		
@@ -2972,14 +2975,14 @@
 
 		num = 3
 		open(1, file = '_print_par_1D_interpolate.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4', div(V)"
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4', 'n_H5', 'n_H6'"
 		write(1,*) ", ZONE T= 'HP'"
 
-		if(ALLOCATED(int2_Cell_par_div) == .False.) then
-			print*, "ERROR   int2_Cell_par_div - NOT ALLOCATED"
-			close(1)
-			return
-		end if
+		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
+		! 	print*, "ERROR   int2_Cell_par_div - NOT ALLOCATED"
+		! 	close(1)
+		! 	return
+		! end if
 			
 		do i = 1, 2000
 			x = i * par_R_END/2001
@@ -2987,7 +2990,80 @@
 			if(num < 1) CYCLE
 			yzel = int2_all_tetraendron_point(1, num)
 			if(yzel < 1) CYCLE
-			write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), int2_Cell_par_div(yzel)
+			if(par_n_sort == 4) then
+				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), 0.0, 0.0!, int2_Cell_par_div(yzel)
+			else if(par_n_sort == 6) then
+				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), PAR_MOMENT(1, 5), PAR_MOMENT(1, 6)
+			else
+				print*, "ERROR j987432yg83voifhu[0u892hf3p9"
+				EXIT
+			end if
+			write(1, *) " "
+		end do
+
+		close(1)
+
+		!! Другие моменты
+
+		num = 3
+		open(1, file = '_print_par_1D_interpolate_Istoch_Iu.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Iu_H1', 'Iu_H2', 'Iu_H3', 'Iu_H4', 'Iu_H5', 'Iu_H6'"
+		write(1,*) ", ZONE T= 'HP'"
+
+		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
+		! 	print*, "ERROR   int2_Cell_par_div - NOT ALLOCATED"
+		! 	close(1)
+		! 	return
+		! end if
+			
+		do i = 1, 2000
+			x = i * par_R_END/2001
+			call Int2_Get_par_fast(x, 0.0_8, 0.0_8, num, PAR, PAR_MOMENT)
+			if(num < 1) CYCLE
+			yzel = int2_all_tetraendron_point(1, num)
+			if(yzel < 1) CYCLE
+			if(par_n_sort == 4) then
+				write(1, *) x, PAR_MOMENT(6, 1), PAR_MOMENT(6, 2), PAR_MOMENT(6, 3), PAR_MOMENT(6, 4), 0.0, 0.0!, int2_Cell_par_div(yzel)
+			else if(par_n_sort == 6) then
+				write(1, *) x, PAR_MOMENT(6, 1), PAR_MOMENT(6, 2), PAR_MOMENT(6, 3), PAR_MOMENT(6, 4), PAR_MOMENT(6, 5), PAR_MOMENT(6, 6)
+			else
+				print*, "ERROR wecfwcfw[vwrevreverver"
+				EXIT
+			end if
+			write(1, *) " "
+		end do
+		
+			
+		close(1)
+
+
+		!! Другие моменты
+
+		num = 3
+		open(1, file = '_print_par_1D_interpolate_Istoch_IT.txt')
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Iu_H1', 'Iu_H2', 'Iu_H3', 'Iu_H4', 'Iu_H5', 'Iu_H6'"
+		write(1,*) ", ZONE T= 'HP'"
+
+		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
+		! 	print*, "ERROR   int2_Cell_par_div - NOT ALLOCATED"
+		! 	close(1)
+		! 	return
+		! end if
+			
+		do i = 1, 2000
+			x = i * par_R_END/2001
+			call Int2_Get_par_fast(x, 0.0_8, 0.0_8, num, PAR, PAR_MOMENT)
+			if(num < 1) CYCLE
+			yzel = int2_all_tetraendron_point(1, num)
+			if(yzel < 1) CYCLE
+			if(par_n_sort == 4) then
+				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), 0.0, 0.0!, int2_Cell_par_div(yzel)
+			else if(par_n_sort == 6) then
+				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), PAR_MOMENT(9, 5), PAR_MOMENT(9, 6)
+			else
+				print*, "ERROR wecfwcfw[vwrevreverver"
+				EXIT
+			end if
 			write(1, *) " "
 		end do
 		

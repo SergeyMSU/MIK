@@ -2087,15 +2087,15 @@
 	!@cuf attributes(host) & 
     subroutine Calc_sourse_MF(plasma, fluid, sourse, zone)  ! Считаются мультифлюидные источники
     ! Variables
-    use GEO_PARAM, only: par_a_2, par_n_p_LISM, par_Kn, par_pi_8, par_n_H_LISM_
+    use GEO_PARAM, only: par_a_2, par_n_p_LISM, par_Kn, par_pi_8, par_n_H_LISM_, par_n_sort
     implicit none
     real(8), intent(in) :: plasma(9)
-    real(8), intent(in) :: fluid(5,4)
-    real(8), intent(out) :: sourse(5,5)  ! (масса, три импульса и энергия)
+    real(8), intent(in) :: fluid(5, par_n_sort)
+    real(8), intent(out) :: sourse(5,par_n_sort + 1)  ! (масса, три импульса и энергия)
     integer(4), intent(in) :: zone
     
-    integer(4) :: i, kk(4)
-    real(8) :: U_M_H(4), U_H(4), sigma(4), nu(4), S1, S2
+    integer(4) :: i, kk(par_n_sort)
+    real(8) :: U_M_H(par_n_sort), U_H(par_n_sort), sigma(par_n_sort), nu(par_n_sort), S1, S2
     
     sourse = 0.0
     kk = 0
@@ -2104,7 +2104,7 @@
     S2 = 0.0
     
     ! Body of Calc_sourse_MF
-    do i = 1, 4
+    do i = 1, par_n_sort
     	U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
            (64.0 / (9.0 * par_pi_8)) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
         U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
@@ -2113,7 +2113,7 @@
         nu(i) = plasma(1) * fluid(1, i) * U_M_H(i) * sigma(i)
     end do
     
-    do i = 1, 4
+    do i = 1, par_n_sort
         sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
         sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
         sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
@@ -2123,12 +2123,12 @@
     
     sourse(2:5, 1) =  sourse(2:5, 1) * (par_n_p_LISM/par_Kn)
     
-    do i = 1, 4
+    do i = 1, par_n_sort
         S1 = S1 + nu(i)
         S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (plasma(5)/plasma(1)) )
     end do
     
-    do i = 1, 4
+    do i = 1, par_n_sort
         sourse(1, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 - nu(i))
         sourse(2, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(2) - nu(i) * fluid(2, i))
         sourse(3, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(3) - nu(i) * fluid(3, i))

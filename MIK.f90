@@ -2586,13 +2586,13 @@
         integer(4), intent(in) :: steps
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone
         real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
         real(8) :: dist, dsl, dsc, dsp
         real(8) :: POTOK(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
         real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
@@ -2923,13 +2923,13 @@
         integer(4), intent(in) :: steps
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
         real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
         real(8) :: dist, dsl, dsc, dsp
         real(8) :: POTOK(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
         real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
@@ -3220,14 +3220,14 @@
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
         integer(4) :: ss1, ss2
         real(8) :: qqq1(9), qqq2(9), qqq(9), n_He  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4), MK_kk(5), POTOK2
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort), MK_kk(5), POTOK2
         real(8) :: dist, dsl, dsc, dsp, distant(3), konvect_(3, 1)
         real(8) :: df1, df2, dff1, dff2, rast(3), rad3, rad4, rad5
         real(8) :: POTOK(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
         real(8) :: Matr(3, 3), Matr2(3, 3), vv(3), kord(3), the1, the2, the3, the4, the5
         real(8) :: qqq11(9), qqq22(9), qqq1_TVD(9), qqq2_TVD(9), qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
 
@@ -3660,7 +3660,7 @@
                 Volume = gl_Cell_Volume(gr)
                 qqq = gl_Cell_par(:, gr)
                 n_He = gl_Cell_par2(1, gr)
-                fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+                fluid1 = gl_Cell_par_MK(1:5, :, gr)
                 MK_kk = gl_Cell_par_MK(6:10, 1, gr)
                 !MK_kk = 1.0
                 ! Просуммируем потоки через грани
@@ -3770,13 +3770,13 @@
         integer(4), intent(in) :: steps
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
         real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
         real(8) :: dist, dsl, dsc, dsp
         real(8) :: POTOK(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, TT, U8, rad1, rad2, aa, bb, cc
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
         real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3, sks
 
@@ -4059,13 +4059,13 @@
         integer :: step, now, now2, step2
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter
         real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
         real(8) :: dist, dsl, dsc, dsp
         real(8) :: POTOK(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
         real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
@@ -4460,14 +4460,14 @@
         integer :: step, now, now2, step2, min_sort, ijk, ijk2, min_sort2, N2, N3
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod, mincell, ss1, ss2
         real(8) :: qqq1(9), qqq2(9), qqq(9), distant(3), n_He  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4), MK_kk(5)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort), MK_kk(5)
         real(8) :: dist, dsl, dsc, dsp, start_time, end_time, rast(3), df1, df2, dff1, dff2, qqq11(9), qqq22(9)
         real(8) :: POTOK(9), qqq1_TVD(9), qqq2_TVD(9), POTOK2
         real(8) :: POTOK_MF(5), konvect_(3, 1)
         real(8) :: POTOK_MF_all(5, 4)
         logical :: tvd1, tvd2, tvd3, tvd4  ! Нужно ли делать особый снос в гиперзвуковом источнике
         real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc, sks, loc_time, loc_time2, rr, y, z
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5, par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
         real(8) :: qqq11_2(1), qqq22_2(1), qqq1_TVD_2(1), qqq2_TVD_2(1)
         real(8) :: rad3, rad4, rad5
         integer(4) :: kdir, KOBL, idgod
@@ -4994,7 +4994,7 @@
                 qqq = gl_Cell_par(:, gr)
                 n_He = gl_Cell_par2(1, gr)
                 
-                fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+                fluid1 = gl_Cell_par_MK(1:5, :, gr)
                 MK_kk = gl_Cell_par_MK(6:10, 1, gr)
                 !if(gl_Cell_center2(1, gr, now) < -150.0) then
                 !	MK_kk = 1.0
@@ -5196,13 +5196,13 @@
         integer :: step, now, now2, step2, min_sort, ijk, ijk2, min_sort2, N2, N3
         integer(4) :: st, gr, ngran, ncell, s1, s2, i, j, k, zone, iter, metod, mincell, ss1, ss2
         real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-        real(8) :: fluid1(5, 4), fluid2(5, 4)
+        real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
         real(8) :: dist, dsl, dsc, dsp, start_time, end_time, rast(3), df1, df2, dff1, dff2, qqq11(9), qqq22(9)
         real(8) :: POTOK(9), qqq1_TVD(9), qqq2_TVD(9)
         real(8) :: POTOK_MF(5)
         real(8) :: POTOK_MF_all(5, 4)
         real(8) :: time, Volume, Volume2, TT, U8, rad1, rad2, aa, bb, cc, wc, sks, loc_time, loc_time2, rr, y, z
-        real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+        real(8) :: SOURSE(5,par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 
         real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 
@@ -8100,8 +8100,8 @@
             y = gl_Cell_center(2, i)
             z = gl_Cell_center(3, i)
             call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
-            if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
-            gl_Cell_par_MK(1:5, 1:4, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
+            !if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
+            gl_Cell_par_MK(1:5, :, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
 
             if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
             
@@ -8139,8 +8139,8 @@
             y = gl_Cell_center(2, i)
             z = gl_Cell_center(3, i)
             call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
-            if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
-            gl_Cell_par_MK(1:5, 1:4, i) = gl_Cell_par_MK(1:5, 1:4, i) + PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
+            !if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
+            gl_Cell_par_MK(1:5, :, i) = gl_Cell_par_MK(1:5, :, i) + PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
             gl_Cell_par_MK(6:10, 1, i) = gl_Cell_par_MK(6:10, 1, i) + PAR_k(:) * dd
             
             if(num < 1) then
@@ -8149,7 +8149,7 @@
                 call Int2_Get_tetraedron_inner(x, y, z, num)
                 if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
                 s1 = int2_all_tetraendron_point(1, num)
-                gl_Cell_par_MK(1:5, 1:4, i) = gl_Cell_par_MK(1:5, 1:4, i) + int2_Moment(1:5, :, s1) * dd
+                gl_Cell_par_MK(1:5, :, i) = gl_Cell_par_MK(1:5, :, i) + int2_Moment(1:5, :, s1) * dd
                 gl_Cell_par_MK(6:10, 1, i) = gl_Cell_par_MK(6:10, 1, i) + int2_Moment_k(:, s1) * dd
             end if
             
@@ -8501,7 +8501,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 587 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 589 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
         ! 574 до изменения сечения на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
@@ -8521,9 +8521,10 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 26 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 30 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+        ! 26 до изменения числа атомов водорода
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 2  !? 3 Номер алгоритма
+		step = 4  !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8809,7 +8810,7 @@
 		    !! call Int2_Save_interpol_for_all_MHD(name) !  + 1
 			!
 		
-		else if(step == 2) then  !----------------------------------------------------------------------------------------
+		else if(step == 2) then  !  МОНТЕ-КАРЛО ----------------------------------------------------------------------------------------
 			! РАБОТА С МОНТЕ-КАРЛО
             ! Создаём все необходимые файлы из файла основной сетки
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -8952,6 +8953,7 @@
                 call PUI_Save_bin(name2 + 1)
             end if
 			
+            call PRINT_ALL()
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
@@ -8963,6 +8965,8 @@
 			call PUI_f_Set()
 			call PUI_f_Set2()
 			call PUI_Read_bin(name2)
+
+            call Int_2_Print_par_1D()
             
             ! open(11, file = "pui_num_tetr.bin", FORM = 'BINARY')
             ! write(11) size(pui_num_tetr)
@@ -9064,7 +9068,7 @@
 			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
-			call Int2_Read_bin(name)
+			call Int2_Read_bin(name2)
 			call Int2_Re_interpol()
 			call Int2_Dell_interpolate()
 			par_n_moment = 19
@@ -9091,18 +9095,18 @@
             call PUI_Set()                !! PUI
             call PUI_f_Set()              !! PUI
             call PUI_f_Set2()             !! PUI
-            call PUI_Read_bin(16)
+            call PUI_Read_bin(name2)
 
             call Culc_f_pui()
             call Cut_f_pui()
-            call PUI_Save_f_bin(17)
+            call PUI_Save_f_bin(name2)
 
             call PUI_Culc_h0()
             call PUI_F_integr_Set()
 
             call PUI_F_integr_Culc()
             call PUI_n_T_culc()
-            call PUI_Save_for_MK_bin(17)
+            call PUI_Save_for_MK_bin(name2)
             
             
 			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
@@ -9136,7 +9140,28 @@
             call Int2_Save_interpol_for_all_MHD(name + 1)
             call Send_request()
 
-
+        else if(step == 6) then
+            ! Забыл добавить в источники ещё один сорт водорода
+            call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+            print*, "A------------------"
+            call Int2_Read_bin(name2)
+            print*, "B------------------"
+            call PUI_Set()
+            print*, "C------------------"
+			call PUI_f_Set()
+            print*, "D------------------"
+			call PUI_f_Set2()
+            print*, "E------------------"
+            call PUI_Read_bin(name2)
+            print*, "F------------------"
+            call Helium_off()
+            print*, "F1------------------"
+			call Int2_culc_k()
+            print*, "F2------------------"
+			call Helium_on()
+            print*, "G------------------"
+            call Int2_Save_bin(name2)
+            call Int_2_Print_par_1D()
         end if !----------------------------------------------------------------------------------------
 		
         101     continue
