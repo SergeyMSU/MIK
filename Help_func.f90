@@ -173,6 +173,11 @@
     read(1) n
     read(1) n
     read(1) n
+
+    if(ALLOCATED(gl_Cell_par_pui) == .False.) then
+        allocate( gl_Cell_par_pui(2, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        gl_Cell_par_pui = 0.0
+    end if
     
     
     close(1)
@@ -195,49 +200,3 @@
 	
 	end subroutine Save_param
 
-    subroutine Sootnosheniya(rho, p, rho_He, rho_Pui, T_Pui, al, rho_Th, rho_E, p_Th, p_Pui, T_Th, T_E)
-        ! Функция, определяющая температуры и концентрации гелия, пикапов и т.д.
-        ! al - это заряд гелия
-        ! если al = 1 то вне гелиопаузы
-        ! если al = 2, то внутри гелиопаузы
-        ! Th - термальные протоны, He - гелий, Pui - пикапы, E - электроны
-        ! без параметров, это общие (те, что считаются в МГД)
-        implicit none
-        real(8), intent(in) :: rho, p, rho_He, rho_Pui, T_Pui
-        integer(4), intent(in) :: al
-        real(8), intent(out), optional :: rho_Th, rho_E, p_Th, p_Pui, T_Th, T_E
-
-        if(PRESENT(rho_Th)) then
-            rho_Th = -(MF_meDmp * al * rho_He + 4.0 * (-rho + rho_He))/(4.0 * (1.0 + MF_meDmp)) - rho_Pui
-        end if
-
-        if(PRESENT(rho_E)) then
-            rho_E = MF_meDmp * (4.0 * rho + (-4.0 + al) * rho_He)/(4.0 * (1.0 + MF_meDmp))
-        end if
-
-        if(PRESENT(p_Th)) then
-            p_Th = (p - rho_Pui * T_Pui) * (-4.0 * rho + (4.0 + al * MF_meDmp) * rho_He + 4.0 * (1.0 + MF_meDmp) * rho_Pui)/&
-            (-8.0 * rho + (7.0 - al + (-1.0 + al) * MF_meDmp) * rho_He + 4.0 * (1.0 + MF_meDmp) * rho_Pui)
-        end if
-
-        if(PRESENT(p_Pui)) then
-            p_Pui = T_pui * rho_Pui
-        end if
-
-        if(PRESENT(T_Th)) then
-            T_Th = -4.0 * (1.0 + MF_meDmp) * (p - rho_Pui * T_Pui)/&
-            (-8.0 * rho + (7.0 - al + (-1.0 + al)*MF_meDmp) * rho_He + 4.0 * (1.0 - MF_meDmp) * rho_Pui)
-        end if
-
-        if(PRESENT(T_E)) then
-            if(PRESENT(T_Th)) then
-                T_E = T_Th
-            else
-                T_E = -4.0 * (1.0 + MF_meDmp) * (p - rho_Pui * T_Pui)/&
-                (-8.0 * rho + (7.0 - al + (-1.0 + al)*MF_meDmp) * rho_He + 4.0 * (1.0 - MF_meDmp) * rho_Pui)
-            end if
-        end if
-
-
-        return
-	end subroutine Sootnosheniya

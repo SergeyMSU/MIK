@@ -58,6 +58,7 @@ module MY_CUDA
 	 integer(4), device, allocatable :: dev_gl_Cell_info(:)
 	 real(8), device, allocatable :: dev_gl_Cell_par(:, :)
 	 real(8), device, allocatable :: dev_gl_Cell_par2(:, :)
+	 real(8), device, allocatable :: dev_gl_Cell_par_pui(:, :)
 	 real(8), device, allocatable :: dev_gl_Cell_par_MF(:,:,:)
 	 real(8), device, allocatable :: dev_gl_Cell_par_MK(:,:,:)
 	 real(8), device, allocatable :: dev_gl_Cell_center(:, :)
@@ -211,6 +212,7 @@ module MY_CUDA
 		 allocate(dev_gl_Gran_type(Ngran))
 		 allocate(dev_gl_Cell_par, mold = gl_Cell_par)
 		 allocate(dev_gl_Cell_par2, mold = gl_Cell_par2)
+		 allocate(dev_gl_Cell_par_pui, mold = gl_Cell_par_pui)
 		 allocate(dev_gl_Cell_par_MF(5, 4, Ncell))
 		 allocate(dev_gl_Cell_center(3, Ncell))
 		 allocate(dev_gl_Gran_normal(3, Ngran))
@@ -371,6 +373,7 @@ module MY_CUDA
 		 dev_gl_Gran_neighbour = gl_Gran_neighbour
 		 dev_gl_Cell_par = gl_Cell_par
 		 dev_gl_Cell_par2 = gl_Cell_par2
+		 dev_gl_Cell_par_pui = gl_Cell_par_pui
 		 dev_gl_Cell_par_MF = gl_Cell_par_MF
 		 dev_gl_Cell_par_MK = gl_Cell_par_MK
 		 dev_gl_Cell_center = gl_Cell_center
@@ -468,55 +471,55 @@ module MY_CUDA
 	end function dev_norm2
 	
 	attributes(device) subroutine dev_Calc_sourse_MF(plasma, fluid, sourse, zone)  ! Считаются мультифлюидные источники
-    use GEO_PARAM
-	implicit none
-    real(8), intent(in) :: plasma(9)
-    real(8), intent(in) :: fluid(5,4)
-    real(8), intent(out) :: sourse(5,5)
-    integer(4), intent(in) :: zone
-    
-    integer(4) :: i, kk(4)
-    real(8) :: U_M_H(4), U_H(4), sigma(4), nu(4), S1, S2
-	
-    sourse = 0.0
-    kk = 0
-    kk(zone) = 1
-    S1 = 0.0
-    S2 = 0.0
-    
-    ! Body of Calc_sourse_MF
-    do i = 1, 4
-    	U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
-           (64.0 / (9.0 * dev_par_pi_8)) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
-        U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
-           (4.0 / dev_par_pi_8) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
-        sigma(i) = (1.0 - par_a_2 * log(U_M_H(i)))**2
-        nu(i) = plasma(1) * fluid(1, i) * U_M_H(i) * sigma(i)
-    end do
-    
-    do i = 1, 4
-        sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
-        sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
-        sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
-        sourse(5, 1) = sourse(5, 1) + nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2 - &
-            plasma(2)**2 - plasma(3)**2 - plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * ( 2.0 * fluid(5, i)/fluid(1, i) - plasma(5)/plasma(1) ) )
-    end do
-    
-    sourse(2:5, 1) =  sourse(2:5, 1) * (par_n_p_LISM/par_Kn)
-    
-    do i = 1, 4
-        S1 = S1 + nu(i)
-        S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (plasma(5)/plasma(1)) )
-    end do
-    
-    do i = 1, 4
-        sourse(1, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 - nu(i))
-        sourse(2, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(2) - nu(i) * fluid(2, i))
-        sourse(3, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(3) - nu(i) * fluid(3, i))
-        sourse(4, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(4) - nu(i) * fluid(4, i))
-        sourse(5, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S2 - nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2)/2.0 + &
-              (U_H(i)/U_M_H(i)) * 2.0 * (fluid(5, i) / fluid(1, i)) ) )
-	end do
+		use GEO_PARAM
+		implicit none
+		real(8), intent(in) :: plasma(9)
+		real(8), intent(in) :: fluid(5,4)
+		real(8), intent(out) :: sourse(5,5)
+		integer(4), intent(in) :: zone
+		
+		integer(4) :: i, kk(4)
+		real(8) :: U_M_H(4), U_H(4), sigma(4), nu(4), S1, S2
+		
+		sourse = 0.0
+		kk = 0
+		kk(zone) = 1
+		S1 = 0.0
+		S2 = 0.0
+		
+		! Body of Calc_sourse_MF
+		do i = 1, 4
+			U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+			(64.0 / (9.0 * dev_par_pi_8)) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
+			U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+			(4.0 / dev_par_pi_8) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
+			sigma(i) = (1.0 - par_a_2 * log(U_M_H(i)))**2
+			nu(i) = plasma(1) * fluid(1, i) * U_M_H(i) * sigma(i)
+		end do
+		
+		do i = 1, 4
+			sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
+			sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
+			sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
+			sourse(5, 1) = sourse(5, 1) + nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2 - &
+				plasma(2)**2 - plasma(3)**2 - plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * ( 2.0 * fluid(5, i)/fluid(1, i) - plasma(5)/plasma(1) ) )
+		end do
+		
+		sourse(2:5, 1) =  sourse(2:5, 1) * (par_n_p_LISM/par_Kn)
+		
+		do i = 1, 4
+			S1 = S1 + nu(i)
+			S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (plasma(5)/plasma(1)) )
+		end do
+		
+		do i = 1, 4
+			sourse(1, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 - nu(i))
+			sourse(2, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(2) - nu(i) * fluid(2, i))
+			sourse(3, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(3) - nu(i) * fluid(3, i))
+			sourse(4, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(4) - nu(i) * fluid(4, i))
+			sourse(5, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S2 - nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2)/2.0 + &
+				(U_H(i)/U_M_H(i)) * 2.0 * (fluid(5, i) / fluid(1, i)) ) )
+		end do
     
 	end subroutine dev_Calc_sourse_MF
 	
@@ -984,7 +987,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 60000 * 9!60000 * 10! * 6 * 9! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	all_step = 60000 * 3!60000 * 10! * 6 * 9! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
 	!! Сейчас сколько тысяч, столько и минут
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()

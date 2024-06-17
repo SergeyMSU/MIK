@@ -28,7 +28,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.05 * lock_move * 0.3 * 0.01_8 ! 0.3 *  0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 1.0 * 0.3 * lock_move! 1.4 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = 1.2 * 0.3 * lock_move! 1.0 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
 
 
@@ -85,7 +85,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 2 * 9!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 2 * 8!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -215,6 +215,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     real(8), allocatable :: gl_Cell_par(:, :)           ! (9, :) Набор параметров (8 стартовых + Q)
     ! ro u v w p bx by bz Q
     real(8), allocatable :: gl_Cell_par2(:, :)           ! (1?, :) (n_He, div(V))
+    real(8), allocatable :: gl_Cell_par_pui(:, :)           ! (1?, :) (rho_pui, T_pui)
     real(8), allocatable :: gl_Cell_par_div(:)           ! (:) (div(V))
     real(8), allocatable :: gl_Cell_par_MF(:,:,:)           ! Набор параметров (5, 4,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
 	real(8), allocatable :: gl_Cell_par_MK(:,:,:)           ! Набор параметров (10, сортов,:)  Мультифлюид параметры (по 5 для каждой из 4-х жидкостей)
@@ -290,6 +291,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
 	integer, allocatable :: f_pui_num2(:)		   ! По номеру узла в интерполяционной сетке, определяем номер в массиве PUI
     real(8), allocatable :: n_pui(:)           ! (:)	   Концентрация пикапов
 	real(8), allocatable :: T_pui(:)           ! (:)	   Температура пикапов
+    integer, allocatable :: f_pui_cut(:)           ! До какого номера от 1 до pui_nW каждая функция распределения считается
     
     contains
     
@@ -344,6 +346,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         if(par_helium) allocate( gl_Cell_par2(1, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         ! if(par_helium) 
         allocate( gl_Cell_par_div(size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
+        allocate( gl_Cell_par_pui(2, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:)) ) )
         
         allocate(gl_Cell_par_MF(5, 4, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
         allocate(gl_Cell_par_MK(10, par_n_sort, size(gl_Cell_A(:,:,:)) + size(gl_Cell_B(:,:,:)) + size(gl_Cell_C(:,:,:))))
@@ -431,6 +434,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
         if(par_helium) gl_Cell_par2 = 0.0
 
         gl_Cell_par_div = 0.0
+        gl_Cell_par_pui = 0.0
         
         
         gl_Cell_A = -1
@@ -484,6 +488,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     deallocate(gl_Cell_par)
 	if(par_helium) deallocate(gl_Cell_par2)
 	deallocate(gl_Cell_par_div)
+	deallocate(gl_Cell_par_pui)
     deallocate(gl_Cell_par_MF)
 	deallocate(gl_Cell_par_MK)
     

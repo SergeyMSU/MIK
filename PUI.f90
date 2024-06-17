@@ -23,7 +23,7 @@ module PUI
 	integer (kind=omp_lock_kind), allocatable :: pui_lock(:)  ! Для openMP
 
 	!! Переменные для обработки функции распределения PUI для последующего розыгрыша
-	integer, allocatable :: f_pui_cut(:)           ! До какого номера от 1 до pui_nW каждая функция распределения считается
+	
 
 
 	!! функция h0(U_H) - см. документацию PUI
@@ -339,7 +339,7 @@ module PUI
 
 		print*, "START Culc_f_pui"
 
-		dt = 0.0005
+		dt = 0.001 !0.0005
 
 		! Находим функцию распределения для ячеек перед ударной волной
 		print*, "Do TS"
@@ -401,7 +401,7 @@ module PUI
 				mas_w0(iw) = ((iw - 0.5) * pui_wR / pui_nW)
 			end do
 
-			if(mod(i, 5000) == 0) print*, "i = ", i, " from", size(f_pui_num)
+			if(mod(i, 500) == 0) print*, "i = ", i, " from", size(f_pui_num)
 			k = f_pui_num(i)      ! Номер узла сетки интерполяции, в которой считаем PUI
 			if(int2_Cell_par2(1, k) == 1) CYCLE   ! Пропускаем ячейки до TS
 			rho0 = int2_Cell_par(1, k)
@@ -830,15 +830,27 @@ module PUI
 		real(8), intent(in) :: x, y, z
 		real(8) :: w, S, SS, ff, UH
 		character(len=5) :: name
-		integer(4) :: n1, i, n2
+		integer(4) :: n1, i, n2, number, zone
+		real(8) :: MAS_PUI(2)
+		real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
+		real(8) :: PAR(9)     ! Выходные параметры
+		real(8) :: cp, n_pui_, T_pui_, ro_He, rho_Th, p_Th
 
 		n1 = 3
+		number = 3
+		
+
 		call Int2_Get_tetraedron_inner(x, y, z, n1)
+		call Int2_Get_par_fast(x, y, z, number, PAR, PAR_MOMENT = PAR_MOMENT, MAS_PUI = MAS_PUI, rho_He = ro_He)
+		
+
+
+
 		write(unit=name,fmt='(i5.5)') num
 
 		print*, "Nomer = ", num, " tetraedr = ", n1, " cell number = ", int2_all_tetraendron_point(1, n1), &
 			"   nomer f_pui = ", f_pui_num2(int2_all_tetraendron_point(1, n1)), "area = ", int2_Cell_par2(1, f_pui_num(f_pui_num2(int2_all_tetraendron_point(1, n1))))
-
+		zone = int2_Cell_par2(1, f_pui_num(f_pui_num2(int2_all_tetraendron_point(1, n1))))
 		! open(1, file = "S+_" // name // ".txt")
 		! n2 = pui_num_tetr(n1)
 		! if(n2 > 0) then
@@ -861,13 +873,23 @@ module PUI
 		! close(2)
 
 		n2 = f_pui_num2(int2_all_tetraendron_point(1, n1))
+		n_pui_ = n_pui(n2)
+		T_pui_ = T_pui(n2)
 		print*, n1, n2
 
+		call Sootnosheniya(PAR(1), PAR(5), ro_He, n_pui_, T_pui_, zone, rho_Th = rho_Th, p_Th = p_Th)
+		cp = sqrt(p_Th/rho_Th)
+
 		open(3, file = "f_PUI_" // name // ".txt")
+
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'w', 'pui', 'th', 'pui + th'"
+		write(1,*) ", ZONE T= 'HP'"
+
 		if(n2 > 0) then
 			do i = 1, pui_nW
 				w = (i-0.5) * pui_wR/pui_nW
-				write(3,*) w, f_pui(i, n2)
+				ff = exp(-w**2/cp**2)/(cp**3 * par_pi_8**(1.5))
+				write(3,*) w, f_pui(i, n2), ff, ff + f_pui(i, n2)
 			end do
 
 		end if

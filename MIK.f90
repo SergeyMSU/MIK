@@ -10,10 +10,10 @@
 	
 	
 	include "Storage_modul.f90"
-	include "Solvers.f90"
 
     module My_func                     ! Модуль интерфейсов для внешних функций
-	
+        real(8), parameter :: MF_par_pi = acos(-1.0_8) 
+        real(8), parameter :: MF_meDmp = (1.0_8/1836.15_8)   ! Отношение массы электрона к массе протона
 
         interface
         
@@ -33,6 +33,155 @@
         end interface
         
         contains 
+
+        !@cuf attributes(host, device) & 
+        subroutine Calc_sourse_MF(plasma, fluid, sourse, zone, n_He_, MAS_PUI_)  ! Считаются мультифлюидные источники
+            ! Variables
+            use GEO_PARAM, only: par_a_2, par_n_p_LISM, par_Kn, par_pi_8, par_n_H_LISM_, par_n_sort
+            implicit none
+            real(8), intent(in) :: plasma(9)
+            real(8), intent(in) :: fluid(5, par_n_sort)
+            real(8), intent(in), OPTIONAL :: n_He_
+            real(8), intent(in), optional :: MAS_PUI_(2)
+            real(8) :: rho_Th, p_Th, p_Pui, rho_Pui
+            real(8), intent(out) :: sourse(5, par_n_sort + 1)  ! (масса, три импульса и энергия)
+            integer(4), intent(in) :: zone
+            integer(4) :: al
+            
+            integer(4) :: i, kk(par_n_sort)
+            real(8) :: U_M_H(par_n_sort), U_H(par_n_sort), sigma(par_n_sort), nu(par_n_sort), S1, S2, n_He
+            real(8) :: MAS_PUI(2)
+            
+            MAS_PUI = 0.0
+            n_He = 0.0
+            if(PRESENT(n_He_)) n_He = n_He_
+            !if(PRESENT(MAS_PUI_)) MAS_PUI = MAS_PUI_
+
+            al = 1
+            if(zone <= 2) al = 2
+            rho_Pui = MAS_PUI(1)
+            call Sootnosheniya(plasma(1), plasma(5), n_He, MAS_PUI(1), MAS_PUI(2), al, rho_Th = rho_Th, p_Th = p_Th, &
+                               p_Pui = p_Pui )
+
+            if(rho_Pui < 0.000001) then
+                p_Pui = 0.0_8
+                rho_Pui = 0.000001_8
+            end if
+
+            if(rho_Th < 0.000001) then
+                p_Th = 0.0_8
+                rho_Th = 0.000001_8
+            end if
+
+            if(p_Th < 0.0) p_Th = 0.000001
+
+            !!   -----------------
+            ! p_Pui = 0.0_8
+            ! rho_Pui = 0.000001_8
+            ! rho_Th = plasma(1)
+            ! p_Th = plasma(5)/2.0
+            !! 
+            
+            sourse = 0.0
+            kk = 0
+            kk(zone) = 1
+            S1 = 0.0
+            S2 = 0.0
+            
+            ! Body of Calc_sourse_MF
+            !if(zone > 2) then
+            if(.True.) then
+                do i = 1, par_n_sort
+                    U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (64.0 / (9.0 * par_pi_8)) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (4.0 / par_pi_8) * (plasma(5) / plasma(1) + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    sigma(i) = (1.0 - par_a_2 * log(U_M_H(i)))**2
+                    nu(i) = plasma(1) * fluid(1, i) * U_M_H(i) * sigma(i)
+                end do
+
+                do i = 1, par_n_sort
+                    sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
+                    sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
+                    sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
+                    sourse(5, 1) = sourse(5, 1) + nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2 - &
+                        plasma(2)**2 - plasma(3)**2 - plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * ( 2.0 * fluid(5, i)/fluid(1, i) - plasma(5)/plasma(1) ) )
+                end do
+
+                do i = 1, par_n_sort
+                    S1 = S1 + nu(i)
+                    S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (plasma(5)/plasma(1)) )
+                end do
+
+            else
+                do i = 1, par_n_sort
+                    U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (64.0 / (9.0 * par_pi_8)) * (2.0 * p_Th / rho_Th + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (4.0 / par_pi_8) * (2.0 * p_Th / rho_Th + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    sigma(i) = (1.0 - par_a_2 * log(U_M_H(i)))**2
+                    nu(i) = rho_Th * fluid(1, i) * U_M_H(i) * sigma(i)
+                end do
+                
+                do i = 1, par_n_sort
+                    sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
+                    sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
+                    sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
+                    sourse(5, 1) = sourse(5, 1) + nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2 - &
+                        plasma(2)**2 - plasma(3)**2 - plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * ( 2.0 * fluid(5, i)/fluid(1, i) - 2.0 * p_Th/rho_Th ) )
+                end do
+
+                do i = 1, par_n_sort
+                    S1 = S1 + nu(i)
+                    S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (2.0 * p_Th/rho_Th) )
+                end do
+
+                do i = 1, par_n_sort
+                    U_M_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (64.0 / (9.0 * par_pi_8)) * (2.0 * p_Pui / rho_Pui + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    U_H(i) = sqrt( (plasma(2) - fluid(2, i))**2 + (plasma(3) - fluid(3, i))**2 + (plasma(4) - fluid(4, i))**2 + &
+                    (4.0 / par_pi_8) * (2.0 * p_Pui / rho_Pui + 2.0 * fluid(5, i) / fluid(1, i)) )
+                    sigma(i) = (1.0 - par_a_2 * log(U_M_H(i)))**2
+                    nu(i) = rho_Pui * fluid(1, i) * U_M_H(i) * sigma(i)
+                end do
+
+                do i = 1, par_n_sort
+                    sourse(2, 1) =  sourse(2, 1) + nu(i) * (fluid(2, i) - plasma(2))
+                    sourse(3, 1) =  sourse(3, 1) + nu(i) * (fluid(3, i) - plasma(3))
+                    sourse(4, 1) =  sourse(4, 1) + nu(i) * (fluid(4, i) - plasma(4))
+                    sourse(5, 1) = sourse(5, 1) + nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2 - &
+                        plasma(2)**2 - plasma(3)**2 - plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * ( 2.0 * fluid(5, i)/fluid(1, i) - 2.0 * p_Pui/rho_Pui ) )
+                end do
+
+
+                do i = 1, par_n_sort
+                    S1 = S1 + nu(i)
+                    S2 = S2 + nu(i) * ( (plasma(2)**2 + plasma(3)**2 + plasma(4)**2)/2.0 + (U_H(i)/U_M_H(i)) * (2.0 * p_Pui/rho_Pui) )
+                end do
+            end if
+
+            ! if( sourse(2, 1) < 0.0 .or.  sourse(2, 1) > 100000.0) then
+            !             print*,  "NUN u3  potok	"
+            !             print*, "___"
+            !             print*, fluid(1, 1), fluid(1, 2), fluid(1, 3), fluid(1, 4), fluid(1, 5), fluid(1, 6)
+            !             print*, "___"
+            !             STOP
+            !     end if
+            
+            sourse(2:5, 1) =  sourse(2:5, 1) * (par_n_p_LISM/par_Kn)
+            
+            
+            ! do i = 1, par_n_sort
+            !     sourse(1, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 - nu(i))
+            !     sourse(2, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(2) - nu(i) * fluid(2, i))
+            !     sourse(3, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(3) - nu(i) * fluid(3, i))
+            !     sourse(4, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 * plasma(4) - nu(i) * fluid(4, i))
+            !     sourse(5, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S2 - nu(i) * ( (fluid(2, i)**2 + fluid(3, i)**2 + fluid(4, i)**2)/2.0 + &
+            !         (U_H(i)/U_M_H(i)) * 2.0 * (fluid(5, i) / fluid(1, i)) ) )
+            ! end do
+            
+        
+        end subroutine Calc_sourse_MF
 
         subroutine get_bazis(ex, ey, ez)
             ! По заданному вектору ex подбирает ey, ez ему перпендикулярные, образующие правую тройку
@@ -115,54 +264,54 @@
         
         !@cuf attributes(host, device) & 
         real(8) pure function sgushenie_1(x, par_al1)
-        ! x от 0 до 1 и возвращает функция от 0 до 1
-        ! Сгущение точек к обоим концам отрезка
-        implicit none
-        real(8), intent(in) :: x, par_al1
+            ! x от 0 до 1 и возвращает функция от 0 до 1
+            ! Сгущение точек к обоим концам отрезка
+            implicit none
+            real(8), intent(in) :: x, par_al1
 
-        sgushenie_1 = x * (par_al1 - 3.0 * (par_al1 - 1.0) * x + 2.0 * (par_al1 - 1.0)*x*x)
-        
-        return
+            sgushenie_1 = x * (par_al1 - 3.0 * (par_al1 - 1.0) * x + 2.0 * (par_al1 - 1.0)*x*x)
+            
+            return
         end function sgushenie_1
         
         !@cuf attributes(host, device) & 
         real(8) pure function sgushenie_2(x, all)
-        ! x от 0 до 1 и возвращает функция от 0 до 1
-        ! Сгущение точек к обоим концам отрезка (сильнее, чем предыдущая функция)
-        implicit none
-        real(8), intent(in) :: x, all
+            ! x от 0 до 1 и возвращает функция от 0 до 1
+            ! Сгущение точек к обоим концам отрезка (сильнее, чем предыдущая функция)
+            implicit none
+            real(8), intent(in) :: x, all
 
-        sgushenie_2 = all * x - 10 * (-1 + all) * x**3 + 15 * (-1 + all) * x**4 - 6 * (-1 + all) * x**5
-        
-        return
+            sgushenie_2 = all * x - 10 * (-1 + all) * x**3 + 15 * (-1 + all) * x**4 - 6 * (-1 + all) * x**5
+            
+            return
         end function sgushenie_2
         
         !@cuf attributes(host, device) & 
         real(8) pure function sgushenie_3(x, all)
-        ! x от 0 до 1 и возвращает функция от 0 до 1
-        ! Сгущение точек к 1
-        implicit none
-        real(8), intent(in) :: x, all
+            ! x от 0 до 1 и возвращает функция от 0 до 1
+            ! Сгущение точек к 1
+            implicit none
+            real(8), intent(in) :: x, all
 
-        sgushenie_3 = -(-x + 1)**all + 1.0
-        
-        return
+            sgushenie_3 = -(-x + 1)**all + 1.0
+            
+            return
         end function sgushenie_3
         
         !@cuf attributes(host, device) & 
         real(8) pure function sgushenie_4(x, x0, y0)
-        ! x от 0 до 1 и возвращает функция от 0 до 1
-        ! Сгущение точек за BS
-        implicit none
-        real(8), intent(in) :: x, x0, y0
+            ! x от 0 до 1 и возвращает функция от 0 до 1
+            ! Сгущение точек за BS
+            implicit none
+            real(8), intent(in) :: x, x0, y0
 
-        if(x < x0) then
-            sgushenie_4 = (x - x0) * y0/x0 + y0
-        else
-            sgushenie_4 = (1.0 - y0) * (x - x0)/(1.0 - x0) + y0
-        end if
-        
-        return
+            if(x < x0) then
+                sgushenie_4 = (x - x0) * y0/x0 + y0
+            else
+                sgushenie_4 = (1.0 - y0) * (x - x0)/(1.0 - x0) + y0
+            end if
+            
+            return
         end function sgushenie_4
         
         !@cuf attributes(host, device) & 
@@ -226,25 +375,25 @@
         
         !@cuf attributes(host, device) & 
         subroutine polyar_skorost(phi, Vy, Vz, Vr, Vphi)
-        ! Variables
-        implicit none
-        real(8), intent(in) :: phi, Vy, Vz
-        real(8), intent(out) :: Vr, Vphi
+            ! Variables
+            implicit none
+            real(8), intent(in) :: phi, Vy, Vz
+            real(8), intent(out) :: Vr, Vphi
 
-        Vr = Vy * cos(phi) + Vz * sin(phi)
-        Vphi = Vz * cos(phi) - Vy * sin(phi)
+            Vr = Vy * cos(phi) + Vz * sin(phi)
+            Vphi = Vz * cos(phi) - Vy * sin(phi)
 
         end subroutine polyar_skorost
         
         !@cuf attributes(host, device) & 
         subroutine dekard_polyar_skorost(phi, Vr, Vphi, Vy, Vz)
-        ! Variables
-        implicit none
-        real(8), intent(in) :: phi, Vr, Vphi 
-        real(8), intent(out) :: Vy, Vz
+            ! Variables
+            implicit none
+            real(8), intent(in) :: phi, Vr, Vphi 
+            real(8), intent(out) :: Vy, Vz
 
-        Vy = Vr * cos(phi) - Vphi * sin(phi)
-        Vz = Vr * sin(phi) + Vphi * cos(phi)
+            Vy = Vr * cos(phi) - Vphi * sin(phi)
+            Vz = Vr * sin(phi) + Vphi * cos(phi)
 
         end subroutine dekard_polyar_skorost
         
@@ -260,10 +409,59 @@
             MK_sigma2 = (1.0 - par_a_2 * log(x * y))**2
         end function MK_sigma2
 
+        !@cuf attributes(host, device) &
+        subroutine Sootnosheniya(rho, p, rho_He, rho_Pui, T_Pui, al, rho_Th, rho_E, p_Th, p_Pui, T_Th, T_E)
+            ! Функция, определяющая температуры и концентрации гелия, пикапов и т.д.
+            ! al - это заряд гелия
+            ! если al = 1 то вне гелиопаузы
+            ! если al = 2, то внутри гелиопаузы
+            ! Th - термальные протоны, He - гелий, Pui - пикапы, E - электроны
+            ! без параметров, это общие (те, что считаются в МГД)
+            implicit none
+            real(8), intent(in) :: rho, p, rho_He, rho_Pui, T_Pui
+            integer(4), intent(in) :: al
+            real(8), intent(out), optional :: rho_Th, rho_E, p_Th, p_Pui, T_Th, T_E
+
+            if(PRESENT(rho_Th)) then
+                rho_Th = -(MF_meDmp * al * rho_He + 4.0 * (-rho + rho_He))/(4.0 * (1.0 + MF_meDmp)) - rho_Pui
+            end if
+
+            if(PRESENT(rho_E)) then
+                rho_E = MF_meDmp * (4.0 * rho + (-4.0 + al) * rho_He)/(4.0 * (1.0 + MF_meDmp))
+            end if
+
+            if(PRESENT(p_Th)) then
+                p_Th = (p - rho_Pui * T_Pui) * (-4.0 * rho + (4.0 + al * MF_meDmp) * rho_He + 4.0 * (1.0 + MF_meDmp) * rho_Pui)/&
+                (-8.0 * rho + (7.0 - al + (-1.0 + al) * MF_meDmp) * rho_He + 4.0 * (1.0 + MF_meDmp) * rho_Pui)
+            end if
+
+            if(PRESENT(p_Pui)) then
+                p_Pui = T_pui * rho_Pui
+            end if
+
+            if(PRESENT(T_Th)) then
+                T_Th = -4.0 * (1.0 + MF_meDmp) * (p - rho_Pui * T_Pui)/&
+                (-8.0 * rho + (7.0 - al + (-1.0 + al)*MF_meDmp) * rho_He + 4.0 * (1.0 - MF_meDmp) * rho_Pui)
+            end if
+
+            if(PRESENT(T_E)) then
+                if(PRESENT(T_Th)) then
+                    T_E = T_Th
+                else
+                    T_E = -4.0 * (1.0 + MF_meDmp) * (p - rho_Pui * T_Pui)/&
+                    (-8.0 * rho + (7.0 - al + (-1.0 + al)*MF_meDmp) * rho_He + 4.0 * (1.0 - MF_meDmp) * rho_Pui)
+                end if
+            end if
+
+
+            return
+        end subroutine Sootnosheniya
+
 	end module My_func
 	
 	! Описание модулей
 	
+    include "Solvers.f90"
 	include "cgod_3D.f90"
     include "Interpolation.f90"
     include "Help_func.f90"
@@ -8077,6 +8275,7 @@
         real(8) :: PAR(9)     ! Выходные параметры
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
         real(8) :: PAR_k(5)
+        real(8) :: MAS_PUI(2)
         LOGICAL :: koeff_local
 
         koeff_local = .True.
@@ -8091,7 +8290,7 @@
         print*, "subroutine Get_MK_to_MHD()"
         
         !call Int2_Read_bin(2)  ! Загрузка файла интерполяции
-        
+
         
         dd = 1.0
         
@@ -8099,9 +8298,10 @@
             x = gl_Cell_center(1, i)
             y = gl_Cell_center(2, i)
             z = gl_Cell_center(3, i)
-            call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k)
+            call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, MAS_PUI = MAS_PUI)
             !if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
             gl_Cell_par_MK(1:5, :, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
+            gl_Cell_par_pui(:, i) = MAS_PUI
 
             if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
             
@@ -8118,7 +8318,7 @@
             
             
             
-            do j = 1, 4
+            do j = 1, par_n_sort
                 if(gl_Cell_par_MK(1, j, i) < 0.0000001) then
                     gl_Cell_par_MK(1, j, i) = 0.0000001
                 end if
@@ -8126,7 +8326,8 @@
             
         end do
         
-        
+        print*, "end subroutine Get_MK_to_MHD()"
+
         return 
         
         call Int2_Read_bin(3)  ! Загрузка файла интерполяции
@@ -8501,7 +8702,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 589 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 597 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
         ! 574 до изменения сечения на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
@@ -8521,10 +8722,10 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 30 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 34 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
         ! 26 до изменения числа атомов водорода
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 4  !? 3 Номер алгоритма
+		step = 3  !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8733,6 +8934,16 @@
 			call Int2_Read_bin(name2)  ! Загрузка файла интерполяции
 			!call Int2_Save_interpol_for_all_MK(name2)
 			!call Int2_Dell_interpolate()
+
+            if(par_PUI) then
+                call PUI_Set()                !! PUI
+                call PUI_f_Set()              !! PUI
+                call PUI_f_Set2()             !! PUI
+                call PUI_Read_bin(name2)
+                call PUI_Read_f_bin(name2)
+                call PUI_F_integr_Set()       !! PUI
+                call PUI_Read_for_MK_bin(name2)   !! PUI
+            end if
 			
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
 			
@@ -8930,13 +9141,13 @@
 			
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
-			call Helium_off()
+			!!call Helium_off()
 			call M_K_start()
             ! call PUI_proverka(20.0_8, 0.0_8, 0.0_8)
 
 			!call M_K_sum()
 			call Int2_culc_k()
-			call Helium_on()
+			!!call Helium_on()
 			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
 			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			call Int_2_Print_par_1D()
@@ -8980,7 +9191,7 @@
             ! call PUI_Save_bin(name2 + 1)
 
 			call Culc_f_pui()
-            !call Cut_f_pui()
+            call Cut_f_pui()
             call PUI_Save_f_bin(name2)
             ! call PUI_Read_f_bin(name2 + 1)
 
@@ -9003,6 +9214,8 @@
 			call PUI_print(8, -17.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(9, -50.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(10, -40.0_8, 30.00001_8, 0.00001_8)
+			call PUI_print(11, 24.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(12, 24.5_8, 0.00001_8, 0.00001_8)
             
             ! call Int_2_Print_par_1D()
             call Print_par_1D_PUI()
@@ -9154,11 +9367,11 @@
             print*, "E------------------"
             call PUI_Read_bin(name2)
             print*, "F------------------"
-            call Helium_off()
+            ! call Helium_off()
             print*, "F1------------------"
-			call Int2_culc_k()
+			call Int2_culc_k(.False.)
             print*, "F2------------------"
-			call Helium_on()
+			! call Helium_on()
             print*, "G------------------"
             call Int2_Save_bin(name2)
             call Int_2_Print_par_1D()

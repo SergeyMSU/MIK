@@ -1184,25 +1184,23 @@ module Monte_Karlo
 							particle(3) + time * ddt * particle(6), cell, PAR, MAS_PUI = MAS_PUI, rho_He = rho_He)
 					else
 						call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
-							particle(3) + time * ddt * particle(6), cell, PAR)
+							particle(3) + time * ddt * particle(6), cell, PAR, rho_He = rho_He)
 					end if
 				
 					! cp = sqrt(PAR(5)/PAR(1))
 					if(area2 <= 2) then
-						ro = PAR(1) + rho_He
-						p = PAR(5) * (8.0 * PAR(1)  + 3.0 * rho_He) / (8.0 * PAR(1))
+						!! ro = PAR(1) + rho_He
+						!! p = PAR(5) * (8.0 * PAR(1)  + 3.0 * rho_He) / (8.0 * PAR(1))
+						!! ro_pui = MAS_PUI(1)
+						!! p = 4.0 * (ro - ro_pui - rho_He) * (p - MAS_PUI(2) * MAS_PUI(1)) /&
+						!! (8 * ro - 5.0 * rho_He - 4.0 * ro_pui)
+						!! ro = ro - ro_pui - rho_He
+
 						ro_pui = MAS_PUI(1)
-						
-						p = 4.0 * (ro - ro_pui - rho_He) * (p - MAS_PUI(2) * MAS_PUI(1)) /&
-						(8 * ro - 5.0 * rho_He - 4.0 * ro_pui)
+						call Sootnosheniya(PAR(1), PAR(5), rho_He, ro_pui, MAS_PUI(2), 2, rho_Th = ro, p_Th = p)
 
-						ro = ro - ro_pui - rho_He
-
-
-						! p = PAR(5) - MAS_PUI(2) * MAS_PUI(1)
 						if(p < 0.0) p = par_p_0/((r/par_1ae)**(2.0 * ggg))
-						! ro_pui = MAS_PUI(1)
-						! ro = PAR(1) - ro_pui
+						
 						if(ro < 0.000001) then
 							ro = 0.000001
 							p = 0.000001
@@ -1211,8 +1209,10 @@ module Monte_Karlo
 						end if
 						cp = sqrt(2.0 * p/ro)
 					else
-						p = PAR(5)
-						ro = PAR(1)
+						!!p = PAR(5)
+						!!ro = PAR(1)
+						call Sootnosheniya(PAR(1), PAR(5), rho_He, 0.0_8, 0.0_8, 1, rho_Th = ro, p_Th = p)
+
 						ro_pui = 0.0
 						cp = sqrt(p/ro)
 					end if

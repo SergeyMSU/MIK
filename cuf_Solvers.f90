@@ -3320,7 +3320,7 @@ attributes(global) subroutine CUF_MGD_grans_MF(now)
 	
 	integer(4) :: st, s1, s2, i, j, k, zone, metod, now2, ss1, ss2
 	real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-	real(8) :: fluid1(5, 4), fluid2(5, 4)
+	real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
 	real(8) :: dist, dsl, dsc, dsp, distant(3)
 	real(8) :: POTOK(9), ttest(3)
 	real(8) :: POTOK_MF(5)
@@ -3600,8 +3600,8 @@ attributes(global) subroutine CUF_MGD_cells_MF(now)
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
-		gl_zone_Cell => dev_gl_zone_Cell
+		par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
+		gl_zone_Cell => dev_gl_zone_Cell! Calc_sourse_MF => dev_Calc_sourse_MF
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
@@ -3610,13 +3610,13 @@ attributes(global) subroutine CUF_MGD_cells_MF(now)
 	
 	integer(4) :: st, s1, s2, i, j, k, zone, now2, ijk
 	real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-	real(8) :: fluid1(5, 4), fluid2(5, 4)
+	real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
 	real(8) :: dist, dsl, dsc, dsp
 	real(8) :: POTOK(9), ttest(3)
 	real(8) :: POTOK_MF(5)
 	real(8) :: POTOK_MF_all(5, 4)
 	real(8) :: time, Volume, U8, rad1, rad2, aa, bb, cc, Volume2, sks
-	real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+	real(8) :: SOURSE(5, par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 	real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	logical :: l_1
 	
@@ -3967,9 +3967,9 @@ attributes(global) subroutine CUF_MGD_cells_MF_inner()
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
+		gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
 		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
-		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume
+		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume! Calc_sourse_MF => dev_Calc_sourse_MF,
 	use GEO_PARAM
 	implicit none
 	
@@ -3977,13 +3977,13 @@ attributes(global) subroutine CUF_MGD_cells_MF_inner()
 	
 	integer(4) :: st, s1, s2, i, j, k, zone, iter
 	real(8) :: qqq1(9), qqq2(9), qqq(9)  ! Переменные в ячейке
-	real(8) :: fluid1(5, 4), fluid2(5, 4)
+	real(8) :: fluid1(5, par_n_sort), fluid2(5, par_n_sort)
 	real(8) :: dist, dsl, dsc, dsp
 	real(8) :: POTOK(9), ttest(3)
 	real(8) :: POTOK_MF(5)
 	real(8) :: POTOK_MF_all(5, 4)
 	real(8) :: Volume, TT, U8, rad1, rad2, aa, bb, cc, Volume2, sks
-	real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+	real(8) :: SOURSE(5, par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 	real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	logical :: l_1
 	
@@ -4650,9 +4650,9 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
+	    par_kk1 => dev_par_kk1, gl_Cell_type => dev_gl_Cell_type, gl_Cell_number => dev_gl_Cell_number, &
 		gl_zone_Cell => dev_gl_zone_Cell, gl_Cell_par_MK => dev_gl_Cell_par_MK, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2, &
-		gl_Cell_par2 => dev_gl_Cell_par2
+		gl_Cell_par2 => dev_gl_Cell_par2, gl_Cell_par_pui => dev_gl_Cell_par_pui ! Calc_sourse_MF => dev_Calc_sourse_MF,
 	use GEO_PARAM
 	implicit none
 	integer, intent(in) :: now
@@ -4661,11 +4661,11 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 	
 	integer(4) :: st, s1, s2, i, j, k, zone, now2, ijk
 	real(8) :: qqq(9), qqq2  ! Переменные в ячейке
-	real(8) :: fluid1(5, 4), MK_kk(5)
+	real(8) :: fluid1(5, par_n_sort), MK_kk(5)
 	real(8) :: dist, dsl, dsc, dsp
 	real(8) :: POTOK(9), ttest(3), POTOK2
 	real(8) :: time, Volume, U8, rad1, rad2, aa, bb, cc, Volume2, sks
-	real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+	real(8) :: SOURSE(5, par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 	real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	logical :: l_1
 	
@@ -4695,7 +4695,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 			qqq = gl_Cell_par(:, gr)
 			qqq2 = gl_Cell_par2(1, gr)
 			
-			fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+			fluid1 = gl_Cell_par_MK(1:5, :, gr)
 			MK_kk = gl_Cell_par_MK(6:10, 1, gr)
 			!if(gl_Cell_center2(1, gr, now) < -150.0) then
 			!	MK_kk = 1.0
@@ -4778,25 +4778,26 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 			end if
 	
 			! He
-			qqq(1) = qqq(1) - qqq2
+			! qqq(1) = qqq(1) - qqq2
 			
-			if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then
-				qqq(5) = qqq(5) / (8.0 * qqq(1) + 3.0 * qqq2) * 8.0 * qqq(1)
-			else
-				qqq(5) = qqq(5) / (4.0 * qqq(1) + qqq2) * 4.0 * qqq(1)
-			end if
+			! if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then
+			! 	qqq(5) = qqq(5) / (8.0 * qqq(1) + 3.0 * qqq2) * 8.0 * qqq(1)
+			! else
+			! 	qqq(5) = qqq(5) / (4.0 * qqq(1) + qqq2) * 4.0 * qqq(1)
+			! end if
 			
-			call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
+			! call dev_Calc_sourse_MF(qqq, fluid1, SOURSE, zone) ! Вычисляем источники
+			call Calc_sourse_MF(qqq, fluid1, SOURSE, zone, n_He_ = qqq2, MAS_PUI_ = gl_Cell_par_pui(:, gr))  ! Вычисляем источники
 			
-			if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then!
-				qqq(5) = qqq(5) * (8.0 * qqq(1) + 3.0 * qqq2) / (8.0 * qqq(1))
-			else
-				qqq(5) = qqq(5) * (4.0 * qqq(1) + qqq2) / (4.0 * qqq(1))
-			end if
+			! if(zone <= 2) then! (qqq(9)/qqq(1) < 50.0) then!
+			! 	qqq(5) = qqq(5) * (8.0 * qqq(1) + 3.0 * qqq2) / (8.0 * qqq(1))
+			! else
+			! 	qqq(5) = qqq(5) * (4.0 * qqq(1) + qqq2) / (4.0 * qqq(1))
+			! end if
 	
-			qqq(1) = qqq(1) + qqq2
+			! qqq(1) = qqq(1) + qqq2
 			
-			if(zone == 1 .or. zone == 2) then !(qqq(9)/qqq(1) < 50.0) then! Перенормировка обратно
+			if(zone <= 2) then !(qqq(9)/qqq(1) < 50.0) then! Перенормировка обратно
 				qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
 				qqq(1) = qqq(1) * (par_chi/par_chi_real)**2
 				qqq2 = qqq2 * (par_chi/par_chi_real)**2
@@ -5307,10 +5308,10 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 		gl_Cell_Volume2 => dev_gl_Cell_Volume2, gl_Cell_dist => dev_gl_Cell_dist, gl_all_Cell => dev_gl_all_Cell, gl_Cell_center2 => dev_gl_Cell_center2, &
 		gl_Cell_gran => dev_gl_Cell_gran, gl_Cell_par_MF => dev_gl_Cell_par_MF, gl_Gran_type => dev_gl_Gran_type, &
 		gl_Gran_POTOK => dev_gl_Gran_POTOK, gl_Gran_POTOK_MF => dev_gl_Gran_POTOK_MF, gl_Gran_info => dev_gl_Gran_info, gl_Cell_info => dev_gl_Cell_info, &
-		Calc_sourse_MF => dev_Calc_sourse_MF, gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
+		gl_all_Cell_inner => dev_gl_all_Cell_inner, gl_Gran_center => dev_gl_Gran_center, gl_Cell_center => dev_gl_Cell_center , &
 		gl_Gran_normal => dev_gl_Gran_normal, gl_Gran_square => dev_gl_Gran_square, gl_Cell_type => dev_gl_Cell_type, &
 		gl_Cell_number => dev_gl_Cell_number, gl_Cell_Volume => dev_gl_Cell_Volume, gl_Cell_par_MK => dev_gl_Cell_par_MK, gl_Gran_POTOK2 => dev_gl_Gran_POTOK2, &
-		gl_Cell_par2 => dev_gl_Cell_par2
+		gl_Cell_par2 => dev_gl_Cell_par2, gl_Cell_par_pui => dev_gl_Cell_par_pui!, Calc_sourse_MF => dev_Calc_sourse_MF
 	use GEO_PARAM
 	implicit none
 	
@@ -5318,12 +5319,12 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 	
 	integer(4) :: st, s1, s2, i, j, k, zone, iter
 	real(8) :: qqq(9), qqq2  ! Переменные в ячейке
-	real(8) :: fluid1(5, 4), MK_kk(5)
+	real(8) :: fluid1(5, par_n_sort), MK_kk(5)
 	real(8) :: dist, dsl, dsc, dsp
 	real(8) :: POTOK(9), ttest(3), POTOK2
 	real(8) :: POTOK_MF(5)
 	real(8) :: Volume, TT, U8, rad1, rad2, aa, bb, Volume2, sks
-	real(8) :: SOURSE(5,5)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
+	real(8) :: SOURSE(5, par_n_sort + 1)  ! Источники массы, импульса и энергии для плазмы и каждого сорта мультифлюида
 	real(8) :: ro3, u3, v3, w3, p3, bx3, by3, bz3, Q3
 	logical :: l_1
 	
@@ -5344,7 +5345,7 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 		Volume = gl_Cell_Volume(gr)
 		qqq = gl_Cell_par(:, gr)
 		qqq2 = gl_Cell_par2(1, gr)
-		fluid1 = gl_Cell_par_MK(1:5, 1:4, gr)
+		fluid1 = gl_Cell_par_MK(1:5, :, gr)
 		MK_kk = gl_Cell_par_MK(6:10, 1, gr)
 		!MK_kk = 1.0
 		! Просуммируем потоки через грани
@@ -5373,14 +5374,14 @@ attributes(global) subroutine CUF_MGD_cells_MK_inner()
 		qqq(9) = qqq(9) / (par_chi/par_chi_real)**2
 		
 		! He
-		qqq(1) = qqq(1) - qqq2
-		qqq(5) = qqq(5) / (8.0 * qqq(1) + 3.0 * qqq2) * 8.0 * qqq(1)
+		! qqq(1) = qqq(1) - qqq2
+		! qqq(5) = qqq(5) / (8.0 * qqq(1) + 3.0 * qqq2) * 8.0 * qqq(1)
 		
+		! call dev_Calc_sourse_MF(qqq, fluid1, SOURSE, zone)
+		call Calc_sourse_MF(qqq, fluid1, SOURSE, zone, n_He_ = qqq2, MAS_PUI_ = gl_Cell_par_pui(:, gr))  ! Вычисляем источники
 		
-		call Calc_sourse_MF(qqq, fluid1, SOURSE, zone)  ! Вычисляем источники
-		
-		qqq(5) = qqq(5) * (8.0 * qqq(1) + 3.0 * qqq2) / (8.0 * qqq(1))
-		qqq(1) = qqq(1) + qqq2
+		! qqq(5) = qqq(5) * (8.0 * qqq(1) + 3.0 * qqq2) / (8.0 * qqq(1))
+		! qqq(1) = qqq(1) + qqq2
 		
 		qqq(2:4) = qqq(2:4) / (par_chi/par_chi_real)
 		qqq(1) = qqq(1) * (par_chi/par_chi_real)**2

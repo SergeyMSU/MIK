@@ -2555,21 +2555,42 @@
 	
 	end subroutine Int2_Read_bin
 	
-	subroutine Int2_culc_k()
+	subroutine Int2_culc_k(temp_)
 	! Посчитаем коэффициенты отношения источников мультифлюида к Монте-Карло
 	! Также меняет температуру атомов на давление
-	integer(4) :: i, j
-	real(8) :: sourse(5,par_n_sort + 1), ss
+	logical, intent(in), optional :: temp_
+	logical :: temp
+	integer(4) :: i, j, cell
+	real(8) :: sourse(5,par_n_sort + 1), ss, MAS_PUI(2), rho_He
+	real(8) :: PAR(9)     ! Выходные параметры
+	real(8) :: fluid(5, par_n_sort)
+
+
+	temp = .True.
+	if(PRESENT(temp_)) temp = temp_
 	
 	! Делаем из температуры давление
-	do i = 1, size(int2_Moment(1, 1, :))
-		!int2_Moment(5, 1:4, i) = 0.5 * int2_Moment(5, 1:4, i) * int2_Moment(1, 1:4, i)
-		int2_Moment(5, :, i) = 0.5 * int2_Moment(5, :, i) * int2_Moment(1, :, i)
-	end do
+	if(temp) then
+		do i = 1, size(int2_Moment(1, 1, :))
+			!int2_Moment(5, 1:4, i) = 0.5 * int2_Moment(5, 1:4, i) * int2_Moment(1, 1:4, i)
+			int2_Moment(5, :, i) = 0.5 * int2_Moment(5, :, i) * int2_Moment(1, :, i)
+		end do
+	end if
+
+	cell = 3
 	
 	! Бежим по точкам
 	do i = 1, size(int2_Moment(1, 1, :))
-		call Calc_sourse_MF(int2_Cell_par(:, i), int2_Moment(1:5, :, i), sourse, 1)
+		call Int2_Get_par_fast(int2_coord(1, i), int2_coord(2, i),&
+								int2_coord(3, i), cell, PAR, MAS_PUI = MAS_PUI, rho_He = rho_He)
+
+		fluid = int2_Moment(1:5, :, i)
+		call Calc_sourse_MF(int2_Cell_par(:, i), fluid, sourse, int2_Cell_par2(1, i), &
+			n_He_ = int2_Cell_par_2(1, i), MAS_PUI_ = MAS_PUI)
+
+
+		! print*, "===", rho_He, int2_Cell_par_2(1, i)
+		! pause
 		
 		!! Считаем коэффициенты (для трёх импульсов и энергии)
 		do j = 2, 5
@@ -2637,73 +2658,79 @@
 	
 	end subroutine Int2_Set_interpol_matrix
 	
-	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, n_HE, MAS_PUI)
-	! Найти тетраедр, которому принадлежит точка и получить значения параметров
-	! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
-	! предполагается, что матрицы лежат в памяти
-	! num по умолчанию должен быть равен 3
-	implicit none
-	real(8), intent(in) :: x, y, z
-	real(8), intent(out) :: PAR(9)     ! Выходные параметры
-	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
-	real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
-	real(8), intent(out), optional :: PAR_k(5)
-	real(8), intent(out), optional :: n_HE
-	real(8), intent(out), optional :: MAS_PUI(2)   ! Массив параметров пикапов
-	
-	real(8), dimension(4, 4) :: Minv
-	real(8), dimension(1, 4) :: vec
-	integer:: i, yzel, yzel2
-	
-	
-	call Int2_Get_tetraedron(x, y, z, num)
-	
-	if(num < 1) then
-		!print*, "Net tetr"
-		num = 0
-		return
-	end if
-	
-	Minv = int2_all_tetraendron_matrix(:, :, num)
-	
-	vec(1, 1) = 1.0_8
-	vec(1, 2:4) = (/ x, y, z /)
-	
-	vec = MATMUL(vec, Minv)
+	subroutine Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, n_HE, MAS_PUI, rho_He)
+		! Найти тетраедр, которому принадлежит точка и получить значения параметров
+		! В отличие от медленной версии, эта не вычисляет матрицу интерполяции каждый раз, 
+		! предполагается, что матрицы лежат в памяти
+		! num по умолчанию должен быть равен 3
+		implicit none
+		real(8), intent(in) :: x, y, z
+		real(8), intent(out) :: PAR(9)     ! Выходные параметры
+		integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+		real(8), intent(out), optional :: PAR_MOMENT(par_n_moment, par_n_sort)
+		real(8), intent(out), optional :: PAR_k(5)
+		real(8), intent(out), optional :: n_HE
+		real(8), intent(out), optional :: MAS_PUI(2)   ! Массив параметров пикапов
+		real(8), intent(out), optional :: rho_He 
+		
+		real(8), dimension(4, 4) :: Minv
+		real(8), dimension(1, 4) :: vec
+		integer:: i, yzel, yzel2
+		
+		
+		call Int2_Get_tetraedron(x, y, z, num)
+		
+		if(num < 1) then
+			!print*, "Net tetr"
+			num = 0
+			return
+		end if
+		
+		Minv = int2_all_tetraendron_matrix(:, :, num)
+		
+		vec(1, 1) = 1.0_8
+		vec(1, 2:4) = (/ x, y, z /)
+		
+		vec = MATMUL(vec, Minv)
 
-	
-	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
-		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
-	
-	if(present(PAR_MOMENT)) then
-		PAR_MOMENT = vec(1, 1) * int2_Moment(:, :, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment(:, :, int2_all_tetraendron_point(2, num) ) + &
-		vec(1, 3) * int2_Moment(:, :, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment(:, :, int2_all_tetraendron_point(4, num) )
-	end if
-	
-	if(present(PAR_k)) then
-		PAR_k = vec(1, 1) * int2_Moment_k(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment_k(:, int2_all_tetraendron_point(2, num) ) + &
-		vec(1, 3) * int2_Moment_k(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment_k(:, int2_all_tetraendron_point(4, num) )
-	end if
-	
-	if(present(n_HE)) then
-		n_HE = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
-		vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
-	end if
+		
+		PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+		
+		if(present(PAR_MOMENT)) then
+			PAR_MOMENT = vec(1, 1) * int2_Moment(:, :, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment(:, :, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Moment(:, :, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment(:, :, int2_all_tetraendron_point(4, num) )
+		end if
+		
+		if(present(PAR_k)) then
+			PAR_k = vec(1, 1) * int2_Moment_k(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Moment_k(:, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Moment_k(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Moment_k(:, int2_all_tetraendron_point(4, num) )
+		end if
+		
+		if(present(n_HE)) then
+			n_HE = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
+		end if
 
-	if(present(MAS_PUI)) then
-		MAS_PUI = 0.0	
-		do i = 1, 4
-			yzel = int2_all_tetraendron_point(i, num)
-			yzel2 = f_pui_num2(yzel)
-			if(yzel2 > 0) then
-				MAS_PUI(1) = MAS_PUI(1) + vec(1, i) * n_pui(yzel2)
-				MAS_PUI(2) = MAS_PUI(2) + vec(1, i) * T_pui(yzel2)
-			else
-				MAS_PUI = 0.0
-				EXIT
-			end if
-		end do
-	end if
+		if(present(MAS_PUI)) then
+			MAS_PUI = 0.0	
+			do i = 1, 4
+				yzel = int2_all_tetraendron_point(i, num)
+				yzel2 = f_pui_num2(yzel)
+				if(yzel2 > 0) then
+					MAS_PUI(1) = MAS_PUI(1) + vec(1, i) * n_pui(yzel2)
+					MAS_PUI(2) = MAS_PUI(2) + vec(1, i) * T_pui(yzel2)
+				else
+					MAS_PUI = 0.0
+					EXIT
+				end if
+			end do
+		end if
+
+		if(present(rho_He)) then
+			rho_He = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
+		end if
 	
 	end subroutine Int2_Get_par_fast
 	
@@ -3007,7 +3034,8 @@
 
 		num = 3
 		open(1, file = '_print_par_1D_interpolate_Istoch_Iu.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Iu_H1', 'Iu_H2', 'Iu_H3', 'Iu_H4', 'Iu_H5', 'Iu_H6'"
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Iu_H1', 'Iu_H2', 'Iu_H3', 'Iu_H4',"
+		write(1,*)  "'Iu_H5', 'Iu_H6'"
 		write(1,*) ", ZONE T= 'HP'"
 
 		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
@@ -3041,7 +3069,8 @@
 
 		num = 3
 		open(1, file = '_print_par_1D_interpolate_Istoch_IT.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Iu_H1', 'Iu_H2', 'Iu_H3', 'Iu_H4', 'Iu_H5', 'Iu_H6'"
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'IT_H1', 'IT_H2', 'IT_H3', 'IT_H4',"
+		write(1,*) " 'IT_H5', 'IT_H6', 'kk1', 'kk2', 'kk3', 'kk4', 'kk5',"
 		write(1,*) ", ZONE T= 'HP'"
 
 		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
@@ -3057,16 +3086,17 @@
 			yzel = int2_all_tetraendron_point(1, num)
 			if(yzel < 1) CYCLE
 			if(par_n_sort == 4) then
-				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), 0.0, 0.0!, int2_Cell_par_div(yzel)
+				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), 0.0, 0.0, &
+				 			int2_Moment_k(:, yzel)
 			else if(par_n_sort == 6) then
-				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), PAR_MOMENT(9, 5), PAR_MOMENT(9, 6)
+				write(1, *) x, PAR_MOMENT(9, 1), PAR_MOMENT(9, 2), PAR_MOMENT(9, 3), PAR_MOMENT(9, 4), PAR_MOMENT(9, 5), PAR_MOMENT(9, 6), &
+							int2_Moment_k(:, yzel)
 			else
 				print*, "ERROR wecfwcfw[vwrevreverver"
 				EXIT
 			end if
 			write(1, *) " "
 		end do
-		
 			
 		close(1)
 	
