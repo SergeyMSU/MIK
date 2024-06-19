@@ -153,7 +153,9 @@ module PUI
 		end do
 
 		allocate(f_pui(pui_nW, N2))
+		allocate(f_pui2(pui_nW, N2))
 		f_pui = 0.0
+		f_pui2 = 0.0
 	end subroutine PUI_f_Set2
 
 	subroutine PUI_n_T_culc()
@@ -339,7 +341,7 @@ module PUI
 
 		print*, "START Culc_f_pui"
 
-		dt = 0.001 !0.0005
+		dt = 0.0001 !0.0005
 
 		! Находим функцию распределения для ячеек перед ударной волной
 		print*, "Do TS"
@@ -792,14 +794,13 @@ module PUI
 
 	subroutine Cut_f_pui()
 		implicit none
-		integer(4) :: i, j
-		real(8) :: SS, w, SS2, S
+		integer(4) :: i, j, n_yzel, zone
+		real(8) :: SS, w, SS2, S, k_norm
+		real(8) :: rho_Th, p_Th, n_he_, cp, n_sw, p_sw, n_pui_, T_pui_
 
-		do i = 1, size(f_pui(1, :))
-
-			S = 0.0
-			SS = 0.0
-			SS2 = 0.0
+		do i = 1, size(f_pui(1, :)) !! Нормируем функцию распределения Пикапов, если она слишком большая
+			S = 0.0 ! Концентрация пикапов
+			SS = 0.0 ! Температура пикапов пикапов
 
 			do j = 1, pui_nW
 				w = (j-0.5) * pui_wR/pui_nW
@@ -811,14 +812,50 @@ module PUI
 				SS = SS + f_pui(j, i) * 4 * par_pi_8 * w**4 /(3.0 * S)
 			end do
 
+			n_sw = int2_Cell_par(1, n_yzel)
+			n_he_ = int2_Cell_par_2(1, n_yzel)
+
+			if(S > n_sw - n_he_) k_norm = 0.999 * (n_sw - n_he_)/S
+
+			f_pui(:, i) = f_pui(:, i) * k_norm
+		end do
+
+		f_pui2 = f_pui
+
+
+		do i = 1, size(f_pui(1, :))
+
+			S = 0.0 ! Концентрация пикапов
+			SS = 0.0 ! Температура пикапов пикапов
+
 			do j = 1, pui_nW
 				w = (j-0.5) * pui_wR/pui_nW
-				SS2 = SS2 + f_pui(j, i) * 4 * par_pi_8 * w**4 /(3.0 * S)
-				if(dabs(SS2 - SS)/SS * 100.0 < 0.01) then
-					f_pui_cut(i) = j
-					EXIT
-				end if
+				S = S + f_pui(j, i) * 4 * par_pi_8 * w**2
 			end do
+
+			do j = 1, pui_nW
+				w = (j-0.5) * pui_wR/pui_nW
+				SS = SS + f_pui(j, i) * 4 * par_pi_8 * w**4 /(3.0 * S)
+			end do
+
+			n_yzel = f_pui_num(i)  ! Номер узла в интерполяционной сетке
+
+			n_sw = int2_Cell_par(1, n_yzel)
+			p_sw = int2_Cell_par(5, n_yzel)
+			n_he_ = int2_Cell_par_2(1, n_yzel)
+			zone = int2_Cell_par2(1, n_yzel)
+			call Sootnosheniya(n_sw, p_sw, n_he_, S, SS, zone, rho_Th = rho_Th, p_Th = p_Th)
+			cp = p_Th/rho_Th
+
+
+			! do j = 1, pui_nW
+			! 	w = (j-0.5) * pui_wR/pui_nW
+			! 	SS2 = SS2 + f_pui(j, i) * 4 * par_pi_8 * w**4 /(3.0 * S)
+			! 	if(dabs(SS2 - SS)/SS * 100.0 < 0.01) then
+			! 		f_pui_cut(i) = j
+			! 		EXIT
+			! 	end if
+			! end do
 
 		end do
 
@@ -878,12 +915,16 @@ module PUI
 		print*, n1, n2
 
 		call Sootnosheniya(PAR(1), PAR(5), ro_He, n_pui_, T_pui_, zone, rho_Th = rho_Th, p_Th = p_Th)
-		cp = sqrt(p_Th/rho_Th)
+		if(rho_Th > 0.0) then
+			cp = sqrt(p_Th/rho_Th)
+		else
+			cp = 1
+		end if
 
 		open(3, file = "f_PUI_" // name // ".txt")
 
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'w', 'pui', 'th', 'pui + th'"
-		write(1,*) ", ZONE T= 'HP'"
+		write(3,*) "TITLE = 'HP'  VARIABLES = 'w', 'pui', 'th', 'pui + th'"
+		write(3,*) ", ZONE T= 'HP'"
 
 		if(n2 > 0) then
 			do i = 1, pui_nW
@@ -1108,7 +1149,10 @@ module PUI
 		write(1) f_pui_cut
 
 
-		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
+		write(1) 1; 
+		write(1) f_pui2
+		
+		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
 		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
 		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
 		write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0; write(1) 0
@@ -1214,6 +1258,9 @@ module PUI
 		read(1) f_pui
 
 		read(1) f_pui_cut
+
+		read(1) n1
+		if(n1 == 1) read(1) f_pui2
 
 		close(1)
 

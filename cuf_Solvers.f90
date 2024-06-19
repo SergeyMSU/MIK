@@ -31,8 +31,8 @@ attributes(global) subroutine Cuda_Move_all_1(now)  ! Поверхностное натяжение на
 	
 	if(k > N3 .or. j > N2) return
 	
-	k1 = 0.002! 0.001
-	if(j <= 18) k1 = 0.03   ! 0.03
+	k1 = 0.02! 0.002! 0.001
+	if(j <= 18) k1 = 0.08   ! 0.03
 	
 	
 	if (j == 1 .and. k/= 1) then

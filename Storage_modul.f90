@@ -28,7 +28,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.05 * lock_move * 0.3 * 0.01_8 ! 0.3 *  0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 1.2 * 0.3 * lock_move! 1.0 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_HP = 3.5 * 0.3 * lock_move! 1.0 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
 	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
 
 
@@ -85,7 +85,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 2 * 8!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 2 * 10!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -287,6 +287,7 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
     integer :: pui_nW = 100      ! 50
 	real(8) :: pui_wR = 200.0    ! 150.0
     real(8), allocatable :: f_pui(:, :)           ! (pui_nW, :)
+    real(8), allocatable :: f_pui2(:, :)           ! (pui_nW, :)
 	integer, allocatable :: f_pui_num(:)           ! По номеру в массиве пуи, определяем номер узла в интерполяционной сетке
 	integer, allocatable :: f_pui_num2(:)		   ! По номеру узла в интерполяционной сетке, определяем номер в массиве PUI
     real(8), allocatable :: n_pui(:)           ! (:)	   Концентрация пикапов
