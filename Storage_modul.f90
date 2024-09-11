@@ -1,7 +1,7 @@
 
     
 module GEO_PARAM                     ! Модуль геометрических - сеточных параметров - констант программы
-    
+    USE OMP_LIB
     implicit none
     
     logical, parameter :: par_developer_info = .True.   ! Параметр разработчика для вывода информационных сообщений
@@ -9,6 +9,8 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	logical, parameter :: par_null_bn = .True.          ! Обнулять ли bn на контакте
 	logical, parameter :: par_helium = .True.          ! Включаем ли гелий? (под него создаются массивы и т.д.)
 	logical, parameter :: par_PUI = .True.          ! Включаем ли PUI
+    LOGICAL, parameter :: par_pogloshenie = .False.  ! Считаем ли поглощение
+    character, parameter :: par_NAME = "B"
 	
 	real(8), parameter :: par_null_bn_x = -10000.0_8 !-2500.0_8   ! От какого расстояния включаем вычитание bn
 	
@@ -28,15 +30,15 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	real(8), parameter :: lock_move = 1.0_8 !1.0_8 
 	real(8), parameter :: par_nat_TS = 0.05 * lock_move * 0.3 * 0.01_8 ! 0.3 *  0.7 * 0.002_8 !0.0000001_8 !0.003_8                ! Коэффициент натяжения ударной волны  0.002
-	real(8), parameter :: par_nat_HP = 3.5 * 0.3 * lock_move! 1.0 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
-	real(8), parameter :: par_nat_BS = lock_move * 0.00004_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
+	real(8), parameter :: par_nat_HP = 1.0 * 0.3 * lock_move! 1.0 - 3.5 * 0.3 *                   ! Коэффициент натяжения контакта  0.0001
+	real(8), parameter :: par_nat_BS = lock_move * 0.0001_8 ! 0.00004_8               ! Коэффициент натяжения внешней ударной волны 0.0002
 
 
 	real(8), parameter :: par_kurant = 0.5_8                ! КУРАНТ
 	
 	real(8), parameter :: koef1 = lock_move * 0.1! 0.2  в 5 раз уменьшил     ! Коэффициент запаздывания скорости ударной волны
     real(8), parameter :: koef2 = 0.1 * lock_move ! 0.1    1.0  0.5  0.01
-    real(8), parameter :: koef3 = lock_move * 0.7_8   ! 0.3
+    real(8), parameter :: koef3 = 0.1 * lock_move * 0.7_8   ! 0.3
 	
     
     
@@ -64,6 +66,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     real(8), parameter :: par_mpHe_inf = 1.15_8  ! Множитель концентрации СВ из-за  Гелия на 1 а.е.
     real(8), parameter :: par_nu_ph = 10.3286!  12.2125 
     real(8), parameter :: par_E_ph = 0.07252!  0.10878
+    real(8), parameter :: par_poglosh = 0.498559_8    !! Константа домножения на поглощение Ly
     
 	real(8), parameter :: par_Mach_alf = 12.8816_8! 12.8816_8
 	real(8), parameter :: par_Mach_0 = 6.44_8
@@ -77,7 +80,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	! такое число итераций
 	integer(4), parameter :: par_n_zone = 6!7  !  Количество радиусов (но есть ещё внешняя зона)
 	integer(4), parameter :: par_m_zone = 7! 6  !  Количество лучей по углу (от 0 до 180)
-	integer(4), parameter :: par_n_sort = 6  !  Количество сортов атомов
+	integer(4), parameter :: par_n_sort = 6!6  !  Количество сортов атомов
 	integer(4) :: par_n_moment = 19 !9  !  Сколько различных моментов считаем (длинна массива)
 	real(8), parameter :: par_Rmax = 300.0! 220.0  !  Радиус сферы, с которой запускаем частицы
 	real(8) :: par_Rleft! = par_R_LEFT + 0.0001 !-400.0 + 0.01  !  Задняя стенка
@@ -85,7 +88,7 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 2 * 10!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	integer(4), parameter :: MK_k_multiply = 7 * 10! 2 * 30! 2 * 10!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
 	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
@@ -113,6 +116,8 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
     integer :: par_l_phi = 80! 48 !4   ! Количество вращений двумерной сетки для получения трёхмерной (разрешение по углу phi)
                                 ! Должно делиться на 4 для удобного вывода результатов в плоскостях
 	real(8) :: par_al1 = 0.35! 1.0   ! Для сгущения сетки по углу (цилиндрическому)
+
+    real(8), parameter :: par_dr_BS = 3.0_8 ! Ширина ячейки, примыкающей к BS с внешней стороны
     
     integer(4) :: par_m_A = 40! 30      ! Количество лучей A в плоскости
     integer(4) :: par_m_BC = 35! 18      ! Количество лучей B/C в плоскости
@@ -157,6 +162,7 @@ end module GEO_PARAM
     
 	 
 module STORAGE                       ! Модуль глобальных данных и типов (все переменные начинаются на gl - global)
+    USE OMP_LIB
     implicit none
 
     ! Если нужно поменять точность, то это нужно ещё сделать в функции выделения памяти и инициализации, но лучше не менять
@@ -294,6 +300,16 @@ module STORAGE                       ! Модуль глобальных данных и типов (все пер
 	real(8), allocatable :: T_pui(:)           ! (:)	   Температура пикапов
     integer, allocatable :: f_pui_cut(:)           ! До какого номера от 1 до pui_nW каждая функция распределения считается
     
+
+    !! Набор массивов для поглощения
+
+    real(8) :: pogl_v_min = -10.0
+    real(8) :: pogl_v_max = 20.0
+    integer(4) :: pogl_iter = 150
+    real(8) :: pogl_ddd
+    real(8), allocatable :: pogloshenie(:, :, :)   !  (n_Hidrogen, pogl_iter, ячеек)
+    integer (kind=omp_lock_kind), allocatable :: pogl_lock(:)  ! (ячеек) Для openMP
+
     contains
     
     

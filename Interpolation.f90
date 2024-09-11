@@ -2097,173 +2097,183 @@
 	
 	
 	subroutine Int2_Get_par(x, y, z, num, PAR)
-	! Найти тетраедр, которому принадлежит точка и получить значения параметров
-	! num по умолчанию должен быть равен 3
-	implicit none
-	real(8), intent(in) :: x, y, z
-	real(8), intent(out) :: PAR(9)     ! Выходные параметры
-	integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
-	integer(4) :: i, j, r(3)
-	real(8), dimension(4, 4) :: Minv
-	real(8), dimension(4, 4) :: M
-	real(8), dimension(4) :: work  ! work array for LAPACK
-	real(8), dimension(1, 4) :: vec
-	integer, dimension(4) :: ipiv   ! pivot indices
-	integer :: n, info
-	
-	 !$inter external DGETRF
-	 !$inter external DGETRI
-	
-	info = 0
-	
-	call Int2_Get_tetraedron(x, y, z, num)
-	
-	if(num == 0) then
-		!print*, "Net tetr"
-		return
-	end if
-	
-	
-	M(:, 1) = 1.0_8
-	M(1, 2:4) = int2_coord(:, int2_all_tetraendron_point(1, num) )
-	M(2, 2:4) = int2_coord(:, int2_all_tetraendron_point(2, num) )
-	M(3, 2:4) = int2_coord(:, int2_all_tetraendron_point(3, num) )
-	M(4, 2:4) = int2_coord(:, int2_all_tetraendron_point(4, num) )
-	
-	Minv = M
-	n = size(M,1)
-	
-	
-	 !$inter call DGETRF(n, n, Minv, n, ipiv, info)
-	
-	if (info /= 0) then
-     stop 'Matrix is numerically singular! wfergt56y454erthy5t'
-	end if
-	
-	 !$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
-	
-	if (info /= 0) then
-     stop 'Matrix inversion failed! frfg543565tttg'
-	end if
-	
-	
-	vec(1, 1) = 1.0_8
-	vec(1, 2:4) = (/ x, y, z /)
-	
-	vec = MATMUL(vec, Minv)
+		! Найти тетраедр, которому принадлежит точка и получить значения параметров
+		! num по умолчанию должен быть равен 3
+		implicit none
+		real(8), intent(in) :: x, y, z
+		real(8), intent(out) :: PAR(9)     ! Выходные параметры
+		integer(4), intent(in out) :: num  ! Тетраэдр, в котором предположительно находится точка (num по умолчанию должен быть равен 3)
+		integer(4) :: i, j, r(3)
+		real(8), dimension(4, 4) :: Minv
+		real(8), dimension(4, 4) :: M
+		real(8), dimension(4) :: work  ! work array for LAPACK
+		real(8), dimension(1, 4) :: vec
+		integer, dimension(4) :: ipiv   ! pivot indices
+		integer :: n, info
+		
+		!$inter external DGETRF
+		!$inter external DGETRI
+		
+		info = 0
+		
+		call Int2_Get_tetraedron(x, y, z, num)
+		
+		if(num == 0) then
+			!print*, "Net tetr"
+			return
+		end if
+		
+		
+		M(:, 1) = 1.0_8
+		M(1, 2:4) = int2_coord(:, int2_all_tetraendron_point(1, num) )
+		M(2, 2:4) = int2_coord(:, int2_all_tetraendron_point(2, num) )
+		M(3, 2:4) = int2_coord(:, int2_all_tetraendron_point(3, num) )
+		M(4, 2:4) = int2_coord(:, int2_all_tetraendron_point(4, num) )
+		
+		Minv = M
+		n = size(M,1)
+		
+		
+		!$inter call DGETRF(n, n, Minv, n, ipiv, info)
+		
+		if (info /= 0) then
+		stop 'Matrix is numerically singular! wfergt56y454erthy5t'
+		end if
+		
+		!$inter call DGETRI(n, Minv, n, ipiv, work, n, info)
+		
+		if (info /= 0) then
+		stop 'Matrix inversion failed! frfg543565tttg'
+		end if
+		
+		
+		vec(1, 1) = 1.0_8
+		vec(1, 2:4) = (/ x, y, z /)
+		
+		vec = MATMUL(vec, Minv)
 
-	
-	PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
-		vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
-	
-	
+		
+		PAR = vec(1, 1) * int2_Cell_par(:, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par(:, int2_all_tetraendron_point(2, num) ) + &
+			vec(1, 3) * int2_Cell_par(:, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par(:, int2_all_tetraendron_point(4, num) )
+		
+		
 	end subroutine Int2_Get_par
 	
 	subroutine Int2_Save_bin(num)
-	implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-	integer(4) :: n1, n2, n3
-    
-    write(unit=name,fmt='(i5.5)') num
-    
-    open(1, file = "int2_save_" // name // ".bin", FORM = 'BINARY')
-	
-	write(1) size(int2_coord(:, 1)), size(int2_coord(1, :))
-	write(1) int2_coord
-	
-	write(1) size(int2_Cell_par(:, 1)), size(int2_Cell_par(1, :))
-	write(1) int2_Cell_par
-	
-	write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))
-	write(1) int2_Cell_par2
-	
-	write(1) size(int2_Moment(:, 1, 1)), size(int2_Moment(1, :, 1)), size(int2_Moment(1, 1, :))
-	write(1) int2_Moment
-	
-	write(1) size(int2_all_Cell(:, 1)), size(int2_all_Cell(1, :))
-	write(1) int2_all_Cell
-	
-	write(1) size(int2_Cell_A(:, 1, 1)), size(int2_Cell_A(1, :, 1)), size(int2_Cell_A(1, 1, :))
-	write(1) int2_Cell_A
-	
-	write(1) size(int2_Cell_B(:, 1, 1)), size(int2_Cell_B(1, :, 1)), size(int2_Cell_B(1, 1, :))
-	write(1) int2_Cell_B
-	
-	write(1) size(int2_Cell_C(:, 1, 1)), size(int2_Cell_C(1, :, 1)), size(int2_Cell_C(1, 1, :))
-	write(1) int2_Cell_C
-	
-	write(1) size(int2_Cell_center(:, 1)), size(int2_Cell_center(1, :))
-	write(1) int2_Cell_center
-	
-	write(1) size(int2_all_neighbours(:, 1)), size(int2_all_neighbours(1, :))
-	write(1) int2_all_neighbours
-	
-	write(1) size(int2_Point_A(:, 1, 1)), size(int2_Point_A(1, :, 1)), size(int2_Point_A(1, 1, :))
-	write(1) int2_Point_A
-	
-	write(1) size(int2_Point_B(:, 1, 1)), size(int2_Point_B(1, :, 1)), size(int2_Point_B(1, 1, :))
-	write(1) int2_Point_B
-	
-	write(1) size(int2_Point_C(:, 1, 1)), size(int2_Point_C(1, :, 1)), size(int2_Point_C(1, 1, :))
-	write(1) int2_Point_C
-	
-	write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
-	write(1) int2_all_tetraendron
-	
-	write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
-	write(1) int2_all_tetraendron_point
-	
-	write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
-	write(1) int2_all_tetraendron_matrix
-	
-	write(1) size(int2_gran_point(:, 1)), size(int2_gran_point(1, :))
-	write(1) int2_gran_point
-	
-	write(1) size(int2_gran_sosed(:))
-	write(1) int2_gran_sosed
-	
-	write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
-	write(1) int2_plane_tetraendron
-	
-	write(1) size(int2_all_Volume(:))
-	write(1) int2_all_Volume
-	
-	
-	write(1) 1
-	write(1) size(int2_Moment_k(:, 1)), size(int2_Moment_k(1, :))
-	write(1) int2_Moment_k
-	
-    write(1) 1
-	write(1) size(int2_Cell_par_2(:, 1)), size(int2_Cell_par_2(1, :))
-	write(1) int2_Cell_par_2
-	
-	
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-	write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    write(1) 0
-    
-	
-	
-	close(1)
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer(4) :: n1, n2, n3
+		
+		write(unit=name,fmt='(i5.5)') num
+		
+		open(1, file = par_NAME//"int2_save_" // name // ".bin", FORM = 'BINARY')
+		
+		write(1) size(int2_coord(:, 1)), size(int2_coord(1, :))
+		write(1) int2_coord
+		
+		write(1) size(int2_Cell_par(:, 1)), size(int2_Cell_par(1, :))
+		write(1) int2_Cell_par
+		
+		write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))
+		write(1) int2_Cell_par2
+		
+		write(1) size(int2_Moment(:, 1, 1)), size(int2_Moment(1, :, 1)), size(int2_Moment(1, 1, :))
+		write(1) int2_Moment
+		
+		write(1) size(int2_all_Cell(:, 1)), size(int2_all_Cell(1, :))
+		write(1) int2_all_Cell
+		
+		write(1) size(int2_Cell_A(:, 1, 1)), size(int2_Cell_A(1, :, 1)), size(int2_Cell_A(1, 1, :))
+		write(1) int2_Cell_A
+		
+		write(1) size(int2_Cell_B(:, 1, 1)), size(int2_Cell_B(1, :, 1)), size(int2_Cell_B(1, 1, :))
+		write(1) int2_Cell_B
+		
+		write(1) size(int2_Cell_C(:, 1, 1)), size(int2_Cell_C(1, :, 1)), size(int2_Cell_C(1, 1, :))
+		write(1) int2_Cell_C
+		
+		write(1) size(int2_Cell_center(:, 1)), size(int2_Cell_center(1, :))
+		write(1) int2_Cell_center
+		
+		write(1) size(int2_all_neighbours(:, 1)), size(int2_all_neighbours(1, :))
+		write(1) int2_all_neighbours
+		
+		write(1) size(int2_Point_A(:, 1, 1)), size(int2_Point_A(1, :, 1)), size(int2_Point_A(1, 1, :))
+		write(1) int2_Point_A
+		
+		write(1) size(int2_Point_B(:, 1, 1)), size(int2_Point_B(1, :, 1)), size(int2_Point_B(1, 1, :))
+		write(1) int2_Point_B
+		
+		write(1) size(int2_Point_C(:, 1, 1)), size(int2_Point_C(1, :, 1)), size(int2_Point_C(1, 1, :))
+		write(1) int2_Point_C
+		
+		write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
+		write(1) int2_all_tetraendron
+		
+		write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
+		write(1) int2_all_tetraendron_point
+		
+		write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
+		write(1) int2_all_tetraendron_matrix
+		
+		write(1) size(int2_gran_point(:, 1)), size(int2_gran_point(1, :))
+		write(1) int2_gran_point
+		
+		write(1) size(int2_gran_sosed(:))
+		write(1) int2_gran_sosed
+		
+		write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
+		write(1) int2_plane_tetraendron
+		
+		write(1) size(int2_all_Volume(:))
+		write(1) int2_all_Volume
+		
+		
+		write(1) 1
+		write(1) size(int2_Moment_k(:, 1)), size(int2_Moment_k(1, :))
+		write(1) int2_Moment_k
+		
+		write(1) 1
+		write(1) size(int2_Cell_par_2(:, 1)), size(int2_Cell_par_2(1, :))
+		write(1) int2_Cell_par_2
+		
+		
+		if(par_pogloshenie) then
+			write(1) 1
+			write(1) pogl_v_min, pogl_v_max, pogl_iter, pogl_ddd
+			write(1) size(pogloshenie(:, 1, 1)), size(pogloshenie(1, :, 1)), size(pogloshenie(1, 1, :))
+			write(1) pogloshenie
+		else
+			write(1) 0
+		end if
+
+
+
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		write(1) 0
+		
+		
+		
+		close(1)
 	
 	end subroutine Int2_Save_bin
 	
@@ -2298,260 +2308,281 @@
 	end subroutine Helium_on
 	
 	subroutine Int2_Save_interpol_for_all_MHD(num)
-	! Сохраняет интерполяционные файлы для всех желующих
-	use STORAGE
-    use GEO_PARAM
-    implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-	integer :: zone, i
-    
-    write(unit=name, fmt='(i5.5)') num
-    
-    open(1, file = "int2_save_for_all_MHD" // name // ".bin", FORM = 'BINARY')
-	
-    
-    write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
-    write(1) int2_all_tetraendron
-	
-	write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
-    write(1) int2_plane_tetraendron
-	
-	write(1) size(int2_gran_sosed(:))
-    write(1) int2_gran_sosed
-	
-	write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
-    write(1) int2_all_tetraendron_matrix
-	
-	! He
-	do i = 1, size(int2_Cell_par(1, :))
-		zone = int2_Cell_par2(1, i)
-		int2_Cell_par(1, i) = int2_Cell_par(1, i) - int2_Cell_par_2(1, i)
-			
-		if(zone == 1 .or. zone == 2) then
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) * 4.0 * int2_Cell_par(1, i)
-		else
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) / (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
-		end if
-	end do
-	
-	
-	write(1) size(int2_Cell_par(:, 1)), size(int2_Cell_par(1, :))
-    write(1) int2_Cell_par
-	
-	write(1) size(int2_Cell_par_2(:, 1)), size(int2_Cell_par_2(1, :))
-    write(1) int2_Cell_par_2
+		! Сохраняет интерполяционные файлы для всех желующих
+		use STORAGE
+		use GEO_PARAM
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer :: zone, i
+		
+		write(unit=name, fmt='(i5.5)') num
+		
+		open(1, file = "int2_save_for_all_MHD" // name // ".bin", FORM = 'BINARY')
+		
+		
+		write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
+		write(1) int2_all_tetraendron
+		
+		write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
+		write(1) int2_plane_tetraendron
+		
+		write(1) size(int2_gran_sosed(:))
+		write(1) int2_gran_sosed
+		
+		write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
+		write(1) int2_all_tetraendron_matrix
+		
+		! He
+		do i = 1, size(int2_Cell_par(1, :))
+			zone = int2_Cell_par2(1, i)
+			int2_Cell_par(1, i) = int2_Cell_par(1, i) - int2_Cell_par_2(1, i)
+				
+			if(zone == 1 .or. zone == 2) then
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) * 4.0 * int2_Cell_par(1, i)
+			else
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) / (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) * 2.0 * int2_Cell_par(1, i)
+			end if
+		end do
+		
+		
+		write(1) size(int2_Cell_par(:, 1)), size(int2_Cell_par(1, :))
+		write(1) int2_Cell_par
+		
+		write(1) size(int2_Cell_par_2(:, 1)), size(int2_Cell_par_2(1, :))
+		write(1) int2_Cell_par_2
 
-	write(1) size(int2_Cell_par_div)
-	write(1) int2_Cell_par_div
-	
-	do i = 1, size(int2_Cell_par(1, :))
-		zone = int2_Cell_par2(1, i)
-		if(zone == 1 .or. zone == 2) then
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) / (4.0 * int2_Cell_par(1, i))
-		else
-			int2_Cell_par(5, i) = int2_Cell_par(5, i) * (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
-		end if
-		int2_Cell_par(1, i) = int2_Cell_par(1, i) + int2_Cell_par_2(1, i)
-	end do
-	
-	write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
-    write(1) int2_all_tetraendron_point
-	
-	write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))  ! ЗОНА
-    write(1) int2_Cell_par2
+		write(1) size(int2_Cell_par_div)
+		write(1) int2_Cell_par_div
+		
+		do i = 1, size(int2_Cell_par(1, :))
+			zone = int2_Cell_par2(1, i)
+			if(zone == 1 .or. zone == 2) then
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (8.0 * int2_Cell_par(1, i) + 3.0 * int2_Cell_par_2(1, i)) / (4.0 * int2_Cell_par(1, i))
+			else
+				int2_Cell_par(5, i) = int2_Cell_par(5, i) * (4.0 * int2_Cell_par(1, i) + int2_Cell_par_2(1, i)) / (2.0 * int2_Cell_par(1, i))
+			end if
+			int2_Cell_par(1, i) = int2_Cell_par(1, i) + int2_Cell_par_2(1, i)
+		end do
+		
+		write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
+		write(1) int2_all_tetraendron_point
+		
+		write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))  ! ЗОНА
+		write(1) int2_Cell_par2
 
-	write(1) 1
-	write(1) size(int2_coord(:, 1)), size(int2_coord(1, :))
-	write(1) int2_coord
+		write(1) 1
+		write(1) size(int2_coord(:, 1)), size(int2_coord(1, :))
+		write(1) int2_coord
 
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	
-	close(1)
-	
-	
-	! Body of Save_interpol_for_all
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		write(1) 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		
+		close(1)
+		
+		
+		! Body of Save_interpol_for_all
 	
 	end subroutine Int2_Save_interpol_for_all_MHD
 	
 	
 	subroutine Int2_Save_interpol_for_all_MK(num)
-	! Сохраняет интерполяционные файлы для всех желующих
-	use STORAGE
-    use GEO_PARAM
-    implicit none
-    integer, intent(in) :: num
-    character(len=5) :: name
-	integer :: zone, i
-    
-    write(unit=name, fmt='(i5.5)') num
-    
-    open(1, file = "int2_save_for_all_MK" // name // ".bin", FORM = 'BINARY')
-	
-    
-    write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
-    write(1) int2_all_tetraendron
-	
-	write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
-    write(1) int2_plane_tetraendron
-	
-	write(1) size(int2_gran_sosed(:))
-    write(1) int2_gran_sosed
-	
-	write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
-    write(1) int2_all_tetraendron_matrix
-	
-	
-	write(1) size(int2_Moment(:, 1, 1)), size(int2_Moment(1, :, 1)), size(int2_Moment(1, 1, :))  ! ЗОНА
-    write(1) int2_Moment
-	
-	
-	write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
-    write(1) int2_all_tetraendron_point
-	
-	write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))  ! ЗОНА
-    write(1) int2_Cell_par2
-	
-	close(1)
-	
-	
-	! Body of Save_interpol_for_all
+		! Сохраняет интерполяционные файлы для всех желующих
+		use STORAGE
+		use GEO_PARAM
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer :: zone, i
+		
+		write(unit=name, fmt='(i5.5)') num
+		
+		open(1, file = par_NAME//"int2_save_for_all_MK" // name // ".bin", FORM = 'BINARY')
+		
+		
+		write(1) size(int2_all_tetraendron(:, 1)), size(int2_all_tetraendron(1, :))
+		write(1) int2_all_tetraendron
+		
+		write(1) size(int2_plane_tetraendron(:, 1, 1)), size(int2_plane_tetraendron(1, :, 1)), size(int2_plane_tetraendron(1, 1, :))
+		write(1) int2_plane_tetraendron
+		
+		write(1) size(int2_gran_sosed(:))
+		write(1) int2_gran_sosed
+		
+		write(1) size(int2_all_tetraendron_matrix(:, 1, 1)), size(int2_all_tetraendron_matrix(1, :, 1)), size(int2_all_tetraendron_matrix(1, 1, :))
+		write(1) int2_all_tetraendron_matrix
+		
+		
+		write(1) size(int2_Moment(:, 1, 1)), size(int2_Moment(1, :, 1)), size(int2_Moment(1, 1, :))  ! ЗОНА
+		write(1) int2_Moment
+		
+		
+		write(1) size(int2_all_tetraendron_point(:, 1)), size(int2_all_tetraendron_point(1, :))
+		write(1) int2_all_tetraendron_point
+		
+		write(1) size(int2_Cell_par2(:, 1)), size(int2_Cell_par2(1, :))  ! ЗОНА
+		write(1) int2_Cell_par2
+		
+		close(1)
+		
+		
+		! Body of Save_interpol_for_all
 	
 	end subroutine Int2_Save_interpol_for_all_MK
 	
 	subroutine Int2_Read_bin(num)
-	implicit none
-	integer, intent(in) :: num
-    character(len=5) :: name
-    integer(4) :: n
-    logical :: exists
-	integer(4) :: n1, n2, n3
-    
-	print*, "Start Int2_Read_bin"
-    write(unit=name,fmt='(i5.5)') num
-    
-    inquire(file="int2_save_" // name // ".bin", exist=exists)
-    
-    if (exists == .False.) then
-		pause "net faila!!!  edhpifs56uhekwkwiuwyvrr"
-        STOP "net faila!!!"
-    end if
-    
-    open(1, file = "int2_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
-	
-	
-	read(1) n1, n2
-	allocate( int2_coord(n1, n2) )
-	read(1) int2_coord
-	
-	read(1) n1, n2
-	allocate( int2_Cell_par(n1, n2) )
-	read(1) int2_Cell_par
-	
-	read(1) n1, n2
-	allocate( int2_Cell_par2(n1, n2) )
-	read(1) int2_Cell_par2
-	
-	read(1) n1, n2, n3
-	allocate( int2_Moment(n1, n2, n3) )
-	read(1) int2_Moment
-	par_n_moment = n1
-	
-	read(1) n1, n2
-	allocate( int2_all_Cell(n1, n2) )
-	read(1) int2_all_Cell
-	
-	read(1) n1, n2, n3
-	allocate( int2_Cell_A(n1, n2, n3) )
-	read(1) int2_Cell_A
-	
-	read(1) n1, n2, n3
-	allocate( int2_Cell_B(n1, n2, n3) )
-	read(1) int2_Cell_B
-	
-	read(1) n1, n2, n3
-	allocate( int2_Cell_C(n1, n2, n3) )
-	read(1) int2_Cell_C
-	
-	read(1) n1, n2
-	allocate( int2_Cell_center(n1, n2) )
-	read(1) int2_Cell_center
-	
-	read(1) n1, n2
-	allocate( int2_all_neighbours(n1, n2) )
-	read(1) int2_all_neighbours
-	
-	read(1) n1, n2, n3
-	allocate( int2_Point_A(n1, n2, n3) )
-	read(1) int2_Point_A
-	
-	read(1) n1, n2, n3
-	allocate( int2_Point_B(n1, n2, n3) )
-	read(1) int2_Point_B
-	
-	read(1) n1, n2, n3
-	allocate( int2_Point_C(n1, n2, n3) )
-	read(1) int2_Point_C
-	
-	read(1) n1, n2
-	allocate( int2_all_tetraendron(n1, n2) )
-	read(1) int2_all_tetraendron
-	
-	read(1) n1, n2
-	allocate( int2_all_tetraendron_point(n1, n2) )
-	read(1) int2_all_tetraendron_point
-	
-	read(1) n1, n2, n3
-	allocate( int2_all_tetraendron_matrix(n1, n2, n3) )
-	read(1) int2_all_tetraendron_matrix
-	
-	read(1) n1, n2
-	allocate( int2_gran_point(n1, n2) )
-	read(1) int2_gran_point
-	
-	read(1) n1
-	allocate( int2_gran_sosed(n1) )
-	read(1) int2_gran_sosed
-	
-	read(1) n1, n2, n3
-	allocate( int2_plane_tetraendron(n1, n2, n3) )
-	read(1) int2_plane_tetraendron
-	
-	read(1) n1
-	allocate( int2_all_Volume(n1) )
-	read(1) int2_all_Volume
-	
-	read(1) n
-	if(n == 1) then
+		implicit none
+		integer, intent(in) :: num
+		character(len=5) :: name
+		integer(4) :: n
+		logical :: exists
+		integer(4) :: n1, n2, n3
+		
+		print*, "Start Int2_Read_bin"
+		write(unit=name,fmt='(i5.5)') num
+		
+		inquire(file=par_NAME//"int2_save_" // name // ".bin", exist=exists)
+		
+		if (exists == .False.) then
+			pause "net faila!!!  edhpifs56uhekwkwiuwyvrr"
+			STOP "net faila!!!"
+		end if
+		
+		open(1, file = par_NAME//"int2_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		
+		
 		read(1) n1, n2
-		allocate( int2_Moment_k(n1, n2) )
-		read(1) int2_Moment_k
-	end if
-	
-	if( allocated(int2_Moment_k) == .False.) then
-		allocate(int2_Moment_k(5, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
-		int2_Moment_k = 1.0
-	end if
-	
-	read(1) n
-	if(n == 1) then
+		allocate( int2_coord(n1, n2) )
+		read(1) int2_coord
+		
 		read(1) n1, n2
-		allocate( int2_Cell_par_2(n1, n2) )
-		read(1) int2_Cell_par_2
-	end if
-	
-	if( allocated(int2_Cell_par_2) == .False.) then
-		allocate(int2_Cell_par_2(1, size(int2_Cell_par(1, :)) ))
-		int2_Cell_par_2 = 0.0
-	end if
-	
-	close(1)
+		allocate( int2_Cell_par(n1, n2) )
+		read(1) int2_Cell_par
+		
+		read(1) n1, n2
+		allocate( int2_Cell_par2(n1, n2) )
+		read(1) int2_Cell_par2
+		
+		read(1) n1, n2, n3
+		allocate( int2_Moment(n1, n2, n3) )
+		read(1) int2_Moment
+		par_n_moment = n1
+		
+		read(1) n1, n2
+		allocate( int2_all_Cell(n1, n2) )
+		read(1) int2_all_Cell
+		
+		read(1) n1, n2, n3
+		allocate( int2_Cell_A(n1, n2, n3) )
+		read(1) int2_Cell_A
+		
+		read(1) n1, n2, n3
+		allocate( int2_Cell_B(n1, n2, n3) )
+		read(1) int2_Cell_B
+		
+		read(1) n1, n2, n3
+		allocate( int2_Cell_C(n1, n2, n3) )
+		read(1) int2_Cell_C
+		
+		read(1) n1, n2
+		allocate( int2_Cell_center(n1, n2) )
+		read(1) int2_Cell_center
+		
+		read(1) n1, n2
+		allocate( int2_all_neighbours(n1, n2) )
+		read(1) int2_all_neighbours
+		
+		read(1) n1, n2, n3
+		allocate( int2_Point_A(n1, n2, n3) )
+		read(1) int2_Point_A
+		
+		read(1) n1, n2, n3
+		allocate( int2_Point_B(n1, n2, n3) )
+		read(1) int2_Point_B
+		
+		read(1) n1, n2, n3
+		allocate( int2_Point_C(n1, n2, n3) )
+		read(1) int2_Point_C
+		
+		read(1) n1, n2
+		allocate( int2_all_tetraendron(n1, n2) )
+		read(1) int2_all_tetraendron
+		
+		read(1) n1, n2
+		allocate( int2_all_tetraendron_point(n1, n2) )
+		read(1) int2_all_tetraendron_point
+		
+		read(1) n1, n2, n3
+		allocate( int2_all_tetraendron_matrix(n1, n2, n3) )
+		read(1) int2_all_tetraendron_matrix
+		
+		read(1) n1, n2
+		allocate( int2_gran_point(n1, n2) )
+		read(1) int2_gran_point
+		
+		read(1) n1
+		allocate( int2_gran_sosed(n1) )
+		read(1) int2_gran_sosed
+		
+		read(1) n1, n2, n3
+		allocate( int2_plane_tetraendron(n1, n2, n3) )
+		read(1) int2_plane_tetraendron
+		
+		read(1) n1
+		allocate( int2_all_Volume(n1) )
+		read(1) int2_all_Volume
+
+		print*, "from Int2_Read_bin: A"
+		
+		read(1) n
+		if(n == 1) then
+			read(1) n1, n2
+			allocate( int2_Moment_k(n1, n2) )
+			read(1) int2_Moment_k
+		end if
+		
+		if( allocated(int2_Moment_k) == .False.) then
+			allocate(int2_Moment_k(5, size(int2_Point_A) + size(int2_Point_B) + size(int2_Point_C)))
+			int2_Moment_k = 1.0
+		end if
+
+		print*, "from Int2_Read_bin: B"
+		
+		read(1) n
+		if(n == 1) then
+			read(1) n1, n2
+			allocate( int2_Cell_par_2(n1, n2) )
+			read(1) int2_Cell_par_2
+		end if
+
+		print*, "from Int2_Read_bin: C ", n
+		
+		if( allocated(int2_Cell_par_2) == .False.) then
+			allocate(int2_Cell_par_2(1, size(int2_Cell_par(1, :)) ))
+			int2_Cell_par_2 = 0.0
+		end if
+
+
+		read(1) n
+		print*, "from Int2_Read_bin: D ", n
+		if(n == 1) then
+			print*, "Int2_Read_bin   Schit pogloshenie!"
+			read(1) pogl_v_min, pogl_v_max, pogl_iter, pogl_ddd
+			read(1) n1, n2, n3
+			allocate( pogloshenie(n1, n2, n3) )
+			read(1) pogloshenie
+			if(par_pogloshenie == .False. .or. n1 == 0 .or. n2 == 0 .or. n3 == 0) deallocate(pogloshenie)
+		end if
+
+		
+		close(1)
+
+		print*, "End Int2_Read_bin"
 	
 	end subroutine Int2_Read_bin
 	
@@ -2583,6 +2614,10 @@
 	do i = 1, size(int2_Moment(1, 1, :))
 		call Int2_Get_par_fast(int2_coord(1, i), int2_coord(2, i),&
 								int2_coord(3, i), cell, PAR, MAS_PUI = MAS_PUI, rho_He = rho_He)
+
+		if(par_PUI == .False.) then
+			MAS_PUI = 0.0
+		end if
 
 		fluid = int2_Moment(1:5, :, i)
 		call Calc_sourse_MF(int2_Cell_par(:, i), fluid, sourse, int2_Cell_par2(1, i), &
@@ -2712,7 +2747,7 @@
 			vec(1, 3) * int2_Cell_par_2(1, int2_all_tetraendron_point(3, num) ) + vec(1, 4) * int2_Cell_par_2(1, int2_all_tetraendron_point(4, num) )
 		end if
 
-		if(present(MAS_PUI)) then
+		if(present(MAS_PUI) .and. par_PUI == .True.) then
 			MAS_PUI = 0.0	
 			do i = 1, 4
 				yzel = int2_all_tetraendron_point(i, num)
@@ -2726,6 +2761,8 @@
 				end if
 			end do
 		end if
+
+		if(present(MAS_PUI) .and. par_PUI == .False.) MAS_PUI = 0.0
 
 		if(present(rho_He)) then
 			rho_He = vec(1, 1) * int2_Cell_par_2(1, int2_all_tetraendron_point(1, num) ) + vec(1, 2) * int2_Cell_par_2(1, int2_all_tetraendron_point(2, num) ) + &
@@ -2908,7 +2945,7 @@
 	end subroutine Int_2_Cut_tetr
 	
 	subroutine Int_2_Print_par_2D_set()
-		integer :: i, j, N1, N2, p
+		integer :: i, j, N1, N2, p, N3
 		real(8) :: PAR(9), PAR_MK(par_n_moment, par_n_sort), PAR_K(5)
 		real(8) :: PAR_MK_SUM(par_n_moment)
 		character(len=2) :: name, name2
@@ -2936,10 +2973,12 @@
 		
 		N1 = size(int2_Point_A(:, 1, 1)) 
 		N2 = size(int2_Point_A(1, :, 1)) 
+		N3 = size(int2_Point_A(1, 1, :)) 
+		N3 = INT(N3/2)                        !! Здесь задаём какой именно срез по фи печатать
 		
 		do i = 1, N1
 			do j = 1, N2
-				p = int2_Point_A(i, j, 1)
+				p = int2_Point_A(i, j, N3)
 				
 				PAR = int2_Cell_par(:, p)
 				PAR_MK = int2_Moment(:, :, p)
@@ -2957,7 +2996,7 @@
 		
 		do i = 1, N1
 			do j = 1, N2
-				p = int2_Point_B(i, j, 1)
+				p = int2_Point_B(i, j, N3)
 				
 				PAR = int2_Cell_par(:, p)
 				PAR_MK = int2_Moment(:, :, p)
@@ -2975,7 +3014,7 @@
 		
 		do i = 1, N1
 			do j = 1, N2
-				p = int2_Point_C(i, j, 1)
+				p = int2_Point_C(i, j, N3)
 				
 				PAR = int2_Cell_par(:, p)
 				PAR_MK = int2_Moment(:, :, p)
@@ -3003,6 +3042,7 @@
 		num = 3
 		open(1, file = '_print_par_1D_interpolate.txt')
 		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'n_H1', 'n_H2', 'n_H3', 'n_H4', 'n_H5', 'n_H6'"
+		write(1,*) ",'u_H3', 'v_H3', 'w_H3', 'T_H3'"
 		write(1,*) ", ZONE T= 'HP'"
 
 		! if(ALLOCATED(int2_Cell_par_div) == .False.) then
@@ -3018,9 +3058,9 @@
 			yzel = int2_all_tetraendron_point(1, num)
 			if(yzel < 1) CYCLE
 			if(par_n_sort == 4) then
-				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), 0.0, 0.0!, int2_Cell_par_div(yzel)
+				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), 0.0, 0.0, PAR_MOMENT(2:5, 3)!, int2_Cell_par_div(yzel)
 			else if(par_n_sort == 6) then
-				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), PAR_MOMENT(1, 5), PAR_MOMENT(1, 6)
+				write(1, *) x, PAR_MOMENT(1, 1), PAR_MOMENT(1, 2), PAR_MOMENT(1, 3), PAR_MOMENT(1, 4), PAR_MOMENT(1, 5), PAR_MOMENT(1, 6), PAR_MOMENT(2:5, 3)
 			else
 				print*, "ERROR j987432yg83voifhu[0u892hf3p9"
 				EXIT
@@ -3158,12 +3198,13 @@
 			
 
 		open(1, file = name // '_print_par_2D_interpolate.txt')
-		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
-		write(1,*) "'bx', 'by', 'bz', 'Q'" !, 'n_H', 'u_H',"
+		write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z'"
+		!write(1,*) ", 'rho', 'u', 'v', 'w', 'p',"
+		!write(1,*) "'bx', 'by', 'bz', 'Q'" !, 'n_H', 'u_H',"
 		!write(1,*) "'v_H', 'w_H', 'T_H', 'MK6', 'MK7', 'MK8', 'MK9'"
 		!write(1,*) ",'n_H1', u_H1', 'v_H1', 'w_H1', 'p_T_H1', 'MK16', 'MK17', 'MK18', 'MK19'"
 		!write(1,*) ",'n_H2', u_H2', 'v_H2', 'w_H2', 'p_T_H2', 'MK26', 'MK27', 'MK28', 'MK29'"
-		!write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'p_T_H3', 'MK36', 'MK37', 'MK38', 'MK39'"
+		write(1,*) ",'n_H3', u_H3', 'v_H3', 'w_H3', 'p_T_H3'" !, 'MK36', 'MK37', 'MK38', 'MK39'"
 		!write(1,*) ",'n_H4', u_H4', 'v_H4', 'w_H4', 'p_T_H4', 'MK46', 'MK47', 'MK48', 'MK49'"
 		!write(1,*) ",'k2', k3', 'k4', 'k5'"
 		write(1,*) ", ZONE T= 'HP', N= ",  4 * (n - 1) , ", E =  ", (n - 1), ", F=FEPOINT, ET=quadrilateral "
@@ -3171,9 +3212,10 @@
 		do i = 1, (n - 1)
 			do j = 1, 4
 				call Int2_Get_par_fast(CUT(1, j, i), CUT(2, j, i), CUT(3, j, i), num, PAR, PAR_MK, PAR_K)
-				!call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
+				call Int2_sum_moment(PAR_MK, PAR_MK_SUM)
 				if(num < 1) num = 3
-				write(1,*) CUT(:, j, i), PAR!, PAR_MK_SUM, PAR_MK(1:9, 1), PAR_MK(1:9, 2), PAR_MK(1:9, 3), PAR_MK(1:9, 4), PAR_K(2:5)
+				!write(1,*) CUT(:, j, i), PAR, PAR_MK_SUM, PAR_MK(1:9, 1), PAR_MK(1:9, 2), PAR_MK(1:9, 3), PAR_MK(1:9, 4), PAR_K(2:5)
+				write(1,*) CUT(:, j, i), PAR_MK(1:5, 3)
 			end do
 		end do
 
@@ -3273,6 +3315,10 @@
 			gl_Cell_par(:, i) = int2_Cell_par(:, int2_all_tetraendron_point(1, num))
 			gl_Cell_par2(:, i) = int2_Cell_par_2(:, int2_all_tetraendron_point(1, num))
 		else
+			if(n_HE > PAR(1)) then
+				n_HE = 0.0
+				print*, "ERRRRRR    n_HE > PAR(1) in", r
+			end if
 			gl_Cell_par(:, i) = PAR
 			gl_Cell_par2(:, i) = n_HE
 		end if

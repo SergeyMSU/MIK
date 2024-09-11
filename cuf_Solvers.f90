@@ -2732,8 +2732,8 @@ attributes(global) subroutine Cuda_Calc_move_HP(now)
 		gl_Cell_par(6:8, s2) = qqq2(6:8)
 	end if
 	
-	
-	if (par_TVD == .True.) then
+	if(.False.) then
+	!!if (par_TVD == .True.) then
 			ss1 = gl_Gran_neighbour_TVD(1, gr)
 			ss2 = gl_Gran_neighbour_TVD(2, gr)
 			if (ss1 /= 0 .and. ss2 /= 0) then
@@ -4142,7 +4142,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	kdir = 0
 	idgod = 0
 	ydar = .False.
-	n_disc = 1
+	n_disc = 0!! 1   ПОМЕНЯЛ
 	time = 100000.0
 	gr = blockDim%x * (blockIdx%x - 1) + threadIdx%x   ! Номер потока
 	
@@ -4545,7 +4545,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	wc = DOT_PRODUCT((gl_Gran_center2(:, gr, now2) -  gl_Gran_center2(:, gr, now))/TT, gl_Gran_normal2(:, gr, now))
 	
 	
-	metod = 0 !(gr)  !! 0   1
+	!metod = 0 !(gr)  !! 0   1
 	metod = gl_Gran_scheme(gr)
 	
 	!if(gl_Gran_type(gr) == 2 .or. gl_Gran_type(gr) == 1) metod = 1 !2
@@ -4556,7 +4556,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	if(gl_Gran_type(gr) == 2) metod = 3 !2
 	
 	if(gl_zone_Cell(s1) == 1 .and. gl_zone_Cell(s1) == 1) metod = 3
-	if(gl_zone_Cell(s1) == 4 .and. gl_zone_Cell(s1) == 4) metod = 1
+	!if(gl_zone_Cell(s1) == 4 .and. gl_zone_Cell(s1) == 4) metod = 1
 	
 	!if(gl_Gran_center2(1, gr, now) <= 25.0 .and. gl_Gran_center2(1, gr, now) >= 18.0) then
 	!	metod = 0
@@ -4564,8 +4564,9 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 
 	
 	if(gl_Gran_type(gr) == 1) metod = 3
-	if(gl_Gran_type(gr) == 3) metod = 3
+	!!if(gl_Gran_type(gr) == 3) metod = 3
 	
+	!! РАСКОМЕНТИТЬ
 	if(gl_Gran_type(gr) == 1) then
 		!n_disc = 2 !2
 		ydar = .True.
@@ -4575,7 +4576,7 @@ attributes(global) subroutine CUF_MGD_grans_MK(now)
 	!metod = 0 !! ----
 	
 	!.and. gl_Gran_center2(1, gr, now) >= -50.0
-	if (.True. .and. gl_Gran_type(gr) == 2) then ! Для гелиопаузы особая процедура
+	if (.True. .and. gl_Gran_type(gr) == 2) then !! Для гелиопаузы особая процедура
 		
 		POTOK = 0.0
 		konvect_(3, 1) = 0.0
@@ -4763,7 +4764,8 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 					zone = 2
 				end if
 			else
-				if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.1) then
+				!if(norm2(qqq(2:4))/sqrt(ggg*qqq(5)/qqq(1)) > 1.1) then
+				if(gl_zone_Cell(gr) == 4) then
 					zone = 4
 				else
 					zone = 3
@@ -4820,10 +4822,11 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 					write(*, *) "Ro < 0  3688"
 					write(*, *) " ---  ", ro3, qqq(1), gl_Cell_center2(1, gr, now), gl_Cell_center2(2, gr, now), gl_Cell_center2(3, gr, now)! , MK_kk(1), &
 						! qqq(1), time * POTOK(1) / Volume2
-					!write(*, *) qqq(1), Q3
+					write(*, *) "2 ---  ", MK_kk(1), SOURSE(2, 1), SOURSE(5, 1)
 					!write(*, *) Volume , Volume2
 					ro3 = 0.1
 					Q3 = (qqq(9)/qqq(1)) * 0.1
+					STOP
 				end if
 				
 				if(gl_Cell_par2(1, gr) <= 0.0) then

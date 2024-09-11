@@ -170,6 +170,9 @@
             
             sourse(2:5, 1) =  sourse(2:5, 1) * (par_n_p_LISM/par_Kn)
             
+            ! if(al == 4) then           !! Отключил источники в зоне 4
+            !     sourse(:, 1) = 0.0
+            ! end if
             
             ! do i = 1, par_n_sort
             !     sourse(1, i + 1) = (par_n_H_LISM_/par_Kn) * (kk(i) * S1 - nu(i))
@@ -6911,33 +6914,39 @@
         kk = 1
         do j = 1, size(gl_RAY_A(1, :, kk))
             yzel = gl_RAY_A(par_n_BS, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
         do j = 1, size(gl_RAY_C(1, :, kk))
             yzel = gl_RAY_C(par_n_BS - par_n_HP + 1, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
         do j =  1, size(gl_RAY_O(1, :, kk))
             yzel = gl_RAY_O(par_n_BS - par_n_HP + 1, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
         kk = par_l_phi/2 + 1
         do j = 1, size(gl_RAY_A(1, :, kk))
             yzel = gl_RAY_A(par_n_BS, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
         do j = 1, size(gl_RAY_C(1, :, kk))
             yzel = gl_RAY_C(par_n_BS - par_n_HP + 1, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
         do j =  1, size(gl_RAY_O(1, :, kk))
             yzel = gl_RAY_O(par_n_BS - par_n_HP + 1, j, kk)
-            write(1,*) gl_x(yzel), gl_y(yzel)
+            !write(1,*) gl_x(yzel), gl_y(yzel)
+            write(1,*) 0.0, 0.0
         end do
 
 
@@ -7180,10 +7189,10 @@
         real(8) :: Tpui, rho, rhoHe, rhopui, Tp, pp, p_th, rho_th, T_th
         
         print*, "Start Print_par_1D_PUI"
-        Dr = 1.0/par_R0
-        DI1 = 0.0264
-        DI2 = 0.007622
-        DI3 = 0.00292921
+        Dr = 1.0! 1.0/par_R0
+        DI1 = 1.0! 0.0264
+        DI2 = 1.0! 0.007622
+        DI3 = 1.0! 0.00292921
 
         num = 3
         N = size(gl_Cell_A(:, 1, 1)) 
@@ -7494,7 +7503,7 @@
         implicit none
 
         integer :: N1, N2, kk, k, i, j, N, m
-        real(8) :: c(3), Mach
+        real(8) :: c(3), Mach, MachA
 
         print*, "Print_par_2D()"
         N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
@@ -7507,7 +7516,7 @@
         write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q', 'He',"
         write(1,*) "'Zone','T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
         write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
-        write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', ZONE T= 'HP'"
+        write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', 'MachA', ZONE T= 'HP'"
 
 
         kk = 1
@@ -7518,9 +7527,10 @@
                 c = gl_Cell_center(:, gl_Cell_A(i, j, kk))
                 m = gl_Cell_A(i, j, kk)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*) c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
         N2 = size(gl_Cell_B(1, :, 1))
@@ -7530,9 +7540,10 @@
                 m = gl_Cell_B(i, j, kk)
                 c = gl_Cell_center(:, m)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
         N2 = size(gl_Cell_C(1, :, 1))
@@ -7542,9 +7553,10 @@
                 m = gl_Cell_C(i, j, kk)
                 c = gl_Cell_center(:, m)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ),&
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
 
@@ -7558,9 +7570,10 @@
                 m = gl_Cell_A(i, j, kk)
                 c = gl_Cell_center(:, m)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
         N2 = size(gl_Cell_B(1, :, 1))
@@ -7570,9 +7583,10 @@
                 m = gl_Cell_B(i, j, kk)
                 c = gl_Cell_center(:, m)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
         N2 = size(gl_Cell_C(1, :, 1))
@@ -7582,9 +7596,10 @@
                 m = gl_Cell_C(i, j, kk)
                 c = gl_Cell_center(:, m)
                 Mach = norm2(gl_Cell_par(2:4, m ))/sqrt(ggg*gl_Cell_par(5, m )/gl_Cell_par(1, m ))
+                MachA = norm2(gl_Cell_par(2:4, m )) * sqrt(4.0 * par_pi_8 * gl_Cell_par(1, m ))/ norm2(gl_Cell_par(6:8, m ))
                 write(1,*)  c, gl_Cell_par(1:8, m ), norm2(gl_Cell_par(6:8, m ))/(8*par_pi_8), gl_Cell_Volume(m), Mach, &
                     gl_Cell_par(9, m )/gl_Cell_par(1, m ), gl_Cell_par2(1, m), gl_zone_Cell(m), gl_Cell_par(5, m )/gl_Cell_par(1, m ), &
-                    gl_Cell_par_MF(:, :, m)
+                    gl_Cell_par_MF(:, :, m), MachA
             end do
         end do
 
@@ -8270,12 +8285,13 @@
         ! Получим результаты работы Монте-Карло для использования их в МГД расчётах
         use Interpolate2
         LOGICAL, intent(in), OPTIONAL :: koeff
-        integer(4) :: i, num, s1, j
+        integer(4) :: i, num, s1, j, cell
         real(8) :: x, y, z, dd
         real(8) :: PAR(9)     ! Выходные параметры
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
         real(8) :: PAR_k(5)
         real(8) :: MAS_PUI(2)
+        real(8) :: Sredn(10, par_n_sort)
         LOGICAL :: koeff_local
 
         koeff_local = .True.
@@ -8300,7 +8316,7 @@
             z = gl_Cell_center(3, i)
             call Int2_Get_par_fast(x, y, z, num, PAR, PAR_MOMENT, PAR_k, MAS_PUI = MAS_PUI)
             !if(par_n_sort /= 4) STOP "ERROR 7890okjhyuio98765rtyuikgyui"
-            gl_Cell_par_MK(1:5, :, i) = PAR_MOMENT(1:5, :) * dd  ! Если сортов - 4
+            gl_Cell_par_MK(1:5, :, i) = PAR_MOMENT(1:5, :) * dd  
             gl_Cell_par_pui(:, i) = MAS_PUI
 
             if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
@@ -8312,7 +8328,7 @@
                 call Int2_Get_tetraedron_inner(x, y, z, num)
                 if(num < 1) STOP "ERROR  89uyfvbnm[;.xsw4567u"
                 s1 = int2_all_tetraendron_point(1, num)
-                gl_Cell_par_MK(1:5, 1:4, i) = int2_Moment(1:5, :, s1) * dd
+                gl_Cell_par_MK(1:5, :, i) = int2_Moment(1:5, :, s1) * dd
                 if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = int2_Moment_k(:, s1) * dd
             end if
             
@@ -8327,6 +8343,19 @@
         end do
         
         print*, "end subroutine Get_MK_to_MHD()"
+
+        do i = 1, size(gl_Cell_A(:, 1, 1))  !! Осредняем параметры водорода вблизи оси для лучшей статистики
+            !! Осреднение только в первой ячейки у оси и только в апвинд
+            Sredn = 0.0
+            do j = 1, size(gl_Cell_A(1, 1, :))
+                cell = gl_Cell_A(i, 1, j)
+                Sredn(:, :) = Sredn(:, :) + gl_Cell_par_MK(:, :, cell)
+            end do 
+
+            do j = 1, size(gl_Cell_A(1, 1, :))
+                gl_Cell_par_MK(:, :, cell) = Sredn(:, :)/size(gl_Cell_A(1, 1, :))
+            end do
+        end do
 
         return 
         
@@ -8702,7 +8731,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 592 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 593!  597 596 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
         ! 574 до изменения сечения на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
@@ -8722,7 +8751,7 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 35 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 41! 38 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
         ! 26 до изменения числа атомов водорода
 		!name3 = 237  ! Имя сетки интерполяции для М-К
 		step = 1  !? 3 Номер алгоритма
@@ -8860,6 +8889,7 @@
 			print*, "D"
 			
 			call PRINT_ALL()
+
 			print*, "Save"
 			call Save_param(name + 1)
 			call Surf_Save_bin(name + 1)   ! Сохранение поверхностей разрыва
@@ -8869,6 +8899,16 @@
 		else if(step == -1) then  ! Перестройка сетки (когда поменяли структуру)
 			call Download_setka(name)  ! Загрузка основной сетки
 			call Surf_Read_setka_bin(name)
+
+            call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
+			print*, "Save 4"
+	        call Int2_Initial()			     ! Создание сетки интерполяции
+			print*, "Save 5"
+			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
+			print*, "Save 6"
+			call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции  + 1
+			print*, "Save 7"
+            call Int2_Dell_interpolate()
 			
 			par_triple_point_2 = 7.0 * par_pi_8/40.0
 			
@@ -8947,7 +8987,7 @@
 			
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
 			
-			!call Int_2_Print_par_2D_set()
+			call Int_2_Print_par_2D_set()
 			call Int_2_Print_par_1D()
 			
 			!do ii = 1, 20
@@ -8976,7 +9016,7 @@
 			end do
 			
 			call PRINT_ALL()
-			!return
+			return
 			!go to 101
 			
 			! call Print_tok_layer()
@@ -9015,7 +9055,7 @@
 			print*, "Save 5"
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			print*, "Save 6"
-			!call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
+			!call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции  + 1
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
 		    !! call Int2_Save_interpol_for_all_MHD(name) !  + 1
@@ -9126,6 +9166,11 @@
 
             call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 
+            print*, "Proverka rho  nHe"
+            do i = 1, size(gl_Cell_par(1, :))
+                if(gl_Cell_par(1, i) < gl_Cell_par2(1, i)) print*, "ERORRRR  HEliy", i
+            end do
+
             !! PUI 
             if(par_PUI) then
                 call PUI_Set()                !! PUI
@@ -9148,10 +9193,23 @@
 			!call M_K_sum()
 			call Int2_culc_k()
 			!!call Helium_on()
-			!call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
-			!call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+			call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+			call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
 			call Int_2_Print_par_1D()
 
+            !! Вывод поглощения
+            if(par_pogloshenie == .True.) then
+                call M_K_Calc_Pogloshenie(1.0_8, 0.0_8, 0.0_8, 1)
+                call M_K_Calc_Pogloshenie(-1.0_8, 0.0_8, 0.0_8, 2)
+                call M_K_Calc_Pogloshenie(0.0_8, 1.0_8, 0.0_8, 3)
+                call M_K_Calc_Pogloshenie(0.0_8, -1.0_8, 0.0_8, 4)
+                call M_K_Calc_Pogloshenie(0.0_8, 0.0_8, 1.0_8, 5)
+                call M_K_Calc_Pogloshenie(0.0_8, 0.0_8, -1.0_8, 6)
+                call M_K_Calc_Pogloshenie(-1.0_8/sqrt(2.0), 1.0_8/sqrt(2.0), 0.0_8, 7)
+                call M_K_Calc_Pogloshenie(-1.0_8/sqrt(2.0), -1.0_8/sqrt(2.0), 0.0_8, 8)
+                call M_K_Calc_Pogloshenie(-1.0_8/sqrt(2.0), 0.0_8, 1.0_8/sqrt(2.0), 9)
+                call M_K_Calc_Pogloshenie(-1.0_8/sqrt(2.0), 0.0_8, -1.0_8/sqrt(2.0), 10)
+            end if
 
 			
 			! Сохраняем интерполяционный файл - мини - сетки
@@ -9375,6 +9433,13 @@
             print*, "G------------------"
             call Int2_Save_bin(name2)
             call Int_2_Print_par_1D()
+        else if (step == 7) then! Печать полей
+            call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+            call Int2_Read_bin(name2)
+
+            call Int_2_Print_par_2D(0.0_8, 0.0_8, 1.0_8, -0.000001_8, 1)
+			call Int_2_Print_par_2D(0.0_8, 1.0_8, 0.0_8, -0.000001_8, 2)
+			call Int_2_Print_par_1D()
         end if !----------------------------------------------------------------------------------------
 		
         101     continue

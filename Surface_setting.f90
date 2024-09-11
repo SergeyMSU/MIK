@@ -48,7 +48,7 @@ module Surface_setting
 		
 		write(unit=name, fmt='(i5.5)') num
 		
-		open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY')
+		open(1, file = par_NAME // "Surf_Save" // name // ".bin", FORM = 'BINARY')
 		
 		
 		write(1) par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_al1
@@ -140,7 +140,7 @@ module Surface_setting
 		
 		write(unit=name,fmt='(i5.5)') num
 		
-		inquire(file="Surf_Save" // name // ".bin", exist=exists)
+		inquire(file=par_NAME//"Surf_Save" // name // ".bin", exist=exists)
 		
 		if (exists == .False.) then
 			pause "net faila!!!  8idjgeye0-0987fhjdkeye "
@@ -150,7 +150,7 @@ module Surface_setting
 		
 		
 		
-		open(1, file = "Surf_Save" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		open(1, file = par_NAME//"Surf_Save" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
 		
 		read(1)  Surf_l_phi, Surf_m_A, Surf_m_BC, Surf_m_O, Surf_m_K, Surf_triple_point, Surf_al1
 		

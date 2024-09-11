@@ -11,7 +11,7 @@
     
     write(unit=name,fmt='(i3.3)') num
     
-    open(1, file = "save_" // name // ".bin", FORM = 'BINARY')
+    open(1, file = par_NAME // "save_" // name // ".bin", FORM = 'BINARY')
     
     write(1)  par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_n_TS, par_n_HP, &
         par_n_BS, par_n_END
@@ -84,7 +84,7 @@
     
     write(unit=name,fmt='(i3.3)') num
     
-    inquire(file="save_" // name // ".bin", exist=exists)
+    inquire(file= par_NAME//"save_" // name // ".bin", exist=exists)
     
     if (exists == .False.) then
 		pause "net faila!!!"
@@ -92,7 +92,7 @@
     end if
     
     
-    open(1, file = "save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+    open(1, file = par_NAME//"save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
     
     read(1)  par_l_phi, par_m_A, par_m_BC, par_m_O, par_m_K, par_triple_point, par_n_TS, par_n_HP, &
         par_n_BS, par_n_END
@@ -179,7 +179,6 @@
         gl_Cell_par_pui = 0.0
     end if
     
-    
     close(1)
 	end subroutine Read_setka_bin
 	
@@ -192,7 +191,7 @@
     
     write(unit=name,fmt='(i5.5)') num
     
-    open(1, file = "Setka_param_" // name // ".txt")
+    open(1, file = par_NAME // "Setka_param_" // name // ".txt")
 	
 	WRITE (1, SETKA_PARAM) 
 	

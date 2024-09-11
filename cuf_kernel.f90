@@ -987,7 +987,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 60000 * 9!60000 * 10! * 6 * 9! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	all_step = 60000 * 10! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
 	!! Сейчас сколько тысяч, столько и минут
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
@@ -1042,9 +1042,9 @@ module MY_CUDA
 	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 2: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 2: ', cudaGetErrorString(cudaGetLastError())
 	
 	!! Было закоменченно
-	Num = size(gl_BS)
-	call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
-	ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
+	! Num = size(gl_BS)
+	! call Cuda_Calc_move_BS<<<ceiling(real(Num)/potok_in_block), potok_in_block>>>(dev_now)
+	! ierrSync = cudaGetLastError(); ierrAsync = cudaDeviceSynchronize(); if (ierrSync /= cudaSuccess) write (*,*) 'Error Sinc start 3: ', cudaGetErrorString(ierrSync); if(ierrAsync /= cudaSuccess) write(*,*) 'Error ASync start 3: ', cudaGetErrorString(cudaGetLastError())
 	
 	
 	
@@ -1266,7 +1266,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 40000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
+	if (mod(step, 10000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1313,7 +1313,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 20000) == 0) then
+	if (mod(step, 1000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

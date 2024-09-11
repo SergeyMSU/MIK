@@ -159,14 +159,15 @@ module PUI
 	end subroutine PUI_f_Set2
 
 	subroutine PUI_n_T_culc()
-		integer :: n2, N, i
-		real(8) :: w, S, S2
+		integer :: n2, N, i, n3
+		real(8) :: w, S, S2, rho
 
 		N = size(f_pui(1, :))
 
-		!$omp parallel
-	 	!$omp do private(i, w, S, S2)
+		! !$omp parallel
+	 	! !$omp do private(i, w, S, S2, n3, rho)
 		do n2 = 1, N
+	        111  continue
 			S = 0.0
 			S2 = 0.0
 			do i = 1, pui_nW
@@ -177,9 +178,25 @@ module PUI
 			S2 = S2/(S * 3.0)
 			n_pui(n2) = S
 			T_pui(n2) = S2
+
+			n3 = f_pui_num(n2) 
+			rho = int2_Cell_par(1, n3) - int2_Cell_par_2(1, n3)
+			if(rho < 0.0)  then
+				print*, int2_Cell_par(1, n3), int2_Cell_par_2(1, n3) 
+				print*, S
+				print*, "coord", int2_coord(:, n3)
+				print*, "------------"
+				STOP 
+			end if
+
+			if(S > 0.99 * rho) then
+				f_pui(:, n2) = f_pui(:, n2) * (0.9899 * rho/S)
+				GOTO 111
+			end if
+
 		end do
-		!$omp end do
-		!$omp end parallel
+		! !$omp end do
+		! !$omp end parallel
 
 	end subroutine PUI_n_T_culc
 
@@ -760,7 +777,7 @@ module PUI
 
 			!$omp critical
 			num_all = num_all + 1
-			if(mod(num_all, 5000) == 0) then
+			if(mod(num_all, 50000) == 0) then
 				print*, num_all, "from", size(pui_Sm(1, :))
 			end if
 			!$omp end critical
@@ -1031,7 +1048,7 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		open(1, file = "pui_save_" // name // ".bin", FORM = 'BINARY')
+		open(1, file = par_NAME//"pui_save_" // name // ".bin", FORM = 'BINARY')
 
 		write(1) size(pui_num_tetr_2)
 		write(1) pui_nW
@@ -1067,7 +1084,7 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		open(1, file = "pui_save_for_MK_" // name // ".bin", FORM = 'BINARY')
+		open(1, file = par_NAME//"pui_save_for_MK_" // name // ".bin", FORM = 'BINARY')
 
 
 		write(1) pui_F_n, pui_nW, pui_wR
@@ -1104,15 +1121,15 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		inquire(file="pui_save_for_MK_" // name // ".bin", exist=exists)
+		inquire(file= par_NAME//"pui_save_for_MK_" // name // ".bin", exist=exists)
 
 		if (exists == .False.) then
-			pause "ERROR net faila 171 PUI!!!"
-			STOP "ERROR net faila 171 PUI!!!"
+			pause "ERROR net faila 171 PUI dfwefcwcw!!!"
+			STOP "ERROR net faila 171 PUI wfecwvwv!!!"
 		end if
 
 		print*, "PUI_Read_for_MK_bin"
-		open(1, file = "pui_save_for_MK_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		open(1, file = par_NAME//"pui_save_for_MK_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
 
 		read(1) n1, n2, a
 		read(1) F_integr_pui
@@ -1136,7 +1153,7 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		open(1, file = "pui_save_f_" // name // ".bin", FORM = 'BINARY')
+		open(1, file = par_NAME//"pui_save_f_" // name // ".bin", FORM = 'BINARY')
 
 		print*, pui_nW, pui_wR
 
@@ -1177,14 +1194,14 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		inquire(file="pui_save_" // name // ".bin", exist=exists)
+		inquire(file= par_NAME//"pui_save_" // name // ".bin", exist=exists)
 
 		if (exists == .False.) then
 			pause "ERROR net faila 174444 PUI!!!"
 			STOP "ERROR net faila 174444 PUI!!!"
 		end if
 
-		open(1, file = "pui_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		open(1, file = par_NAME//"pui_save_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
 
 		read(1) n1
 		if(size(pui_num_tetr_2) /= n1) then
@@ -1228,14 +1245,14 @@ module PUI
 
 		write(unit=name,fmt='(i5.5)') num
 
-		inquire(file="pui_save_f_" // name // ".bin", exist=exists)
+		inquire(file= par_NAME//"pui_save_f_" // name // ".bin", exist=exists)
 
 		if (exists == .False.) then
 			pause "ERROR net faila 171 PUI!!!"
 			STOP "ERROR net faila 171 PUI!!!"
 		end if
 
-		open(1, file = "pui_save_f_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
+		open(1, file = par_NAME//"pui_save_f_" // name // ".bin", FORM = 'BINARY', ACTION = "READ")
 
 		read(1) n2
 		read(1) aa

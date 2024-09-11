@@ -123,7 +123,7 @@
 	null_bn = .False.
 	
 	if(.not. present(n_disc)) then
-    n_disco = 1 
+    n_disco = 0!!1 
     else 
     n_disco = n_disc 
 	end if
@@ -1038,7 +1038,7 @@
 !c-------  n_state=3   - multi-state (5 speed) HLLD (All Discontinuity)
 	  
 	      if(.not. present(n_disc)) then
-        n_disco = 1 
+        n_disco = 0  !! œŒÃ≈ÕﬂÀ
         else 
         n_disco = n_disc 
 	    end if

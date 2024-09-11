@@ -1,6 +1,7 @@
 
 	module MY_CUDA_smooth
 		USE My_func
+		USE GEO_PARAM
 		contains 
 		!@cuf attributes(host, device) & 
 		subroutine Smooth_kvadr(x1, y1, z1, x2, y2, z2, x3, y3, z3, x, y, z, xx, yy, zz)
@@ -762,9 +763,10 @@
 				r = R_HP + max((R_BS - R_HP) * (DBLE(i - par_n_HP)/(par_n_BS - par_n_HP))**1.6, &
 						ddr * (i - par_n_HP))
 			else
-				ddr = R_HP - (R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - 1 - par_n_TS)/(par_n_HP - par_n_TS), par_kk14))
-				dr = R_BS - (max(R_HP + (R_BS - R_HP) * (DBLE(par_n_BS - 1 - par_n_HP)/(par_n_BS - par_n_HP))**1.6, &
-						ddr * (i - par_n_HP)))
+				!!ddr = R_HP - (R_TS + (R_HP - R_TS) * sgushenie_2(DBLE(par_n_HP - 1 - par_n_TS)/(par_n_HP - par_n_TS), par_kk14))
+				!!dr = R_BS - (max(R_HP + (R_BS - R_HP) * (DBLE(par_n_BS - 1 - par_n_HP)/(par_n_BS - par_n_HP))**1.6, &
+				!!		ddr * (i - par_n_HP)))
+				dr = par_dr_BS * (1.0 + (the/(par_pi_8/2.0))**2  )
 				r = R_BS + max((par_R_END - R_BS) * (DBLE(i- par_n_BS)/(par_n_END - par_n_BS))**3.0, &
 								dr * (i - par_n_BS))
 			end if
@@ -804,7 +806,7 @@
 				!ddr = R_BS - (rr + dr +  (R_BS - rr - dr) * (DBLE(par_n_BS - par_n_HP - 2)/(par_n_BS - par_n_HP - 1))**1.5)
 				
 				r = max(R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**3.0 * (par_R_END - R_BS), &
-						R_BS + ddr * (i - (par_n_BS - par_n_HP + 1)) )
+						R_BS + 2.0 * par_dr_BS * (i - (par_n_BS - par_n_HP + 1)) ) !! ddr
 
 				if(r > par_R_END) then
 					r = par_R_END - ddr + i * ddr/300
@@ -843,7 +845,7 @@
 			else
 				!r = R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**(0.55 * par_kk2) * (par_R_END - R_BS)
 				r = max(R_BS + (DBLE(i - (par_n_BS - par_n_HP + 1))/(N1 - (par_n_BS - par_n_HP + 1) ))**3.0 * (par_R_END - R_BS), &
-						R_BS + ddr * (i - (par_n_BS - par_n_HP + 1)))
+						R_BS + 2.0 * par_dr_BS * (i - (par_n_BS - par_n_HP + 1)))  !! ddr
 			end if
 			
 			Setka_O = r
@@ -990,7 +992,7 @@
 				end if
 			
 				if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 4 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 4) then
-					gl_Gran_scheme(k) = 1!3
+					gl_Gran_scheme(k) = 0!!  2!0!1!3
 				end if
 			
 				if(gl_zone_Cell(gl_Gran_neighbour(1, k)) == 3 .and. gl_zone_Cell(gl_Gran_neighbour(2, k)) == 3) then

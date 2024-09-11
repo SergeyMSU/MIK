@@ -11,7 +11,7 @@ module Monte_Karlo
 	
 	implicit none
 	
-	integer(4), parameter :: par_stek = 1000  ! Глубина стека (заранее выделяется память под него)
+	integer(4), parameter :: par_stek = 2000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
 	logical, parameter :: MK_Mu_stat = .True.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
 	logical, parameter :: MK_photoionization = .True.    ! Нужна ли фотоионизация
@@ -184,6 +184,7 @@ module Monte_Karlo
 				end do
 
 				if(par_PUI == .False.) then
+				!if(.True.) then
 					call M_K_Fly(potok)
 				else
 					call M_K_Fly_PUI(potok)    !! PUI
@@ -230,6 +231,7 @@ module Monte_Karlo
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
 				if(par_PUI == .False.) then
+				!if(.True.) then
 					call M_K_Fly(potok)
 				else
 					call M_K_Fly_PUI(potok)    !! PUI
@@ -264,6 +266,7 @@ module Monte_Karlo
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
 				if(par_PUI == .False.) then
+				!if(.True.) then
 					call M_K_Fly(potok)
 				else
 					call M_K_Fly_PUI(potok)    !! PUI
@@ -297,6 +300,7 @@ module Monte_Karlo
 				M_K_particle_2(4, stek(potok), potok) = to_j  ! Зона назначения
 
 				if(par_PUI == .False.) then
+				!if(.True.) then
 					call M_K_Fly(potok)
 				else
 					call M_K_Fly_PUI(potok)    !! PUI
@@ -315,7 +319,8 @@ module Monte_Karlo
 		
 		no = MK_Mu_mult * MK_N * par_n_claster
 		M_K_Moment(:, :, :, :) = M_K_Moment(:, :, :, :) / no  ! Вынес сюда для избежания потери точности при сложении
-		
+		if(par_pogloshenie == .True.) pogloshenie(:, :, :) = pogloshenie(:, :, :) / no
+
 		if(par_PUI == .True.) then
 			pui_Sm(:, :) = sqv * pui_Sm(:, :) / no
 			do i = 1, pui_nW
@@ -393,6 +398,8 @@ module Monte_Karlo
 					pui_Sp(:, j) = pui_Sp(:, j) / no
 				end if
 			end if
+
+			if(par_pogloshenie == .True.) pogloshenie(:, :, i) = pogloshenie(:, :, i) * sqv / no
 			
 			if(MK_is_NaN == .True. .and. ieee_is_nan(M_K_Moment(1, 1, i, 1))) then
 					print*, "NaN 098uiknhuuyhjh"
@@ -672,6 +679,8 @@ module Monte_Karlo
 		real(8) :: Y, betta
 		real(8) :: PAR(9) 
 		integer :: cell
+
+		print*, "M_K_init()"
 		
 		! Инициализация некоторых параметров
 		par_n_moment = 19
@@ -726,11 +735,11 @@ module Monte_Karlo
 		
 		real(8) :: time ! Оценочное время до вылета частицы из ячейки
 		
-		real(8) :: cp, vx, vy, vz, ro, PAR(9)  ! Параметры плазмы в ячейке
+		real(8) :: cp, vx, vy, vz, ro, p, PAR(9)  ! Параметры плазмы в ячейке
 		real(8) :: uz, nu_ex, kappa, ksi, t_ex, t2, mu_ex, mu2, r_ex(3), r, mu, u, V(3), mu3
 		real(8) :: uz_M, uz_E, k1, k2, k3, u1, u2, u3, skalar
 		real(8) :: Ur, Uthe, Uphi, Vr, Vthe, Vphi
-		real(8) :: v1, v2, v3, r_peregel, ddt
+		real(8) :: v1, v2, v3, r_peregel, ddt, rho_He
 		
 		real(8) :: nu_ph, kappa_ph, kappa_all, mu_ph, mu_perez
 		
@@ -748,9 +757,9 @@ module Monte_Karlo
 			
 			!pause
 			
-			if(stek(n_potok) > par_stek * 0.9) then
+			if(stek(n_potok) > par_stek * 0.95) then
 				print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
-				pause
+				!pause
 				STOP
 			end if
 			
@@ -776,6 +785,9 @@ module Monte_Karlo
 				
 				time = max(0.00000001_8, time * 1.0001) ! Увеличим время, чтобы частица точно вышла из ячейки
 				
+				area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
+				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+
 				kappa = 0.0
 				do ijk = 1, 3
 					
@@ -792,13 +804,17 @@ module Monte_Karlo
 					end select
 					
 					call Int2_Get_par_fast2(particle(1) + time * ddt * particle(4), particle(2)+ time * ddt * particle(5),&
-						particle(3) + time * ddt * particle(6), cell, PAR = PAR)
+						particle(3) + time * ddt * particle(6), cell, PAR = PAR, rho_He = rho_He)
 				
-					cp = sqrt(PAR(5)/PAR(1))
+					call Sootnosheniya(PAR(1), PAR(5), rho_He, 0.0_8, 0.0_8, area2, rho_Th = ro, p_Th = p)
+
+					if(p < 0.0) p = par_p_0/((r/par_1ae)**(2.0 * ggg))
+
+					cp = sqrt(2.0 * p/ro)
 					vx = PAR(2)
 					vy = PAR(3)
 					vz = PAR(4)
-					ro = PAR(1)
+					!ro = PAR(1)
 				
 					if(ro <= 0.0 .or. ro > 1000.0) then
 						print*, PAR
@@ -824,9 +840,8 @@ module Monte_Karlo
 					kappa = kappa + (nu_ex * time/3.0)  ! по перезарядке
 				end do
 				
-				area2 = int2_Cell_par2(1, int2_all_tetraendron_point(1, cell)) ! Зона рождения
 				
-				r = norm2(particle(1:3) + time/2.0 * particle(4:6))
+				
 				
 				if(MK_photoionization) then
 					nu_ph = par_nu_ph * (par_1ae/r)**2
@@ -955,7 +970,7 @@ module Monte_Karlo
 					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 				
 				! Добавляем для расчёта PUI
-				if(area2 <= 2 .and. par_PUI == .True.) then
+				if(area2 <= 2 .and. par_PUI == .True.) then ! 
 					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
@@ -964,6 +979,18 @@ module Monte_Karlo
 				end if
 				!!(t_ex * mu + t2 * mu2)
 				!_________________________________________________________________________________________
+				
+				!! Добавляем расчёт поглощения  ---------------------------------------------------
+				if(par_pogloshenie == .True.) then
+					uz_M = DOT_PRODUCT(particle(4:6), r_ex)/r   ! Проекция скорости на ось зрения (от звёзды)
+					if(uz_M > pogl_v_min .and. uz_M < pogl_v_max) then
+						ijk = MK_poglosh_nomer(uz_M)
+						call omp_set_lock(pogl_lock(cell))
+						pogloshenie(particle_2(2), ijk, cell) = pogloshenie(particle_2(2), ijk, cell) + t_ex * mu + t2 * mu2
+						call omp_unset_lock(pogl_lock(cell))
+					end if
+				end if
+				!! --------------------------------------------------------------------------------
 				
 				
 				
@@ -1086,7 +1113,7 @@ module Monte_Karlo
 		integer(4), intent(in) :: n_potok  ! Номер потока 
 		
 		real(8) :: particle(8)
-		integer(4):: particle_2(4), i, ijk
+		integer(4):: particle_2(4), i, ijk, jjj
 		logical :: particle_3(par_n_zone + 1, par_m_zone + 1)
 		
 		integer(4) :: num  ! Номер частицы, верхняя в стеке
@@ -1126,9 +1153,9 @@ module Monte_Karlo
 			
 			!pause
 			
-			if(stek(n_potok) > par_stek * 0.9) then
+			if(stek(n_potok) > par_stek * 0.95) then
 				print*, "1234543fj976r  Perepolnen stek", stek(n_potok) 
-				pause
+				!pause
 				STOP
 			end if
 			
@@ -1214,7 +1241,7 @@ module Monte_Karlo
 						call Sootnosheniya(PAR(1), PAR(5), rho_He, 0.0_8, 0.0_8, 1, rho_Th = ro, p_Th = p)
 
 						ro_pui = 0.0
-						cp = sqrt(p/ro)
+						cp = sqrt(2.0 * p/ro)
 					end if
 
 					vx = PAR(2)
@@ -1427,6 +1454,17 @@ module Monte_Karlo
 				end if
 				!_________________________________________________________________________________________
 				
+				!! Добавляем расчёт поглощения  ---------------------------------------------------
+				if(par_pogloshenie == .True.) then
+					uz_M = DOT_PRODUCT(particle(4:6), r_ex)/r   ! Проекция скорости на ось зрения (от звёзды)
+					if(uz_M > pogl_v_min .and. uz_M < pogl_v_max) then
+						ijk = MK_poglosh_nomer(uz_M)
+						call omp_set_lock(pogl_lock(cell))
+						pogloshenie(particle_2(2), ijk, cell) = pogloshenie(particle_2(2), ijk, cell) + t_ex * mu + t2 * mu2
+						call omp_unset_lock(pogl_lock(cell))
+					end if
+				end if
+				!! --------------------------------------------------------------------------------
 				
 				
 				call spherical_skorost(r_ex(1), r_ex(2), r_ex(3), vx, vy, vz, Ur, Uphi, Uthe)
@@ -1563,6 +1601,71 @@ module Monte_Karlo
 		end do
 	
 	end subroutine M_K_Fly_PUI
+
+	subroutine M_K_Calc_Pogloshenie(rx, ry, rz, nomer)
+        ! Печатаем поверхности, которые выделяем
+        integer, intent(in) :: nomer
+        real(8), intent(in) :: rx, ry, rz  !! Направление луча зрения (единичный вектор!)
+		real(8) :: r(3), dl
+		real(8) :: pogl(par_n_sort, pogl_iter), u
+		character(len=5) :: name
+		integer(4) :: cell, sort, i
+
+		print*, "Start M_K_Calc_Pogloshenie ", rx, ry, rz, nomer
+		if(par_poglosh == .False.) return
+
+		r(1) = rx * par_R0/10.0
+		r(2) = ry * par_R0/10.0
+		r(3) = rz * par_R0/10.0
+        dl = par_R0/2.0
+		pogl = 0.0
+		write(unit=name,fmt='(i5.5)') nomer
+		cell = 3
+
+		do while (.True.)
+			r = r + dl * (/ rx, ry, rz /)
+
+			call Int2_Get_tetraedron(r(1), r(2), r(3), cell)
+			if(cell < 1) EXIT
+
+			do sort = 1, par_n_sort
+				do i = 1, pogl_iter
+					pogl(sort, i) = pogl(sort, i) + par_n_p_LISM * dl * pogloshenie(sort, i, cell)/pogl_ddd
+				end do
+			end do
+
+		end do
+
+		open(1, file = "Pogloshenie_" // name // ".txt")
+		if(par_n_sort == 6) write(1,*) "TITLE = 'HP'  VARIABLES = u, f1, f2, f3, f4, f5, f6, ff"
+		if(par_n_sort == 4) write(1,*) "TITLE = 'HP'  VARIABLES = u, f1, f2, f3, f4, ff"
+		
+		pogl = pogl * par_poglosh
+
+		print*, "Size poglosh = ", size(pogloshenie(:, 1, 1)), size(pogloshenie(1, :, 1)), size(pogloshenie(1, 1, :))
+
+		do i = 1, pogl_iter
+			u = pogl_v_min + (i + 0.5) * pogl_ddd;
+			if(par_n_sort == 6) write(1,*) u, exp(-pogl(1, i)), exp(-pogl(2, i)), exp(-pogl(3, i)), exp(-pogl(4, i)), exp(-pogl(5, i)), exp(-pogl(6, i)), exp(-sum(pogl(:, i)))
+			if(par_n_sort == 4) write(1,*) u, exp(-pogl(1, i)), exp(-pogl(2, i)), exp(-pogl(3, i)), exp(-pogl(4, i)), exp(-sum(pogl(:, i)))
+		end do
+
+		close(1)
+    end subroutine M_K_Calc_Pogloshenie
+
+	integer(4) pure function MK_poglosh_nomer(V)
+	    !integer(4) function MK_poglosh_nomer(V)
+		!! В какой номер в массиве поглощений нужно записать данную скорость
+		real(8), intent(in) :: V
+
+		MK_poglosh_nomer = max(min(INT((V - pogl_v_min)/pogl_ddd), pogl_iter), 1)
+
+		! print*, pogl_v_min + (MK_poglosh_nomer + 0.5) * pogl_ddd, V
+		! print*, "VVV", pogl_v_min + (MK_poglosh_nomer - 1 + 0.5) * pogl_ddd, pogl_v_min + (MK_poglosh_nomer + 0.5) * pogl_ddd, pogl_v_min + (MK_poglosh_nomer + 1 + 0.5) * pogl_ddd
+		! print*, "dv", V - (pogl_v_min + (MK_poglosh_nomer - 1 + 0.5) * pogl_ddd), V - (pogl_v_min + (MK_poglosh_nomer + 0.5) * pogl_ddd), V - (pogl_v_min + (MK_poglosh_nomer + 1 + 0.5) * pogl_ddd)
+		! pause
+		return
+	end function MK_poglosh_nomer
 	
 	subroutine M_K_rand(s1, s2, s3, b)
 		integer(4), intent(in out) :: s1, s2, s3
@@ -1589,6 +1692,8 @@ module Monte_Karlo
 		integer(4) :: i, j, n, k, sort, m_zone, n_zone
 		real(8) :: Yr
 		logical :: exists
+
+		print*, "M_K_Set()"
 		
 		allocate(M_K_particle(8, par_stek, par_n_potok))
 		allocate(M_K_particle_2(4, par_stek, par_n_potok))
@@ -1671,7 +1776,12 @@ module Monte_Karlo
 			
 			read(2, *) n_zone, m_zone, sort
 
-			do k = 1, sort
+			if(par_n_sort > sort) then
+				print*, "ERROR iji9j9uhcw8ogbor3u4buyv4cwl"
+				STOP
+			end if
+
+			do k = 1, par_n_sort
 				do j = 1, m_zone! par_m_zone + 1
 					do i = 1, n_zone!par_n_zone + 1
 						read(2, *) n, n, n, MK_Mu(i, j, k)
@@ -1681,10 +1791,7 @@ module Monte_Karlo
 			
 			close(2)
 
-			if(par_n_sort /= sort) then
-				print*, "ERROR iji9j9uhcw8ogbor3u4buyv4cwl"
-				STOP
-			end if
+			
 
 			if(par_m_zone + 1 /= m_zone) then
 				print*, "ERROR berebt5verby"
@@ -1698,9 +1805,13 @@ module Monte_Karlo
 		end if
 		
 		
-		MK_Mu(:, :, 2) = MK_Mu(:, :, 2) * 0.2
-		MK_Mu(:, :, 3) = MK_Mu(:, :, 3) * 0.5
-		MK_Mu(:, :, 4) = MK_Mu(:, :, 4) * 0.5
+		MK_Mu(:, :, 2) = MK_Mu(:, :, 2) * 0.8 ! * 0.2
+		MK_Mu(:, :, 3) = MK_Mu(:, :, 3) * 2.0! * 0.5
+		MK_Mu(:, :, 4) = MK_Mu(:, :, 4) * 2.0! * 0.5
+
+		if(par_n_sort >= 6) then
+			MK_Mu(:, :, 6) = MK_Mu(:, :, 6) * 0.5! * 0.5
+		end if
 		
 		
 		MK_SINKR(1) = sin(MK_al_zone(1))
@@ -1717,7 +1828,34 @@ module Monte_Karlo
 		
 		Yr = dabs(par_Velosity_inf)
 		MK_A0_ = (Yr + 1.0 / (2.0 * Yr)) * erf(Yr) + exp(-(Yr**2)) / par_sqrtpi + Yr
-		MK_A1_ = 1.0 + (1.0 + 1.0 / (2.0 * (Yr)**2 )) * erf(Yr) + exp(-(Yr**2) ) / (par_sqrtpi * Yr)
+		MK_A1_ = 1.0 + (1.0 + 1.0 / (2.0 * (Yr)**2 )) * erf(Yr) + exp(-(Yr**2) ) / (par_sqrtpi * Yr) 
+
+
+		!! Создаём массивы для учёта поглощения
+		print*, "1 !!!!!!!!!!! - Size poglosh = ", allocated(pogloshenie)
+
+		if(par_pogloshenie == .True. .and. allocated(pogloshenie) == .False.) then
+			print*, "Start Set par_pogloshenie ", par_n_sort, pogl_iter, size(int2_all_tetraendron_point(1, :))
+			ALLOCATE(pogloshenie(par_n_sort, pogl_iter, size(int2_all_tetraendron_point(1, :))))
+			print*, "ALLOCATE"
+			pogl_ddd = (pogl_v_max - pogl_v_min)/pogl_iter
+			pogloshenie = 0.0
+			print*, "End Set par_pogloshenie"
+		else
+			pogl_ddd = (pogl_v_max - pogl_v_min)/pogl_iter
+			pogloshenie = 0.0
+		end if
+
+		print*, "!!!!!!!!!!! - Size poglosh = ", size(pogloshenie(:, 1, 1)), size(pogloshenie(1, :, 1)), size(pogloshenie(1, 1, :))
+		print*, "2 !!!!!!!!!!! - Size poglosh = ", allocated(pogloshenie)
+
+		if(par_pogloshenie == .True. .and. allocated(pogl_lock) == .False.) then
+			ALLOCATE(pogl_lock(size(int2_all_tetraendron_point(1, :))))
+
+			do i = 1, size(int2_all_tetraendron_point(1, :))
+				call omp_init_lock(pogl_lock(i))
+			end do
+		end if
 		
 	
 	end subroutine M_K_Set
