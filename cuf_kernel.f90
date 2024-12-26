@@ -987,7 +987,7 @@ module MY_CUDA
 	dev_gl_Point_num = 0.0
 	
 	! Главный цикл
-	all_step = 60000 * 10! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
+	all_step = 60000 * 3! 23000 * 2 * 6 * 3! 23000 * 2 * 6 * 13! 23000 * 4!3 * 23000! 23000  (23 * 2  -  это 10 минут)
 	!! Сейчас сколько тысяч, столько и минут
 	do step = 1,  all_step  ! ---------------------------------------------------------------------------------------------------
 		ierrAsync = cudaDeviceSynchronize()
@@ -1224,7 +1224,7 @@ module MY_CUDA
  !   dev_gl_Gran_square = dev_gl_Gran_square2(:, now2)
 	
 	
-	if (mod(step, 30000) == 1) then !1
+	if (mod(step, 10000) == 1) then !1
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1266,7 +1266,7 @@ module MY_CUDA
     dev_gl_Point_num = 0
 	
 	
-	if (mod(step, 10000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
+	if (mod(step, 30000) == 0 .or. step == 1000 .or. step == 5000 .or. step == 10000 .or. step == 15000 .or. step == 30000) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1296,7 +1296,7 @@ module MY_CUDA
 		call Print_par_1D()
 	end if
 	
-	if (mod(step, 300000) == 0) then
+	if (mod(step, 100000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)
@@ -1313,7 +1313,7 @@ module MY_CUDA
 		call Save_setka_bin(79)
 	end if
 	
-	if (mod(step, 1000) == 0) then
+	if (mod(step, 10000) == 0) then
 		
 		dev_gl_x = dev_gl_x2(:, now2)
 		dev_gl_y = dev_gl_y2(:, now2)

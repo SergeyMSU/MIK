@@ -6549,6 +6549,188 @@
 
         close(1)
 	end subroutine Print_Setka_y_2D
+
+    subroutine Print_Contact_3D_with_current()
+        use GEO_PARAM
+        use STORAGE
+        implicit none
+        integer(4) :: N1, N2, N3, j, k, cel, gr, kk, M1, M2, M3
+        real(8) :: c(3), nn(3), JJ(3), B1(3), B2(3)
+        
+        N3 = size(gl_Cell_A(1, 1, :))
+        N2 = size(gl_Cell_A(1, :, 1))
+        N1 = size(gl_Cell_A(:, 1, 1))
+        
+        M3 = size(gl_Cell_C(1, 1, :))
+        M2 = size(gl_Cell_C(1, :, 1))
+        M1 = size(gl_Cell_C(:, 1, 1))
+        
+        open(1, file = 'Print_Contact_3D_with_current.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I1', 'I2', 'I3', 'JJ'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1) + 4 * M3 * (M2 - 1) + 4 * N3 , ", E =  ", N3 * (N2 - 1) + M3 * (M2 - 1) + N3, ", F=FEPOINT, ET=quadrilateral "
+        
+        
+        do k = 1, N3
+            do j = 1, N2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_A(par_n_HP - 1, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, j, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_HP - 1, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, j + 1, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_HP - 1, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, j + 1, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_HP - 1, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, j, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            end do	
+        end do
+        
+        
+        do k = 1, M3
+            do j = 1, M2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, j, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, j + 1, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, j + 1, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, j, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            end do	
+        end do
+        
+        do k = 1, N3
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_A(par_n_HP - 1, N2, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, N2, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, 1, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_C(par_n_HP - par_n_TS, 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_C(par_n_HP - par_n_TS + 1, 1, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_HP - 1, N2, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_HP, N2, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+        end do
+        
+        do k = 1, N3 * (N2 - 1) + M3 * (M2 - 1) + N3
+            write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+        end do
+        
+        
+        close(1)
+	
+	end subroutine Print_Contact_3D_with_current
 	
 	subroutine Print_Contact_3D()
         use GEO_PARAM
@@ -6660,6 +6842,117 @@
 	
 	end subroutine Print_Contact_3D
 
+    subroutine Culc_current(B1, B2, n, J)
+        ! Нормаль смотрит от первой ячейки во вторую, т.е. от магнитного поля "1" к полю "2"
+        use GEO_PARAM
+        use STORAGE
+        use My_func
+        implicit none
+        real(8), intent(in) :: B1(3), B2(3), n(3)
+        real(8), intent(out) :: J(3)
+        real(8) :: t1(3), t2(3)  ! Касательные вектора
+        real(8) :: B1t1, B2t1, B1t2, B2t2  ! Компоненты вектора магнитного поля на касательные вектора
+        real(8) :: Jt1, Jt2
+
+        ! print*, "Start Culc_current"
+
+        call get_bazis(n, t1, t2)
+
+        ! print*, "Proverim, chto normali edinichnie, t1 = ", norm2(t1), norm2(t2)
+
+        B1t1 = DOT_PRODUCT(B1, t1)
+        B1t2 = DOT_PRODUCT(B1, t2)
+        B2t1 = DOT_PRODUCT(B2, t1)
+        B2t2 = DOT_PRODUCT(B2, t2)
+
+        Jt2 = B2t1 - B1t1
+        Jt1 = -(B2t2 - B2t1)
+
+        J(1) = Jt1 * t1(1) + Jt2 * t2(1)
+        J(2) = Jt1 * t1(2) + Jt2 * t2(2)
+        J(3) = Jt1 * t1(3) + Jt2 * t2(3)
+
+        ! print*, "End Culc_current"
+    end subroutine Culc_current
+
+    subroutine Print_BS_3D_with_current()
+        use GEO_PARAM
+        use STORAGE
+        implicit none
+        integer(4) :: N1, N2, N3, j, k, cel, gr, kk
+        real(8) :: c(3), n(3), JJ(3), B1(3), B2(3)
+        
+        N3 = size(gl_Cell_A(1, 1, :))
+        N2 = size(gl_Cell_A(1, :, 1))
+        N1 = size(gl_Cell_A(:, 1, 1))
+        
+        
+        open(1, file = 'Print_BS_3D_with_current.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'Jx', 'Jy', 'Jz'  ZONE T= 'HP', N= ",  4 * N3 * (N2 - 1), ", E =  ", N3 * (N2 - 1), ", F=FEPOINT, ET=quadrilateral "
+        
+        
+        do k = 1, N3
+            do j = 1, N2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_A(par_n_BS - 1, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                n = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_BS, j, k))
+                call Culc_current(B1, B2, n, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3)
+                
+                cel = gl_Cell_A(par_n_BS - 1, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                n = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_BS, j + 1, k))
+                call Culc_current(B1, B2, n, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3)
+                
+                cel = gl_Cell_A(par_n_BS - 1, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                n = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_BS, j + 1, kk))
+                call Culc_current(B1, B2, n, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3)
+                
+                cel = gl_Cell_A(par_n_BS - 1, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                n = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_BS, j, kk))
+                call Culc_current(B1, B2, n, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3)
+                
+            end do	
+        end do
+        
+        
+        do k = 1, N3 * (N2 - 1)
+            write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+        end do
+        
+        
+        close(1)
+	
+	end subroutine Print_BS_3D_with_current
+
     subroutine Print_BS_3D()
         use GEO_PARAM
         use STORAGE
@@ -6713,6 +7006,195 @@
         close(1)
 	
 	end subroutine Print_BS_3D
+
+    subroutine Print_TS_3D_with_current()
+        use GEO_PARAM
+        use STORAGE
+        implicit none
+        integer(4) :: N1, N2, N3, j, k, cel, gr, kk, N, E
+        real(8) :: c(3), nn(3), JJ(3), B1(3), B2(3)
+        
+        N3 = size(gl_Cell_A(1, 1, :))
+        N2 = size(gl_Cell_A(1, :, 1))
+        N1 = size(gl_Cell_A(:, 1, 1))
+        
+        N = 4 * N3 * (N2 - 1) + 4 * size(gl_Cell_B(1, 1, :)) * (size(gl_Cell_B(1, :, 1)) - 1) + size(gl_Cell_B(1, 1, :)) * 4
+        
+        E = N3 * (N2 - 1) + size(gl_Cell_B(1, 1, :)) * (size(gl_Cell_B(1, :, 1)) - 1) + size(gl_Cell_B(1, 1, :))
+        
+        open(1, file = 'Print_TS_3D_with_current.txt')
+        write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'I1', 'I2', 'I3', 'JJ'  ZONE T= 'HP', N= ",  N , ", E =  ", E, ", F=FEPOINT, ET=quadrilateral "
+        
+        
+        do k = 1, N3
+            do j = 1, N2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_A(par_n_TS - 1, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, j, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_TS - 1, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, j + 1, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_TS - 1, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, j + 1, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_A(par_n_TS - 1, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, j, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            end do	
+        end do
+        
+        N3 = size(gl_Cell_B(1, 1, :))
+        N2 = size(gl_Cell_B(1, :, 1))
+        N1 = size(gl_Cell_B(:, 1, 1))
+        
+        do k = 1, N3
+            do j = 1, N2 - 1
+                kk = k + 1
+                if (kk > N3) kk = 1
+                
+                cel = gl_Cell_B(par_n_TS - 1, j, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, j, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_B(par_n_TS - 1, j + 1, k)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, j + 1, k))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_B(par_n_TS - 1, j + 1, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, j + 1, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+                cel = gl_Cell_B(par_n_TS - 1, j, kk)
+                gr = gl_Cell_gran(1, cel)
+                c = gl_Gran_center(:, gr)
+
+                nn = gl_Gran_normal(:, gr)
+                B1 = gl_Cell_par(6:8, cel)
+                B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, j, kk))
+                call Culc_current(B1, B2, nn, JJ)
+
+                write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            end do	
+        end do
+        
+        N2 = size(gl_Cell_A(1, :, 1))
+        
+        do k = 1, N3
+            kk = k + 1
+            if (kk > N3) kk = 1
+                
+            cel = gl_Cell_A(par_n_TS - 1, N2, k)
+            gr = gl_Cell_gran(1, cel)
+            c = gl_Gran_center(:, gr)
+
+            nn = gl_Gran_normal(:, gr)
+            B1 = gl_Cell_par(6:8, cel)
+            B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, N2, k))
+            call Culc_current(B1, B2, nn, JJ)
+
+            write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            cel = gl_Cell_B(par_n_TS - 1, size(gl_Cell_B(1, :, 1)), k)
+            gr = gl_Cell_gran(1, cel)
+            c = gl_Gran_center(:, gr)
+
+            nn = gl_Gran_normal(:, gr)
+            B1 = gl_Cell_par(6:8, cel)
+            B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, size(gl_Cell_B(1, :, 1)), k))
+            call Culc_current(B1, B2, nn, JJ)
+
+            write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            cel = gl_Cell_B(par_n_TS - 1, size(gl_Cell_B(1, :, 1)), kk)
+            gr = gl_Cell_gran(1, cel)
+            c = gl_Gran_center(:, gr)
+
+            nn = gl_Gran_normal(:, gr)
+            B1 = gl_Cell_par(6:8, cel)
+            B2 = gl_Cell_par(6:8, gl_Cell_B(par_n_TS, size(gl_Cell_B(1, :, 1)), kk))
+            call Culc_current(B1, B2, nn, JJ)
+
+            write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+                
+            cel = gl_Cell_A(par_n_TS - 1, N2, kk)
+            gr = gl_Cell_gran(1, cel)
+            c = gl_Gran_center(:, gr)
+
+            nn = gl_Gran_normal(:, gr)
+            B1 = gl_Cell_par(6:8, cel)
+            B2 = gl_Cell_par(6:8, gl_Cell_A(par_n_TS, N2, kk))
+            call Culc_current(B1, B2, nn, JJ)
+
+            write(1,*) c(1), c(2), c(3), JJ(1), JJ(2), JJ(3), norm2(JJ)
+        end do
+        
+        
+        do k = 1, E
+            write(1,*) 4 * k - 3, 4 * k - 2, 4 * k - 1, 4 * k
+        end do
+        
+        
+        close(1)
+	
+	end subroutine Print_TS_3D_with_current
 	
 	subroutine Print_TS_3D()
         use GEO_PARAM
@@ -7123,19 +7605,27 @@
 
 	end subroutine Print_surface_y_2D
 	
-	subroutine Print_par_1D()
+	subroutine Print_par_1D(nnn1_)
         use GEO_PARAM
         use STORAGE
         use Interpolate2
         implicit none
 
+        INTEGER(4), intent(in), OPTIONAL :: nnn1_
+        INTEGER(4) :: nnn1
         integer :: N1, N2, kk, k, i, j, N, m, num
         real(8) :: c(3), Mach
         real(8) :: PAR(9)     ! Выходные параметры
         real(8) :: PAR_MOMENT(par_n_moment, par_n_sort)
         real(8) :: Dr, DI1, DI2, DI3
+        character(len=5) :: name
         
-        print*, "Print_par_1D()"
+
+        nnn1 = 0
+        if(PRESENT(nnn1_)) nnn1 = nnn1_
+        write(unit=name,fmt='(i5.5)') nnn1
+        
+        print*, "Print_par_1D()  ", name
         Dr = 1.0! 1.0/par_R0
         DI1 = 0.0264
         DI2 = 0.007622
@@ -7144,11 +7634,11 @@
         num = 3
         N = size(gl_Cell_A(:, 1, 1)) 
 
-        open(1, file = 'print_par_1D.txt')
+        open(1, file = name // '_print_par_1D.txt')
         write(1,*) "TITLE = 'HP'  VARIABLES = r, rho, Ur, u, v, w, p, p+BB, BB, Bx, By, Bz, n_He,"
         write(1,*) "Max, In, Iu, IT"
 
-
+        print*, "2 - Print_par_1D()  "
         do j = 1, N
             c = gl_Cell_center(:, gl_Cell_A(j, 1, 1))
             m = gl_Cell_A(j, 1, 1)
@@ -7165,6 +7655,8 @@
                 norm2(gl_Cell_par(2:4, m ))/sqrt(ggg * gl_Cell_par(5, m )/gl_Cell_par(1, m )),&
                 sum(PAR_MOMENT(19, :)) * DI1, sum(PAR_MOMENT(6, :)) * DI2, sum(PAR_MOMENT(9, :)) * DI3
         end do
+
+        print*, "3 - Print_par_1D()  "
         
         close(1)
         
@@ -7497,13 +7989,21 @@
     end subroutine Send_request
 
 
-    subroutine Print_par_2D()  ! Печатает 2Д сетку с линиями в Техплот
+    subroutine Print_par_2D(nnn1_)  ! Печатает 2Д сетку с линиями в Техплот
         use GEO_PARAM
         use STORAGE
         implicit none
 
+        INTEGER(4), intent(in), OPTIONAL :: nnn1_
+        INTEGER(4) :: nnn1
         integer :: N1, N2, kk, k, i, j, N, m
         real(8) :: c(3), Mach, MachA
+        character(len=5) :: name
+        
+
+        nnn1 = 0
+        if(PRESENT(nnn1_)) nnn1 = nnn1_
+        write(unit=name,fmt='(i5.5)') nnn1
 
         print*, "Print_par_2D()"
         N = size(gl_Cell_A(1, :, 1)) * size(gl_Cell_A(:, 1, 1)) + &
@@ -7511,12 +8011,14 @@
             size(gl_Cell_C(1, :, 1)) * size(gl_Cell_C(:, 1, 1))
         N = N * 2
 
-        open(1, file = 'print_par_2D.txt')
+        open(1, file = name // '_print_par_2D.txt')
         write(1,*) "TITLE = 'HP'  VARIABLES = 'X', 'Y', 'Z', 'rho', 'u', 'v', 'w', 'p',"
         write(1,*) "'bx', 'by', 'bz', 'bb', 'Volume', 'Mach', 'Q', 'He',"
         write(1,*) "'Zone','T','rho1', 'u1', 'v1', 'w1', 'p1', 'rho2',"
         write(1,*)" 'u2', 'v2', 'w2', 'p2', 'rho3', 'u3', 'v3', 'w3', 'p3', "
         write(1,*) "'rho4', 'u4', 'v4', 'w4', 'p4', 'MachA', ZONE T= 'HP'"
+
+        
 
 
         kk = 1
@@ -8319,8 +8821,16 @@
             gl_Cell_par_MK(1:5, :, i) = PAR_MOMENT(1:5, :) * dd  
             gl_Cell_par_pui(:, i) = MAS_PUI
 
+
+        
+
+
             if(koeff_local) gl_Cell_par_MK(6:10, 1, i) = PAR_k(:) * dd  !TODO Нужно ли интерполировать коэффициенты? Или их лучше оставить на сетке?
             
+            !! ЗАНУЛЯЕМ АТОМЫ В АПВИНД   !$VREMENNIY$!
+            ! if(x > 100.0) then
+            !     gl_Cell_par_MK(1, 4, i) = 0.000000001_8
+            ! end if
 
             if(num < 1) then
                 !print*, "mini-problem with interpolation", x, y, z
@@ -8335,8 +8845,9 @@
             
             
             do j = 1, par_n_sort
-                if(gl_Cell_par_MK(1, j, i) < 0.0000001) then
-                    gl_Cell_par_MK(1, j, i) = 0.0000001
+                if(gl_Cell_par_MK(1, j, i) < 0.00000001) then
+                    gl_Cell_par_MK(1, j, i) = 0.00000001
+                    gl_Cell_par_MK(5, j, i) = 0.0 !!$VREMENNIY$!
                 end if
             end do
             
@@ -8396,12 +8907,18 @@
         call Int2_Dell_interpolate()
 	end subroutine Get_MK_to_MHD
     
-	subroutine PRINT_ALL()
+	subroutine PRINT_ALL(nnn1_)
+        INTEGER(4), intent(in), OPTIONAL :: nnn1_
+        INTEGER(4) :: nnn1
+
+        nnn1 = 0
+        if(PRESENT(nnn1_)) nnn1 = nnn1_
+
 
         print*, "= PRINT_ALL()"
         ! Печатает текущую сетку (разные файлы)
         print*, "C1"
-        call Print_par_2D()
+        call Print_par_2D(nnn1)
         print*, "C1"
         call Print_surface_2D()
         print*, "C2"
@@ -8418,7 +8935,7 @@
         print*, "C1"
         call Print_par_y_2D()
         print*, "C4"
-        call Print_par_1D()
+        call Print_par_1D(nnn1)
         print*, "C1"
         
         ! Body of PRINT_ALL
@@ -8731,7 +9248,7 @@
         print*, "test = ", aa/(10E28)
 		
         
-		name = 593!  597 596 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
+		name = 611!598!  597 596 !548 544    536 !? 534 Номер файла основной сетки   533 - до PUI
         ! 551 - до изменения chi
         ! 574 до изменения сечения на стебегенса
         !? 535 - до того, как поменять определение давления в PUI
@@ -8751,10 +9268,11 @@
 		! 298 до того, как изменили схему на гелиопаузе
 		! 304 до изменения знака поля внутри
 		! 315 перед тем, как перестроить сетку
-		name2 = 41! 38 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+		name2 = 61!49 38 !?19   9 8 Номер интерполяционного файла сетки с источниками    8 - до PUI
+        !! 45
         ! 26 до изменения числа атомов водорода
 		!name3 = 237  ! Имя сетки интерполяции для М-К
-		step = 1  !? 3 Номер алгоритма
+		step = 1 !? 3 Номер алгоритма
 
 		!PAR_MOMENT = 0.0
 		!call Int2_Read_bin(name2)
@@ -8809,6 +9327,8 @@
         print*, "Vypolnyaetsya shag nomer ", step
 		print*, "********************************************************************************************"
 		
+
+
 		if(step == -2) then  ! Меняем структуру сетки
 			! СОЗДАЁМ СЕТКУ
 			! задаём параметры мини-сетки
@@ -8968,6 +9488,7 @@
 			print*, "-----   Download"
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
 
+
 			call Initial_conditions()  ! Задаём граничные условия на внутренней сфере
 
 			print*, "-----   Download int"
@@ -8980,9 +9501,9 @@
                 call PUI_f_Set()              !! PUI
                 call PUI_f_Set2()             !! PUI
                 call PUI_Read_bin(name2)
-                call PUI_Read_f_bin(name2)
+                call PUI_Read_f_bin(name2 + 1)     !!&IZMENIL&!
                 call PUI_F_integr_Set()       !! PUI
-                call PUI_Read_for_MK_bin(name2)   !! PUI
+                call PUI_Read_for_MK_bin(name2 + 1)   !! PUI  !!&IZMENIL&!
             end if
 			
 			call Get_MK_to_MHD() ! Заполняем центры ячеек параметрами водорода и коэффициентами интерполяции
@@ -9016,11 +9537,15 @@
 			end do
 			
 			call PRINT_ALL()
-			return
+			!return
 			!go to 101
 			
 			! call Print_tok_layer()
-			! return
+
+            call Print_BS_3D_with_current()
+            call Print_TS_3D_with_current()
+            call Print_Contact_3D_with_current()
+			!return  !! Отключение программы
 			
 		    !@cuf call CUDA_info()
 			print*, "------------------------------ START ----------------------------"
@@ -9039,7 +9564,7 @@
 			
 			
 			! Печатаем сетку (для просмотра)
-			call PRINT_ALL()
+			call PRINT_ALL(name + 1)
 			! СОХРАНЕНИЕ
 			print*, "Save"
 			call Save_param(name + 1) ! + 1
@@ -9055,16 +9580,17 @@
 			print*, "Save 5"
 			call Int2_Set_interpol_matrix()	 ! Заполнение интерполяционной матрицы в каждом тетраэдре с помощью Lapack
 			print*, "Save 6"
-			!call Int2_Save_bin(name)			 ! Сохранение полной сетки интерполяции  + 1
+			call Int2_Save_bin(name + 1)			 ! Сохранение полной сетки интерполяции  + 1
 			print*, "Save 7"
 			!! Сохранение сетки для общего пользования
-		    !! call Int2_Save_interpol_for_all_MHD(name) !  + 1
+		    !! call Int2_Save_interpol_for_all_MHD(name + 1) !  + 1
 			!
 		
 		else if(step == 2) then  !  МОНТЕ-КАРЛО ----------------------------------------------------------------------------------------
 			! РАБОТА С МОНТЕ-КАРЛО
             ! Создаём все необходимые файлы из файла основной сетки
-			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
+			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями инициализации)
+
             print*, "** A **"
 			call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
 			call Int2_Set_Interpolate()      ! Выделение памяти под	сетку интерполяции
@@ -9168,7 +9694,7 @@
 
             print*, "Proverka rho  nHe"
             do i = 1, size(gl_Cell_par(1, :))
-                if(gl_Cell_par(1, i) < gl_Cell_par2(1, i)) print*, "ERORRRR  HEliy", i
+                if(gl_Cell_par(1, i) < gl_Cell_par2(1, i)) print*, "ERORRRRRRRRRRRRRRRRRRRRRRRR  HEliy", i
             end do
 
             !! PUI 
@@ -9177,15 +9703,20 @@
                 call PUI_f_Set()              !! PUI
                 call PUI_f_Set2()             !! PUI
                 call PUI_Read_bin(name2)
-                call PUI_Read_f_bin(name2)
+                call PUI_Read_f_bin(name2 + 1)          !!&IZMENIL&!
                 call PUI_Culc_h0()            !! PUI
                 call PUI_F_integr_Set()       !! PUI
-                call PUI_Read_for_MK_bin(name2)   !! PUI
+                call PUI_Read_for_MK_bin(name2 + 1)   !! PUI  !!&IZMENIL&!
                 call Print_par_1D_PUI()
             end if
 			
+            !!return  !! ---
+            call Int_2_Print_par_1D()
+            call PRINT_ALL()
+
 			! СЧИТАЕМ Монте-Карло на мини-сетке
 			print*, "START MK"
+            print*, "!!!!!! par_n_sort = ", par_n_sort  !! ------------------------------
 			!!call Helium_off()
 			call M_K_start()
             ! call PUI_proverka(20.0_8, 0.0_8, 0.0_8)
@@ -9226,8 +9757,8 @@
             
 		else if(step == 3) then  !----------------------------------------------------------------------------------------
 			call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
-            call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва
-            call Surf_Read_setka_bin(name)
+            call Surf_Save_bin(name)   ! Сохранение поверхностей разрыва (на основе основной сетки)
+            call Surf_Read_setka_bin(name)  ! Считывание поверхностей разрыва (но в специальные массивы)
 
 			call Int2_Read_bin(name2)
 			call PUI_Set()
@@ -9247,10 +9778,10 @@
 
 			! call PUI_calc_Sm()
             ! call PUI_Save_bin(name2 + 1)
-
+            print*, "A ---- "
 			call Culc_f_pui()
             !call Cut_f_pui()
-            call PUI_Save_f_bin(name2)
+            call PUI_Save_f_bin(name2 + 1)
             ! call PUI_Read_f_bin(name2 + 1)
 
             call PUI_Culc_h0()
@@ -9258,7 +9789,7 @@
 
             call PUI_F_integr_Culc()
             call PUI_n_T_culc()
-            call PUI_Save_for_MK_bin(name2)
+            call PUI_Save_for_MK_bin(name2 + 1)
             ! call PUI_Read_for_MK_bin(name2 + 1)
             
             
@@ -9274,6 +9805,11 @@
 			call PUI_print(10, -40.0_8, 30.00001_8, 0.00001_8)
 			call PUI_print(11, 24.0_8, 0.00001_8, 0.00001_8)
 			call PUI_print(12, 24.5_8, 0.00001_8, 0.00001_8)
+
+            call PUI_print(13, -100.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(14, -150.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(15, -200.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(16, -200.0_8, 0.00001_8, 0.00001_8)
             
             ! call Int_2_Print_par_1D()
             call Print_par_1D_PUI()
@@ -9339,7 +9875,8 @@
 			
 			print*, "Dvizhenie setki zaversheno" 
 			! Считываем файл интерполяции и интерполируем переменные на мини-сетку
-			call Int2_Read_bin(name2)
+			!call Int2_Read_bin(name)
+			call Int2_Read_bin(name2)  !! Не понял почему эту сетку
 			call Int2_Re_interpol()
 			call Int2_Dell_interpolate()
 			par_n_moment = 19
@@ -9361,7 +9898,7 @@
             ! Считываем нормальную сетку
 
             call Download_setka(name)  ! Загрузка основной сетки (со всеми нужными функциями)
-
+            print*, "!!!!!! par_n_sort = ", par_n_sort  !! ------------------------------
             !! PUI 
             call PUI_Set()                !! PUI
             call PUI_f_Set()              !! PUI
@@ -9370,30 +9907,38 @@
 
             call Culc_f_pui()
             call Cut_f_pui()
-            call PUI_Save_f_bin(name2)
+            call PUI_Save_f_bin(name2 + 1)
+
+            call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
+            call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
 
             call PUI_Culc_h0()
             call PUI_F_integr_Set()
 
             call PUI_F_integr_Culc()
             call PUI_n_T_culc()
-            call PUI_Save_for_MK_bin(name2)
+            call PUI_Save_for_MK_bin(name2 + 1)
             
             
-			! call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
-			! call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(3, 15.1_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(4, 15.2_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(5, 15.3_8, 0.00001_8, 0.00001_8)
-            ! call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
+			call PUI_print(40, 8.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(50, 10.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(60, 12.0_8, 0.00001_8, 0.00001_8)
+			call PUI_print(70, 14.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(80, 16.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(90, 18.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(100, 20.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(110, 22.0_8, 0.00001_8, 0.00001_8)
+            call PUI_print(1, 14.2_8, 0.00001_8, 0.00001_8)
+            call PUI_print(2, 14.5_8, 0.00001_8, 0.00001_8)
+            call PUI_print(3, 15.1_8, 0.00001_8, 0.00001_8)
+            call PUI_print(4, 15.2_8, 0.00001_8, 0.00001_8)
+            call PUI_print(5, 15.3_8, 0.00001_8, 0.00001_8)
+            call PUI_print(6, 15.5_8, 0.00001_8, 0.00001_8)
+
+            call PUI_print(13, -100.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(14, -150.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(15, -200.0_8, 40.00001_8, 0.00001_8)
+            call PUI_print(16, -200.0_8, 0.00001_8, 0.00001_8)
             
             call Print_par_1D_PUI()
         else if(step == 5) then

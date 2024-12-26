@@ -26,7 +26,7 @@
 	real(8), allocatable :: int2_Cell_par_2(:, :)           ! (1?, :) (n_He)
 	real(8), allocatable :: int2_Cell_par_div(:)           ! div V
 	integer(4), allocatable :: int2_Cell_par2(:, :)      ! (1, :) Набор параметров (зона)                        INFO
-	real(8), allocatable :: int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
+	real(8), allocatable ::  int2_Moment(:, :, :)  ! (par_n_moment, par_n_sort, :)
 	!(rho, u, v, w, T, Iu, Iv, Iw, IT, Huu, Huv, Huw, Hvv, Hvw, Hww, Huuu, Hvvv, Hwww,  In)
 	!(1  , 2, 3, 4, 5,  6,  7,  8,  9,  10,  11,  12,  13,  14,  15,   16,   17,   18,  19)
 	real(8), allocatable :: int2_Moment_k(:, :)  ! (5 масса - три импульса - энергия, : число точек)
@@ -2032,7 +2032,7 @@
 			GO TO 11
 		end if
 		num = -1
-		print*, "num = -1  oiuygvnmoiuhb"
+		print*, "num = -1  oiuygvnmoiuhb ", r
 		return
 	end if
 	
@@ -3050,6 +3050,8 @@
 		! 	close(1)
 		! 	return
 		! end if
+
+		print*, "2 - Int_2_Print_par_1D()"
 			
 		do i = 1, 2000
 			x = i * par_R_END/2001
@@ -3067,6 +3069,8 @@
 			end if
 			write(1, *) " "
 		end do
+
+		print*, "3 - Int_2_Print_par_1D()"
 
 		close(1)
 
@@ -3100,6 +3104,8 @@
 			end if
 			write(1, *) " "
 		end do
+
+		print*, "4 - Int_2_Print_par_1D()"
 		
 			
 		close(1)
@@ -3139,6 +3145,8 @@
 		end do
 			
 		close(1)
+
+		print*, "5 - Int_2_Print_par_1D()"
 	
 	end subroutine Int_2_Print_par_1D
 	
@@ -3311,7 +3319,10 @@
 		if(num < 1) then
 			num = 3
 			call Int2_Get_tetraedron_inner(r(1), r(2), r(3), num)
-			if(num < 1) STOP "ERROR  u;dkfg783hju"
+			if(num < 1) then
+				print*, "r = ", r, num
+				STOP "ERROR  u;dkfg783hju"
+			end if
 			gl_Cell_par(:, i) = int2_Cell_par(:, int2_all_tetraendron_point(1, num))
 			gl_Cell_par2(:, i) = int2_Cell_par_2(:, int2_all_tetraendron_point(1, num))
 		else

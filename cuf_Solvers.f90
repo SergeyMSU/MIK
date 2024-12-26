@@ -1858,8 +1858,8 @@ attributes(global) subroutine Cuda_Move_all_O(now)
 			R_HP = norm2(ER2)  ! Новое расстояние до HP
 			
 			! Блокируем схлопывание контакта к оси  20.0
-			if(R_HP < 17.0_8) then
-				R_HP = 17.0_8
+			if(R_HP < 20.0_8) then  !!&CHANGE&!  17
+				R_HP = 20.0_8
 			end if
 			
 			xx = gl_x2(gl_RAY_B(par_n_HP, par_m_BC, k), now2)              ! Отталкиваемся от x - координаты крайней точки B на гелиопаузе в этой плоскости (k)
@@ -4826,7 +4826,7 @@ attributes(global) subroutine CUF_MGD_cells_MK(now)
 					!write(*, *) Volume , Volume2
 					ro3 = 0.1
 					Q3 = (qqq(9)/qqq(1)) * 0.1
-					STOP
+					!STOP
 				end if
 				
 				if(gl_Cell_par2(1, gr) <= 0.0) then

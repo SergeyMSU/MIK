@@ -340,7 +340,7 @@ module PUI
 
 	subroutine Culc_f_pui()
 		USE Surface_setting
-		integer :: i, k, num, yzel, tetraedron, iw, numw, num_do, i1, num2, cell_n
+		integer :: i, k, num, yzel, tetraedron, iw, numw, num_do, i1, num2, cell_n, step
 		real(8) :: r(3), PAR(9), dt, Sm, w0, q1, rho, rho0, w, qInt, Sp, rho_do
 		real(8) :: aa(3), bb(3), cc(3)
 		real(8) :: s, cospsi, C, A, B
@@ -363,7 +363,7 @@ module PUI
 		! Находим функцию распределения для ячеек перед ударной волной
 		print*, "Do TS"
 		!$omp parallel
-	 	!$omp do private(k, num, yzel, tetraedron, iw, numw, num_do, i1, num2, r, PAR, Sm, w0, q1, rho, rho0, w, qInt, Sp, rho_do, s, cospsi, C, A, B, PAR_k, normal, f0_pui, mas_w, mas_w0, mas_Sm, mas_Sm2, find_n)
+	 	!$omp do private(step, k, num, yzel, tetraedron, iw, numw, num_do, i1, num2, r, PAR, Sm, w0, q1, rho, rho0, w, qInt, Sp, rho_do, s, cospsi, C, A, B, PAR_k, normal, f0_pui, mas_w, mas_w0, mas_Sm, mas_Sm2, find_n)
 		do i = 1, size(f_pui_num)
 			if(mod(i, 5000) == 0) print*, "i = ", i, " from", size(f_pui_num)
 			k = f_pui_num(i)      ! Номер узла сетки интерполяции, в которой считаем PUI
@@ -383,8 +383,10 @@ module PUI
 			num = 3
 			qInt = 0.0            ! Интеграл от источника массы при ионизации
 
+			step = 0
 			! Бежим до Солнца
 			do while (.TRUE.)
+				step = step + 1
 				call Int2_Get_par_fast(r(1), r(2), r(3), num, PAR, PAR_k = PAR_k)
 				q1 = PAR_k(1)
 				rho = PAR(1)
@@ -402,6 +404,10 @@ module PUI
 				end do
 
 				if(norm2(r) <= par_R0) EXIT
+
+				if(step > 100000) then
+					print*, "Step = ", step, " r = ", r
+				end if
 			end do
 
 			f_pui(:, i) = f0_pui(:)
@@ -1230,6 +1236,9 @@ module PUI
 		read(1) pui_Sm
 		read(1) n1, n2
 		read(1) pui_Sp
+
+		print*, "1 Sp = ", pui_Sp(10, 1), pui_Sp(10, 10), pui_Sp(10, 100), pui_Sp(10, 1000)
+		print*, "2 Sp = ", pui_Sp(10, 20000), pui_Sp(10, 30000), pui_Sp(10, 40000), pui_Sp(10, 50000)
 
 		close(1)
 

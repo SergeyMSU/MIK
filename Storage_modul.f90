@@ -88,8 +88,9 @@ module GEO_PARAM                     ! Модуль геометрических - сеточных параметр
 	
 	! Число частиц у каждого потока!
 	! Число должно быть кратно par_n_parallel
-	integer(4), parameter :: MK_k_multiply = 7 * 10! 2 * 30! 2 * 10!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
-	integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
+	integer(4), parameter :: MK_k_multiply = 8 * 2! 2 * 30! 2 * 10!6 * 11! 17   ! 1 = 10 минут счёта (с пикапами 18 минут)
+	! Сейчас получилось 8 = 1 час с пикапами
+    integer(4), parameter :: MK_k_mul1 = 6 * MK_k_multiply! 6
 	integer(4), parameter :: MK_k_mul2 = 1 * MK_k_multiply! 
 	integer(4), parameter :: MK_N1 = MK_k_mul1 * 60/par_n_parallel   ! 600 Число исходных частиц первого типа (с полусферы)
 	integer(4), parameter :: MK_N2 = MK_k_mul1 * 20/par_n_parallel  ! 200

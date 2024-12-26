@@ -13,7 +13,7 @@ module Monte_Karlo
 	
 	integer(4), parameter :: par_stek = 2000  ! Глубина стека (заранее выделяется память под него)
 	logical, parameter :: MK_is_NaN = .False.    ! Нужны ли проверки на nan
-	logical, parameter :: MK_Mu_stat = .True.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
+	logical, parameter :: MK_Mu_stat = .False.    ! Нужно ли накапливать веса для статистики и весовых каэффициентов
 	logical, parameter :: MK_photoionization = .True.    ! Нужна ли фотоионизация
 	
 	real(8), parameter :: MK_Mu_mult = 100.0_8  ! На что домножаем веса для избежания потери точности
@@ -38,7 +38,7 @@ module Monte_Karlo
 	
 	real(8), allocatable :: M_K_particle(:, :, :)   ! Частицы (8, par_stek, число потоков)
 	! (три координаты, три скорости, вес, радиус перегелия)
-	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы (4, par_stek, число потоков)
+	integer(4), allocatable :: M_K_particle_2(:, :, :)  ! Частицы 
 	! (в какой ячейке частица, сорт, зона назначения по r, зона назначения по углу)
 	logical(4), allocatable :: M_K_particle_3(:, :, :, :)  ! Частицы (par_n_zone + 1, par_m_zone + 1, par_stek, число потоков)
 	
@@ -407,7 +407,7 @@ module Monte_Karlo
 			end if
 
 			do j = 1, par_n_sort
-				if(M_K_Moment(1, j, i, 1) > 0.000001) then
+				if(M_K_Moment(1, j, i, 1) > 0.0000001) then
 					M_K_Moment(2:4, j, i, 1) = M_K_Moment(2:4, j, i, 1)/M_K_Moment(1, j, i, 1)  ! Скорости
 					M_K_Moment(5, j, i, 1) = (2.0/3.0) * ( M_K_Moment(5, j, i, 1)/M_K_Moment(1, j, i, 1) - &
 						kvv(M_K_Moment(2, j, i, 1), M_K_Moment(3, j, i, 1), M_K_Moment(4, j, i, 1)) )  ! Temp
@@ -713,7 +713,7 @@ module Monte_Karlo
 		! Проверка параметров
 		cell = 3
 		call Int2_Get_par_fast(260.0_8, 1.0_8, 1.0_8, cell, PAR)
-		print*, "Proverka MK, 745465635", "must be 1 = ", sqrt(PAR(5)/PAR(1))
+		print*, "Proverka MK, 745465635", "must be 1 = ", sqrt(PAR(5)/PAR(1)), PAR(1)
 	end subroutine M_K_init
 	
 	subroutine M_K_Fly(n_potok)
@@ -1224,6 +1224,12 @@ module Monte_Karlo
 						!! ro = ro - ro_pui - rho_He
 
 						ro_pui = MAS_PUI(1)
+
+						! if(ro_pui > 0) then
+						! 	print*, "ro_pui ", ro_pui
+						! 	pause
+						! end if
+
 						call Sootnosheniya(PAR(1), PAR(5), rho_He, ro_pui, MAS_PUI(2), 2, rho_Th = ro, p_Th = p)
 
 						if(p < 0.0) p = par_p_0/((r/par_1ae)**(2.0 * ggg))
@@ -1292,7 +1298,7 @@ module Monte_Karlo
 				end do
 
 				
-				
+				kappa_ph = 0.0_8
 				if(MK_photoionization) then
 					nu_ph = par_nu_ph * (par_1ae/r)**2
 					kappa_ph = (nu_ph * time)     ! по фотоионизации
@@ -1444,13 +1450,19 @@ module Monte_Karlo
 				M_K_Moment(9, particle_2(2), cell, n_potok) = M_K_Moment(9, particle_2(2), cell, n_potok) + &
 					mu_ph * (0.5 * norm2(particle(4:6)) + par_E_ph)
 				
-				! Добавляем для расчёта PUI
+				!! Добавляем для расчёта PUI
 				if(area2 <= 2 .and. par_PUI == .True.) then
 					!? call PUI_Add(cell, u, kappa/time, nu_ph, mu_ex, mu_ph, t_ex, time)
-					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)
+					!call PUI_Add(cell, u, kappa/time, nu_ph, mu, t_ex)  ! (kappa_all - kappa_ph)/time
 					!call PUI_Add(cell, u, kappa/time, nu_ph, mu2, t2)
-					call PUI_Add(cell, u, kappa_all/time, mu, t_ex)
-					call PUI_Add(cell, u, kappa_all/time, mu2, t2)
+					
+					if(area2 == 1 .and. particle_2(2) /= 1 .and. particle_2(2) /= 5) then  ! От атомов этого-же сорта и тепловой плазмы не рождаются пикапы
+						call PUI_Add(cell, u, (kappa_all - kappa_ph)/time, mu, t_ex)
+						call PUI_Add(cell, u, (kappa_all - kappa_ph)/time, mu2, t2)
+					else
+						call PUI_Add(cell, u, 0.0_8, mu, t_ex)
+						call PUI_Add(cell, u, 0.0_8, mu2, t2)
+					end if
 				end if
 				!_________________________________________________________________________________________
 				
@@ -1693,7 +1705,7 @@ module Monte_Karlo
 		real(8) :: Yr
 		logical :: exists
 
-		print*, "M_K_Set()"
+		print*, "M_K_Set(), sortov = ", par_n_sort
 		
 		allocate(M_K_particle(8, par_stek, par_n_potok))
 		allocate(M_K_particle_2(4, par_stek, par_n_potok))
